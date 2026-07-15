@@ -1,0 +1,30 @@
+{
+  "name": "souclaude-harness",
+  "version": "1.0.0",
+  "description": "CLI para inicializar y migrar el harness de Claude Code de SOUTEC (metodologia CCEM)",
+  "type": "module",
+  "bin": {
+    "souclaude": "bin/cli.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "templates"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "picocolors": "^1.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ialvarezsoutec/souclaude-harness.git"
+  },
+  "license": "UNLICENSED",
+  "private": false
+}

@@ -1,0 +1,53 @@
+# >>> souclaude-harness >>>
+# Generado por souclaude-harness v1.0.0. No editar dentro del bloque:
+# el proximo 'souclaude upgrade' lo reemplaza. Tus lineas fuera del bloque no se tocan.
+# === Variables de entorno y secretos ===
+# Guia Operativa Git & GitHub Soutec v2.0, seccion 8.2.
+.env
+.env.local
+.env.development
+.env.production
+*.pem
+*.key
+*.pfx
+credentials.json
+secrets.json
+
+# === Claude Code ===
+# Los settings del equipo se commitean; los personales, no.
+.claude/settings.local.json
+.claude/backup-*/
+
+# Propuestas del harness pendientes de merge. Son transitorias: revisalas con
+# `git diff --no-index <archivo> <archivo>.new` y borralas.
+*.new
+
+# === Docker ===
+docker-compose.override.yml
+
+# === PowerShell ===
+*.ps1.bak
+
+# === Sistema operativo ===
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# === Editores ===
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# === Node.js / JS / TS ===
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+# <<< souclaude-harness <<<
