@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "effortLevel": "medium",
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./**/*.pem)",
+      "Read(./**/id_rsa*)"
+    ],
+    "ask": [
+      "Bash(git push:*)"
+    ]
+  }
+}

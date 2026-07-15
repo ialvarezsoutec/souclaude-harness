@@ -1,0 +1,133 @@
+{
+  "harnessVersion": "1.0.0",
+  "cliVersion": "1.0.0",
+  "installedAt": "2026-07-14T21:44:01.627Z",
+  "greenfield": false,
+  "vars": {
+    "PROJECT_NAME": "souclaude-harness",
+    "PROJECT_TYPE": "automation",
+    "STACK": "Node.js",
+    "ARCH_ENFORCER": "dependency-cruiser (o ESLint no-restricted-imports)",
+    "LANGUAGE": "espanol",
+    "OWNER": "Ignacio A",
+    "DATE": "2026-07-14",
+    "HARNESS_VERSION": "1.0.0"
+  },
+  "detected": {
+    "stacks": [
+      "node"
+    ],
+    "packageManager": "npm"
+  },
+  "files": {
+    "CLAUDE.md": {
+      "policy": "user-owned",
+      "hash": "707b707f3f287e9e"
+    },
+    "docs/constitution.md": {
+      "policy": "user-owned",
+      "hash": "ce48fbbe770760b4"
+    },
+    "notes.md": {
+      "policy": "user-owned",
+      "hash": "a3da920c4f090f27"
+    },
+    ".claude/settings.json": {
+      "policy": "merge-json",
+      "hash": "81fd8dbc169c3bb9"
+    },
+    ".github/pull_request_template.md": {
+      "policy": "user-owned",
+      "hash": "31381510ca185185"
+    },
+    ".github/CODEOWNERS": {
+      "policy": "user-owned",
+      "hash": "90e7a4658c60dd3a"
+    },
+    ".claude/skills/ccem-core/SKILL.md": {
+      "policy": "managed",
+      "hash": "474136889ccc43b7"
+    },
+    ".claude/skills/ccem-sdd/SKILL.md": {
+      "policy": "managed",
+      "hash": "9c7cf5ca8cb472c8"
+    },
+    ".claude/skills/ccem-planner/SKILL.md": {
+      "policy": "managed",
+      "hash": "879a52470ac77a09"
+    },
+    ".claude/skills/ccem-research/SKILL.md": {
+      "policy": "managed",
+      "hash": "7649e6c80ed50378"
+    },
+    ".claude/skills/ccem-stack/SKILL.md": {
+      "policy": "managed",
+      "hash": "39fdfdbe45958b0d"
+    },
+    ".claude/skills/ccem-prompting/SKILL.md": {
+      "policy": "managed",
+      "hash": "e103ac1dc7bea703"
+    },
+    ".claude/skills/soutec-github/SKILL.md": {
+      "policy": "managed",
+      "hash": "a753f05fbaff642d"
+    },
+    ".claude/skills/spec-new/SKILL.md": {
+      "policy": "managed",
+      "hash": "81607ae7d752efb1"
+    },
+    ".claude/skills/adr-new/SKILL.md": {
+      "policy": "managed",
+      "hash": "c97144a92c7dadda"
+    },
+    ".claude/skills/constitution-check/SKILL.md": {
+      "policy": "managed",
+      "hash": "cfcdbcc279a83dd0"
+    },
+    ".claude/skills/harness-upgrade/SKILL.md": {
+      "policy": "managed",
+      "hash": "33e4bebecf0e4b91"
+    },
+    "specs/README.md": {
+      "policy": "managed",
+      "hash": "5b80f1f5d88ff254"
+    },
+    "specs/_templates/spec-template.md": {
+      "policy": "managed",
+      "hash": "845246c777884931"
+    },
+    "specs/_templates/plan-template.md": {
+      "policy": "managed",
+      "hash": "be02b38b31c380f9"
+    },
+    "specs/_templates/tasks-template.md": {
+      "policy": "managed",
+      "hash": "3861570557899e64"
+    },
+    "specs/_templates/spec-lite-template.md": {
+      "policy": "managed",
+      "hash": "7ca9d26aec5b1714"
+    },
+    "specs/_templates/plan-lite-template.md": {
+      "policy": "managed",
+      "hash": "bcce41e6118edf0a"
+    },
+    "specs/_templates/tasks-lite-template.md": {
+      "policy": "managed",
+      "hash": "93671c3c04cf8dfc"
+    },
+    "docs/decisions/README.md": {
+      "policy": "managed",
+      "hash": "e1f023b6685da17c"
+    },
+    "docs/decisions/_template.md": {
+      "policy": "managed",
+      "hash": "6e38a96a3255f3f4"
+    }
+  },
+  "blocks": {
+    ".gitignore": {
+      "hash": "83faec42796a42b5"
+    }
+  }
+}
