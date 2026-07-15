@@ -15,7 +15,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test test/"
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
