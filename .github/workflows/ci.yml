@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    # Windows es el entorno real de los devs de SOUTEC (OneDrive, CRLF, rutas con
+    # espacios). Ubuntu esta para que el lockfile escrito en Windows se pueda leer
+    # desde CI: por eso el hash se normaliza a LF y las rutas van en POSIX.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      - run: npm test
+
+      # El CLI tiene que poder instalarse sobre un repo real sin escribir nada.
+      - name: dry-run sobre el propio repo
+        run: node bin/cli.mjs upgrade --dry-run --yes

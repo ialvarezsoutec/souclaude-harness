@@ -1,0 +1,21 @@
+# CODEOWNERS — Equipo de Innovación y Desarrollo
+# Sintaxis: <patrón>    @usuario_o_equipo
+#
+# El último patrón que hace match gana: lo más específico va al final.
+# Usar equipos (@org/equipo) en vez de usuarios individuales.
+# Ajustar los nombres de equipo a los reales de la organización.
+
+# Por defecto, todo PR requiere aprobación del coordinador
+*       @org-soutec/coordinador-innovacion
+
+# Documentación puede ser revisada por cualquier desarrollador
+*.md    @org-soutec/innovacion-dev
+/docs/  @org-soutec/innovacion-dev
+
+# Workflows de CI: aprobación obligatoria del coordinador
+/.github/workflows/   @org-soutec/coordinador-innovacion
+
+# Configuración sensible: requiere coordinador siempre
+.env.example          @org-soutec/coordinador-innovacion
+docker-compose*.yml   @org-soutec/coordinador-innovacion
+Dockerfile*           @org-soutec/coordinador-innovacion

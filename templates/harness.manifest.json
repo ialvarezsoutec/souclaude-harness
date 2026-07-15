@@ -1,0 +1,52 @@
+{
+  "harnessVersion": "1.0.0",
+  "files": [
+    { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned" },
+    { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned" },
+    { "id": "notes", "src": "base/notes.md", "dest": "notes.md", "render": true, "policy": "user-owned" },
+
+    { "id": "readme", "src": "base/README.md", "dest": "README.md", "render": true, "policy": "user-owned", "when": "empty-repo" },
+    { "id": "env-example", "src": "base/env.example", "dest": ".env.example", "policy": "user-owned", "when": "empty-repo" },
+
+    { "id": "settings", "src": "base/claude/settings.json", "dest": ".claude/settings.json", "policy": "merge-json" },
+    { "id": "gitignore", "src": "fragments/gitignore", "dest": ".gitignore", "policy": "append-block" },
+
+    { "id": "pr-template", "src": "base/github/pull_request_template.md", "dest": ".github/pull_request_template.md", "policy": "user-owned" },
+    { "id": "codeowners", "src": "base/github/CODEOWNERS", "dest": ".github/CODEOWNERS", "policy": "user-owned" },
+
+    { "id": "skill-ccem-core", "src": "base/claude/skills/ccem-core/SKILL.md", "dest": ".claude/skills/ccem-core/SKILL.md", "policy": "managed" },
+    { "id": "skill-ccem-sdd", "src": "base/claude/skills/ccem-sdd/SKILL.md", "dest": ".claude/skills/ccem-sdd/SKILL.md", "policy": "managed" },
+    { "id": "skill-ccem-planner", "src": "base/claude/skills/ccem-planner/SKILL.md", "dest": ".claude/skills/ccem-planner/SKILL.md", "policy": "managed" },
+    { "id": "skill-ccem-research", "src": "base/claude/skills/ccem-research/SKILL.md", "dest": ".claude/skills/ccem-research/SKILL.md", "policy": "managed" },
+    { "id": "skill-ccem-stack", "src": "base/claude/skills/ccem-stack/SKILL.md", "dest": ".claude/skills/ccem-stack/SKILL.md", "policy": "managed" },
+    { "id": "skill-ccem-prompting", "src": "base/claude/skills/ccem-prompting/SKILL.md", "dest": ".claude/skills/ccem-prompting/SKILL.md", "policy": "managed" },
+    { "id": "skill-soutec-github", "src": "base/claude/skills/soutec-github/SKILL.md", "dest": ".claude/skills/soutec-github/SKILL.md", "policy": "managed" },
+
+    { "id": "skill-spec-new", "src": "base/claude/skills/spec-new/SKILL.md", "dest": ".claude/skills/spec-new/SKILL.md", "policy": "managed" },
+    { "id": "skill-adr-new", "src": "base/claude/skills/adr-new/SKILL.md", "dest": ".claude/skills/adr-new/SKILL.md", "policy": "managed" },
+    { "id": "skill-constitution-check", "src": "base/claude/skills/constitution-check/SKILL.md", "dest": ".claude/skills/constitution-check/SKILL.md", "policy": "managed" },
+    { "id": "skill-harness-upgrade", "src": "base/claude/skills/harness-upgrade/SKILL.md", "dest": ".claude/skills/harness-upgrade/SKILL.md", "policy": "managed" },
+
+    { "id": "specs-readme", "src": "base/specs/README.md", "dest": "specs/README.md", "policy": "managed" },
+    { "id": "tmpl-spec", "src": "base/specs/_templates/spec-template.md", "dest": "specs/_templates/spec-template.md", "policy": "managed" },
+    { "id": "tmpl-plan", "src": "base/specs/_templates/plan-template.md", "dest": "specs/_templates/plan-template.md", "policy": "managed" },
+    { "id": "tmpl-tasks", "src": "base/specs/_templates/tasks-template.md", "dest": "specs/_templates/tasks-template.md", "policy": "managed" },
+    { "id": "tmpl-spec-lite", "src": "base/specs/_templates/spec-lite-template.md", "dest": "specs/_templates/spec-lite-template.md", "policy": "managed" },
+    { "id": "tmpl-plan-lite", "src": "base/specs/_templates/plan-lite-template.md", "dest": "specs/_templates/plan-lite-template.md", "policy": "managed" },
+    { "id": "tmpl-tasks-lite", "src": "base/specs/_templates/tasks-lite-template.md", "dest": "specs/_templates/tasks-lite-template.md", "policy": "managed" },
+
+    { "id": "adr-readme", "src": "base/docs/decisions/README.md", "dest": "docs/decisions/README.md", "policy": "managed" },
+    { "id": "adr-template", "src": "base/docs/decisions/_template.md", "dest": "docs/decisions/_template.md", "policy": "managed" }
+  ],
+  "dirs": [
+    { "dest": "src", "when": "empty-repo" },
+    { "dest": "tests", "when": "empty-repo" },
+    { "dest": "scripts", "when": "empty-repo" }
+  ],
+  "obsolete": [
+    {
+      "dest": ".claudeignore",
+      "reason": "Claude Code nunca soporto .claudeignore: el archivo se ignora en silencio. La exclusion real se configura en permissions.deny de .claude/settings.json, que este harness ya emite."
+    }
+  ]
+}
