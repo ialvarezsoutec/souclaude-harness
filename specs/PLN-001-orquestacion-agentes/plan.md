@@ -18,7 +18,7 @@
 
 ## Decisiones de las open questions (de la spec)
 
-- **Q1 → orquestador como subagente** en `.claude/agents/orquestador.md`.
+- **Q1 → orquestador como subagente** en `.claude/agents/orchestrator.md`.
 - **Q2 → sí va un `AGENTS.md`** de navegación, emitido por el harness.
 - **Q3 → licencia:** ver [Research notes → D4](#d4-derivar-de-betta-techharness-sdd-ccem-research).
 
@@ -41,15 +41,16 @@ Markdown de definición de agente + `AGENTS.md`, más entradas declarativas en e
 
 ### Roles y nombres
 
-Cuatro roles, nombrados en **español** (son conceptos del método, lenguaje de negocio —
-P1/naming de la constitución), en kebab-case para el `name:` del subagente:
+Cuatro roles. El **identificador** (`name:` del subagente, lo que se invoca con
+`subagent_type`) va en **inglés** kebab-case — toca el framework, y la constitución manda
+inglés para eso. La **prosa del cuerpo** de cada agente sigue en español (es el método):
 
 | Archivo (`dest`) | `name` | Rol | `tools` |
 |---|---|---|---|
-| `.claude/agents/orquestador.md` | `orquestador` | Descompone y coordina. No escribe código. | Read, Glob, Grep, Bash, Agent |
-| `.claude/agents/autor-spec.md` | `autor-spec` | Redacta `spec.md`/`plan.md`/`tasks.md`. No toca código. | Read, Write, Edit, Glob, Grep, Bash |
-| `.claude/agents/implementador.md` | `implementador` | Implementa una feature según su spec aprobado. | Read, Write, Edit, Glob, Grep, Bash |
-| `.claude/agents/revisor.md` | `revisor` | Aprueba/rechaza contra constitución y spec. No edita. | Read, Glob, Grep, Bash |
+| `.claude/agents/orchestrator.md` | `orchestrator` | Descompone y coordina. No escribe código. | Read, Glob, Grep, Bash, Agent |
+| `.claude/agents/spec-author.md` | `spec-author` | Redacta `spec.md`/`plan.md`/`tasks.md`. No toca código. | Read, Write, Edit, Glob, Grep, Bash |
+| `.claude/agents/implementer.md` | `implementer` | Implementa una feature según su spec aprobado. | Read, Write, Edit, Glob, Grep, Bash |
+| `.claude/agents/reviewer.md` | `reviewer` | Aprueba/rechaza contra constitución y spec. No edita. | Read, Glob, Grep, Bash |
 
 ---
 
@@ -79,16 +80,16 @@ quiere ("actuá como orquestador para PLN-XXX").
 Flujo de handoff (resultados **por disco**, no por chat):
 
 ```
-dev ─"orquestá PLN-XXX"─► [orquestador]
+dev ─"orquestá PLN-XXX"─► [orchestrator]
         │  verifica: rama con ID, main al día, specs/<ID>-<slug>/ existe
         ▼
-   Fase spec:   lanza [autor-spec] ─► escribe spec.md ─► ⏸ CHECKPOINT humano
+   Fase spec:   lanza [spec-author] ─► escribe spec.md ─► ⏸ CHECKPOINT humano
         ▼  (aprobado)
-   Fase plan:   lanza [autor-spec] ─► escribe plan.md ─► ⏸ CHECKPOINT humano
+   Fase plan:   lanza [spec-author] ─► escribe plan.md ─► ⏸ CHECKPOINT humano
         ▼  (aprobado)
-   Fase tasks:  lanza [autor-spec] ─► escribe tasks.md ─► ⏸ CHECKPOINT humano
+   Fase tasks:  lanza [spec-author] ─► escribe tasks.md ─► ⏸ CHECKPOINT humano
         ▼  (aprobado — recién acá se admite código)
-   Implement:   lanza [implementador] task×task ─► lanza [revisor] ─► veredicto
+   Implement:   lanza [implementer] task×task ─► lanza [reviewer] ─► veredicto
 ```
 
 El orquestador nunca marca `done` ni salta un checkpoint (P6). El revisor es **independiente**
@@ -101,8 +102,8 @@ del implementador (Goal 3 de la spec).
 ### Input — entrada de manifest (una por archivo)
 
 ```json
-{ "id": "agent-orquestador", "src": "base/claude/agents/orquestador.md",
-  "dest": ".claude/agents/orquestador.md", "policy": "managed" }
+{ "id": "agent-orchestrator", "src": "base/claude/agents/orchestrator.md",
+  "dest": ".claude/agents/orchestrator.md", "policy": "managed" }
 ```
 
 `render` se omite (los agentes no usan `{{VARS}}`: son genéricos, agnósticos al proyecto).
@@ -120,7 +121,7 @@ tools: <lista mínima; el revisor NO tiene Write/Edit>
 ### Output — árbol emitido en el repo consumidor
 
 ```
-.claude/agents/{orquestador,autor-spec,implementador,revisor}.md
+.claude/agents/{orchestrator,spec-author,implementer,reviewer}.md
 AGENTS.md
 ```
 
@@ -165,7 +166,7 @@ adopción del patrón, la decisión opt-in y el resultado de `ccem-research` (D4
 - [x] ID de Planner (`PLN-001`) y rama — ya creados.
 
 ### Se crean DURANTE
-- [ ] `templates/base/claude/agents/{orquestador,autor-spec,implementador,revisor}.md`
+- [ ] `templates/base/claude/agents/{orchestrator,spec-author,implementer,reviewer}.md`
 - [ ] `templates/base/AGENTS.md`
 - [ ] `docs/decisions/20260721-orquestacion-multiagente.md` (ADR)
 
@@ -184,7 +185,7 @@ adopción del patrón, la decisión opt-in y el resultado de `ccem-research` (D4
 
 | Risk | Impact | Likelihood | Mitigation |
 |------|--------|-----------|------------|
-| Un subagente no puede spawnear otro subagente (nesting) en Claude Code, y el `orquestador`-como-subagente no podría lanzar a los otros 3 | M | M | Documentar la invocación de modo que la **sesión top-level adopte el rol** orquestador y spawnee a los workers (así funciona la referencia). Verificar el comportamiento real en el task de implementación antes de fijar la redacción. |
+| Un subagente no puede spawnear otro subagente (nesting) en Claude Code, y el `orchestrator`-como-subagente no podría lanzar a los otros 3 | M | M | Documentar la invocación de modo que la **sesión top-level adopte el rol** orquestador y spawnee a los workers (así funciona la referencia). Verificar el comportamiento real en el task de implementación antes de fijar la redacción. |
 | Copiar prosa de la referencia (sin licencia) genera problema de IP | M | L | Redactar todo original en español CCEM; la referencia es inspiración del **patrón**, no fuente de texto. Ver D4. |
 | El bump de versión rompe tests que fijan `1.0.0` | L | Alta (ya detectado) | Actualizar el assert en `test/init.test.js` en el mismo task del bump. |
 | `AGENTS.md` en la raíz colisiona con otra convención del repo consumidor | L | L | Política `managed`: si el usuario ya tiene uno propio distinto, el motor deja `.new` y no pisa. |
@@ -200,12 +201,15 @@ adopción del patrón, la decisión opt-in y el resultado de `ccem-research` (D4
 cada proyecto y viola P9/P10.
 **Alternativa descartada**: replicar el `CLAUDE.md` "rol obligatorio: leader" de la referencia.
 
-### D2: Nombres de rol en español
+### D2: Identificadores de rol en inglés, prosa en español
 
-**Decisión**: `orquestador`, `autor-spec`, `implementador`, `revisor`.
-**Rationale**: son conceptos del método (lenguaje de negocio, P1/naming), y todo el harness
-le habla en español al dev.
-**Alternativa descartada**: mantener `leader/spec_author/implementer/reviewer` en inglés.
+**Decisión**: `name:` en inglés kebab-case (`orchestrator`, `spec-author`, `implementer`,
+`reviewer`); el cuerpo instructivo de cada agente, en español.
+**Rationale**: el `name:`/`subagent_type` es un identificador que toca el framework (se
+invoca programáticamente) → la constitución manda inglés para eso. El método, que es lo que
+el dev lee, sigue en español.
+**Alternativa descartada**: nombres en español (`orquestador`, etc.) — más inconsistente con
+la regla de naming, y `subagent_type` con tilde/ñ es frágil.
 
 ### D3: `AGENTS.md` como `managed`, no `user-owned`
 
