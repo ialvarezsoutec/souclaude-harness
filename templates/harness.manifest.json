@@ -1,9 +1,10 @@
 {
   "harnessVersion": "1.0.0",
   "files": [
-    { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned" },
-    { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned" },
-    { "id": "notes", "src": "base/notes.md", "dest": "notes.md", "render": true, "policy": "user-owned" },
+    { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned", "critical": true },
+    { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned", "critical": true },
+    { "id": "notes", "src": "base/notes.md", "dest": "notes.md", "render": true, "policy": "user-owned", "critical": true },
+    { "id": "agents-md", "src": "base/AGENTS.md", "dest": "AGENTS.md", "render": true, "policy": "user-owned" },
 
     { "id": "readme", "src": "base/README.md", "dest": "README.md", "render": true, "policy": "user-owned", "when": "empty-repo" },
     { "id": "env-example", "src": "base/env.example", "dest": ".env.example", "policy": "user-owned", "when": "empty-repo" },
@@ -26,6 +27,17 @@
     { "id": "skill-adr-new", "src": "base/claude/skills/adr-new/SKILL.md", "dest": ".claude/skills/adr-new/SKILL.md", "policy": "managed" },
     { "id": "skill-constitution-check", "src": "base/claude/skills/constitution-check/SKILL.md", "dest": ".claude/skills/constitution-check/SKILL.md", "policy": "managed" },
     { "id": "skill-harness-upgrade", "src": "base/claude/skills/harness-upgrade/SKILL.md", "dest": ".claude/skills/harness-upgrade/SKILL.md", "policy": "managed" },
+
+    { "id": "agent-leader", "src": "base/claude/agents/leader.md", "dest": ".claude/agents/leader.md", "policy": "managed" },
+    { "id": "agent-spec-author", "src": "base/claude/agents/spec_author.md", "dest": ".claude/agents/spec_author.md", "policy": "managed" },
+    { "id": "agent-implementer", "src": "base/claude/agents/implementer.md", "dest": ".claude/agents/implementer.md", "policy": "managed" },
+    { "id": "agent-reviewer", "src": "base/claude/agents/reviewer.md", "dest": ".claude/agents/reviewer.md", "policy": "managed" },
+    { "id": "agent-security-evidence-compiler", "src": "base/claude/agents/security-evidence-compiler.md", "dest": ".claude/agents/security-evidence-compiler.md", "policy": "managed" },
+
+    { "id": "skill-it-security-approval", "src": "base/claude/skills/it-security-approval/SKILL.md", "dest": ".claude/skills/it-security-approval/SKILL.md", "policy": "managed" },
+    { "id": "skill-it-security-approval-report-template", "src": "base/claude/skills/it-security-approval/report-template.md", "dest": ".claude/skills/it-security-approval/report-template.md", "policy": "managed" },
+    { "id": "skill-it-security-approval-renderer", "src": "base/claude/skills/it-security-approval/scripts/render_security_report.py", "dest": ".claude/skills/it-security-approval/scripts/render_security_report.py", "policy": "managed" },
+    { "id": "skill-security-report-standard", "src": "base/claude/skills/security-report-standard/SKILL.md", "dest": ".claude/skills/security-report-standard/SKILL.md", "policy": "managed" },
 
     { "id": "specs-readme", "src": "base/specs/README.md", "dest": "specs/README.md", "policy": "managed" },
     { "id": "tmpl-spec", "src": "base/specs/_templates/spec-template.md", "dest": "specs/_templates/spec-template.md", "policy": "managed" },
