@@ -1,7 +1,7 @@
 {
-  "harnessVersion": "1.0.0",
-  "cliVersion": "1.0.0",
-  "installedAt": "2026-07-14T21:44:01.627Z",
+  "harnessVersion": "1.1.0",
+  "cliVersion": "1.1.0",
+  "installedAt": "2026-07-21T17:51:44.600Z",
   "greenfield": false,
   "vars": {
     "PROJECT_NAME": "souclaude-harness",
@@ -11,7 +11,7 @@
     "LANGUAGE": "espanol",
     "OWNER": "Ignacio A",
     "DATE": "2026-07-14",
-    "HARNESS_VERSION": "1.0.0"
+    "HARNESS_VERSION": "1.1.0"
   },
   "detected": {
     "stacks": [
@@ -26,11 +26,15 @@
     },
     "docs/constitution.md": {
       "policy": "user-owned",
-      "hash": "ce48fbbe770760b4"
+      "hash": "99eca0925b686b76"
     },
     "notes.md": {
       "policy": "user-owned",
-      "hash": "a3da920c4f090f27"
+      "hash": "17b688245595a577"
+    },
+    "AGENTS.md": {
+      "policy": "managed",
+      "hash": "0afbb8355b439a43"
     },
     ".claude/settings.json": {
       "policy": "merge-json",
@@ -46,47 +50,63 @@
     },
     ".claude/skills/ccem-core/SKILL.md": {
       "policy": "managed",
-      "hash": "474136889ccc43b7"
+      "hash": "2f34bd8020691d50"
     },
     ".claude/skills/ccem-sdd/SKILL.md": {
       "policy": "managed",
-      "hash": "9c7cf5ca8cb472c8"
+      "hash": "0ba00e16f596787b"
     },
     ".claude/skills/ccem-planner/SKILL.md": {
       "policy": "managed",
-      "hash": "879a52470ac77a09"
+      "hash": "73bc04c95a61cd2d"
     },
     ".claude/skills/ccem-research/SKILL.md": {
       "policy": "managed",
-      "hash": "7649e6c80ed50378"
+      "hash": "6fa3515c4984d50a"
     },
     ".claude/skills/ccem-stack/SKILL.md": {
       "policy": "managed",
-      "hash": "39fdfdbe45958b0d"
+      "hash": "a159e71237a5f2b4"
     },
     ".claude/skills/ccem-prompting/SKILL.md": {
       "policy": "managed",
-      "hash": "e103ac1dc7bea703"
+      "hash": "0ab9c0c2761230d9"
     },
     ".claude/skills/soutec-github/SKILL.md": {
       "policy": "managed",
-      "hash": "a753f05fbaff642d"
+      "hash": "18535a9ac75f2444"
     },
     ".claude/skills/spec-new/SKILL.md": {
       "policy": "managed",
-      "hash": "81607ae7d752efb1"
+      "hash": "1159f8abe1a0f672"
     },
     ".claude/skills/adr-new/SKILL.md": {
       "policy": "managed",
-      "hash": "c97144a92c7dadda"
+      "hash": "0b54070cce49f5fc"
     },
     ".claude/skills/constitution-check/SKILL.md": {
       "policy": "managed",
-      "hash": "cfcdbcc279a83dd0"
+      "hash": "adb58e51546962b7"
     },
     ".claude/skills/harness-upgrade/SKILL.md": {
       "policy": "managed",
-      "hash": "33e4bebecf0e4b91"
+      "hash": "7e955e9968674907"
+    },
+    ".claude/agents/orchestrator.md": {
+      "policy": "managed",
+      "hash": "4e475b0429ecb34e"
+    },
+    ".claude/agents/spec-author.md": {
+      "policy": "managed",
+      "hash": "8e0c3abbb37758e4"
+    },
+    ".claude/agents/implementer.md": {
+      "policy": "managed",
+      "hash": "c41f73d9e6096df5"
+    },
+    ".claude/agents/reviewer.md": {
+      "policy": "managed",
+      "hash": "8b29081e3d7fd949"
     },
     "specs/README.md": {
       "policy": "managed",
@@ -98,27 +118,27 @@
     },
     "specs/_templates/plan-template.md": {
       "policy": "managed",
-      "hash": "be02b38b31c380f9"
+      "hash": "4a475fd119277200"
     },
     "specs/_templates/tasks-template.md": {
       "policy": "managed",
-      "hash": "3861570557899e64"
+      "hash": "67c05750a9ca31da"
     },
     "specs/_templates/spec-lite-template.md": {
       "policy": "managed",
-      "hash": "7ca9d26aec5b1714"
+      "hash": "07f3b2148c961f73"
     },
     "specs/_templates/plan-lite-template.md": {
       "policy": "managed",
-      "hash": "bcce41e6118edf0a"
+      "hash": "014dbb1ba77c156d"
     },
     "specs/_templates/tasks-lite-template.md": {
       "policy": "managed",
-      "hash": "93671c3c04cf8dfc"
+      "hash": "3050d36fdbae0d19"
     },
     "docs/decisions/README.md": {
       "policy": "managed",
-      "hash": "e1f023b6685da17c"
+      "hash": "fe67f08af5050983"
     },
     "docs/decisions/_template.md": {
       "policy": "managed",
@@ -127,7 +147,7 @@
   },
   "blocks": {
     ".gitignore": {
-      "hash": "83faec42796a42b5"
+      "hash": "bd33e9a0009adb97"
     }
   }
 }
