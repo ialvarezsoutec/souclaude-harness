@@ -1,10 +1,10 @@
 # Plan: Orquestación de agentes con roles bajo CCEM
 
 **Spec**: [spec.md](./spec.md)
-**Status**: draft
+**Status**: implemented
 **Owner**: Ignacio A
 **Creado**: 2026-07-21
-**Aprobado**: pending
+**Aprobado**: 2026-07-21
 
 ---
 

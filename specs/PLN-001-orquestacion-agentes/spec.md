@@ -1,10 +1,10 @@
 # Spec: Orquestación de agentes con roles bajo CCEM
 
-**Status**: draft
+**Status**: implemented
 **Owner**: Ignacio A
 **Stakeholders**: coordinador del harness, devs que consumen el harness
 **Creado**: 2026-07-17
-**Aprobado**: pending
+**Aprobado**: 2026-07-21
 **Tarjeta Planner**: PLN-001
 
 ---

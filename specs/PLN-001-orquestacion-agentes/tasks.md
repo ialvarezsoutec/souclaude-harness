@@ -3,7 +3,7 @@
 **Spec**: [spec.md](./spec.md)
 **Plan**: [plan.md](./plan.md)
 **Estimated total**: ~3.5-4 h
-**Status**: draft
+**Status**: complete
 
 ---
 
