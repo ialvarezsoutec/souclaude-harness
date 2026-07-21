@@ -8,73 +8,71 @@
 
 ## 1. Antes de empezar (obligatorio)
 
-1. Ejecuta `./init.sh` y verifica que termina sin errores. Si falla, **para**
-   y resuelve el entorno antes de tocar código.
-2. Lee `progress/current.md` para entender en qué estado quedó la última sesión.
-3. Lee `feature_list.json`. Toda feature nueva (`"sdd": true`) pasa por
-   **Spec Driven Development** — ver `docs/specs.md` y §4 de este archivo.
-4. Lee `docs/specs.md` antes de tocar cualquier spec o feature `sdd: true`.
+1. Lee `CLAUDE.md` para el contexto del proyecto (stack, dominio, comandos).
+2. Lee `docs/constitution.md`: los principios P1-P10 son no-negociables.
+3. Si la tarea es una feature nueva, un refactor grande, una migración o un
+   cambio de contrato, aplica **Spec-Driven Development** — ver la skill
+   `ccem-sdd` y §3 de este archivo. Para un bug puntual, un ajuste cosmético
+   o un hotfix, la matriz de decisión de `ccem-sdd` puede indicar que SDD no
+   aplica: en ese caso, dilo y hacé el trabajo directamente.
 
 ## 2. Mapa del repositorio
 
 | Archivo / carpeta            | Qué contiene                                                                | Cuándo leerlo |
 |------------------------------|-----------------------------------------------------------------------------|---------------|
-| `feature_list.json`          | Lista de tareas con estado (`pending` / `spec_ready` / `in_progress` / `done` / `blocked`) | Siempre, al empezar |
-| `progress/current.md`        | Estado de la sesión actual                                                  | Siempre, al empezar |
-| `progress/history.md`        | Bitácora append-only de sesiones anteriores                                 | Si necesitas contexto histórico |
-| `specs/<feature>/`           | `requirements.md` + `design.md` + `tasks.md` (Kiro-style)                   | Antes de implementar cualquier feature con `"sdd": true` |
-| `docs/architecture.md`       | Qué significa "hacer un buen trabajo" en este proyecto                      | Antes de implementar |
-| `docs/conventions.md`        | Reglas de estilo, nombres, estructura                                       | Antes de escribir código |
-| `docs/specs.md`              | Proceso SDD: EARS notation, los 3 archivos, puerta de aprobación humana     | Antes de redactar o leer un spec |
-| `docs/verification.md`       | Cómo verificar que tu trabajo funciona (incluye trazabilidad requirements)  | Antes de declarar una tarea como `done` |
-| `CHECKPOINTS.md`             | Criterios objetivos de "estado final correcto"                              | Para auto-evaluarte |
-| `.claude/agents/`            | Definiciones de subagentes (`leader`, `spec_author`, `implementer`, `reviewer`) | Si orquestas trabajo |
-| `src/`                       | Código de la aplicación                                                     | Para implementar |
-| `tests/`                     | Tests automáticos                                                           | Para verificar |
+| `CLAUDE.md`                  | Contexto del proyecto, stack, comandos, reglas de git                      | Siempre, al empezar |
+| `docs/constitution.md`       | Principios P1-P10 no-negociables                                            | Antes de cualquier decisión arquitectónica |
+| `specs/<feature-slug>/`      | `spec.md` + `plan.md` + `tasks.md` (o variantes `-lite`)                    | Antes de implementar cualquier feature con SDD |
+| `docs/decisions/`            | ADRs — decisiones con trade-off                                             | Al tomar una decisión que otro dev necesitará entender después |
+| `notes.md`                   | Scratchpad persistente de aprendizajes recientes                            | Para dejar o buscar un gotcha del día |
+| `.claude/skills/`            | Skills CCEM: `ccem-core`, `ccem-sdd`, `ccem-planner`, `ccem-stack`, etc.    | Se aplican solas cuando el contexto lo amerita |
+| `.claude/agents/`            | Definiciones de subagentes (`leader`, `spec_author`, `implementer`, `reviewer`) | Si orquestas trabajo complejo con subagentes reales |
 
-## 3. Reglas duras (no negociables)
+## 3. Dos formas de trabajar, no dos flujos distintos
 
-- **Una sola feature a la vez.** No mezcles cambios de varias tareas en la misma sesión.
-- **No declares una tarea `done` sin pruebas verdes.** Ejecuta `./init.sh` y
-  asegúrate de que el bloque de tests pasa al 100%.
-- **No saltes la fase de spec.** Toda feature con `"sdd": true` debe pasar
-  por `spec_author` y obtener aprobación humana antes de tocar código.
-- **No saltes la puerta de aprobación humana.** El leader detiene el flujo
-  en `spec_ready` y espera.
-- **Documenta lo que haces** en `progress/current.md` mientras trabajas, no al final.
-- **Deja el repositorio limpio** antes de cerrar la sesión (ver §5).
+Este repo soporta **Spec-Driven Development** (skill `ccem-sdd`) de dos
+maneras que producen los mismos artefactos en `specs/<slug>/`:
+
+- **Un solo Claude sigue la skill paso a paso** (Specify → Plan → Tasks →
+  Implement), instanciando specs con `/spec-new`. Es el modo por defecto y
+  cubre la gran mayoría de los casos.
+- **Orquestación multi-agente** (`.claude/agents/leader.md` +
+  `spec_author.md` + `implementer.md` + `reviewer.md`): útil cuando conviene
+  aislar contexto entre fases o paralelizar exploración antes de escribir la
+  spec. El `leader` decide cuándo lanzar cada subagente; nunca escribe
+  código él mismo. Ver `leader.md` para el protocolo completo.
+
+Ambas rutas comparten el mismo gate humano: **hasta que `tasks.md` esté
+aprobado, no se toca código.**
+
+## 4. Agentes especialistas bajo demanda
+
+Además del cuarteto de orquestación SDD, este harness puede incluir agentes
+especialistas invocados para una tarea concreta y acotada, no como parte del
+flujo diario. El caso real hoy es `security-evidence-compiler.md`: se activa
+solo cuando la skill `it-security-approval` completa un gate de seguridad
+(`FINAL_SECURITY_GATE=PASSED`) y compila la evidencia en un informe para IT.
+No es un rol genérico de "asesor" — es un agente con contrato de activación
+explícito y entradas/salidas bien definidas. Si en el futuro aparece otro
+caso concreto de este tipo, se agrega con su propio nombre descriptivo, no
+como una casilla vacía a llenar.
+
+## 5. Reglas duras (no negociables)
+
+- **Una sola feature a la vez.** No mezcles cambios de varias tareas en la
+  misma sesión.
+- **No declares una tarea terminada sin pruebas verdes.** Ejecuta la suite
+  de tests/lint/build del proyecto (comandos en `CLAUDE.md`).
+- **No saltes la fase de spec** cuando la matriz de `ccem-sdd` dice que
+  aplica.
+- **No saltes la puerta de aprobación humana** entre `tasks.md` aprobado e
+  Implement.
 - **Si no sabes algo, busca en `docs/`** antes de inventarlo.
-
-## 4. Flujo de trabajo (SDD)
-
-```
-pending → [spec_author] → spec_ready → ⏸ HUMANO → in_progress → [implementer → reviewer] → done
-```
-
-1. El leader detecta la primera feature `pending` con `"sdd": true`.
-2. El leader lanza `spec_author`, que crea
-   `specs/<name>/{requirements,design,tasks}.md` y marca el status como
-   `spec_ready`.
-3. **Pausa.** El humano lee el spec en `specs/<name>/` y aprueba (o pide cambios).
-4. Una vez aprobado, el leader cambia el status a `in_progress` y lanza `implementer`.
-5. El implementer ejecuta `tasks.md` una a una, marcándolas `[x]`.
-6. El reviewer verifica trazabilidad `R<n>` ↔ test y tasks completas;
-   aprueba o rechaza.
-7. Si aprueba, el implementer marca `done` y mueve el resumen a
-   `progress/history.md`.
-
-## 5. Cierre de sesión (lifecycle)
-
-Antes de terminar:
-
-1. Ejecuta `./init.sh` — todo verde.
-2. Si la tarea está acabada: marca `status: "done"` en `feature_list.json`.
-3. Mueve el resumen de `progress/current.md` al final de `progress/history.md`.
-4. Vacía `progress/current.md` dejando solo la plantilla.
-5. No dejes archivos temporales, ni `print()` de debug, ni TODOs sin contexto.
+- **Si algo es ambiguo o parece mal: para y pregunta.** No adivines ni
+  reinterpretes.
 
 ## 6. Si te bloqueas
 
-- Relee la sección relevante de `docs/`.
+- Relee la sección relevante de `docs/` o la skill correspondiente.
 - Si la herramienta no hace lo que esperas, **no inventes un workaround**:
-  documenta el bloqueo en `progress/current.md` y para la sesión.
+  reporta el bloqueo con contexto concreto y para.
