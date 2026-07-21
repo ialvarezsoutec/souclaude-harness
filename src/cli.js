@@ -8,6 +8,7 @@ import { init } from './commands/init.js'
 import { upgrade } from './commands/upgrade.js'
 import { status } from './commands/status.js'
 import { adopt } from './commands/adopt.js'
+import { verify } from './commands/verify.js'
 import * as ui from './ui.js'
 
 const OPTIONS = {
@@ -17,6 +18,7 @@ const OPTIONS = {
   prune: { type: 'boolean' },
   backup: { type: 'boolean', default: true },
   verbose: { type: 'boolean', short: 'v' },
+  strict: { type: 'boolean' },
   name: { type: 'string' },
   type: { type: 'string' },
   stack: { type: 'string' },
@@ -26,7 +28,7 @@ const OPTIONS = {
   version: { type: 'boolean' },
 }
 
-const COMMANDS = { init, upgrade, status, adopt }
+const COMMANDS = { init, upgrade, status, adopt, verify }
 
 export async function main(argv, cwd) {
   let parsed
@@ -91,6 +93,8 @@ ${pc.bold('COMANDOS')}
   ${pc.cyan('status')}    Solo lectura: que version tenes, que cambio, que editaste tú.
   ${pc.cyan('adopt')}     Para un repo con estructura hecha a mano. NO toca ningun archivo:
             solo anota en .claude/harness.json que ya coincide con el harness.
+  ${pc.cyan('verify')}    Audita el propio harness (manifest vs templates/base/): huerfanos,
+            rutas rotas, ids/dest duplicados, criticos faltantes. No mira ningun proyecto.
 
   Sin comando, se autodetecta: hay lockfile -> upgrade · hay estructura previa -> adopt · repo limpio -> init
 
@@ -103,6 +107,7 @@ ${pc.bold('FLAGS')}
   -v, --verbose        Muestra tambien los archivos sin cambios.
   --name, --type, --stack, --lang    Responden las preguntas sin modo interactivo.
   --assume-version     (adopt) Version del harness que se asume instalada.
+  --strict             (verify) Los warnings (huerfanos) tambien hacen fallar el comando.
 
 ${pc.bold('GARANTIA')}
   Un archivo tuyo NUNCA se sobrescribe en silencio. Si difiere del harness, la
