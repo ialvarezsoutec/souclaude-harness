@@ -16,16 +16,21 @@ Sin registry, sin `.npmrc`, sin token. Solo hace falta git y Node ≥20.
 
 ```
 CLAUDE.md                     contexto del proyecto para Claude
-docs/constitution.md          principios no-negociables P1-P8
+AGENTS.md                     mapa de navegación para agentes de IA
+docs/constitution.md          principios no-negociables P1-P10
 docs/decisions/               ADRs + su template
 specs/                        Spec-Driven Development (templates full y lite)
 notes.md                      scratchpad persistente
 .claude/
   settings.json               permisos y effort (schema-correcto)
   harness.json                lockfile: versión + hash de cada archivo
+  agents/
+    leader, spec_author, implementer, reviewer   orquestación multi-agente opcional del flujo SDD
+    security-evidence-compiler                    compila evidencia de security review para IT
   skills/
-    ccem-core, ccem-sdd, ccem-research, ccem-stack, ccem-prompting
-    spec-new, adr-new, constitution-check, harness-upgrade
+    ccem-core, ccem-sdd, ccem-planner, ccem-research, ccem-stack, ccem-prompting
+    spec-new, adr-new, constitution-check, harness-upgrade, soutec-github
+    it-security-approval, security-report-standard
 .gitignore                    bloque gestionado, tus líneas intactas
 ```
 
