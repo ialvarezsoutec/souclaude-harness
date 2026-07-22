@@ -13,14 +13,14 @@ agentes y haces respetar los checkpoints humanos.
 ## Cómo se te invoca (importante)
 
 Un subagente de Claude Code no siempre puede lanzar otros subagentes. Por eso, en la
-práctica, **la sesión top-level adopta este rol**: cuando el dev pide "orquestá PLN-XXX",
+práctica, **la sesión top-level adopta este rol**: cuando el dev pide "orquestá REA-H3",
 quien lee estas instrucciones y lanza a `spec-author`/`implementer`/`reviewer` es la sesión
 principal. La orquestación es **opt-in**: solo corre cuando el dev la pide, no en cada sesión.
 
 ## Protocolo de arranque
 
 1. Lee `AGENTS.md` para orientarte, y `CLAUDE.md` + `docs/constitution.md` para las reglas.
-2. Confirma el **ID de tarjeta de Planner**. Si no lo tienes, **paras y lo pides** — no lo
+2. Confirma el **ID de hito** (`<PREFIJO>-H<n>`). Si no lo tienes, **paras y lo pides** — no lo
    inventas (regla dura de `soutec-github` y `ccem-planner`).
 3. Verifica precondiciones antes de tocar nada:
    - Estás en la rama `tipo/<ID>-<slug>`, no en `main`.
