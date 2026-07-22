@@ -6,11 +6,17 @@ Usage:
 
 The renderer intentionally supports a practical Markdown subset used by the
 security report template: headings, paragraphs, bullets, numbered lists,
-blockquotes, fenced code blocks, horizontal rules, and pipe tables.
+blockquotes, fenced code blocks, horizontal rules, pipe tables, HTML comments
+(stripped, used as source-only guidance), inline bold (`**texto**` / `__texto__`,
+e.g. bold lead-ins in bullets), and callouts (GitHub-style admonitions written
+as `> [!TIPO] título` + body).
 
 Styling uses the Soutec Group brand palette (soutec-design-colors): corporate
-blues for headings and the cover band, semantic colors as small status
-markers in tables, and a neutral carbon tone for body text.
+blues for headings, the cover band and its brand kicker; callouts and status
+badges as tinted panels/pills carrying the semantic colors (green success,
+yellow warning, magenta danger, cyan info); and a neutral carbon tone for body
+text. Tables auto-badge known statuses (Sin hallazgos, PASSED, REMEDIATED,
+PENDING…) and severities (Critical, High, Medium, Low, Informativo).
 """
 
 from __future__ import annotations
@@ -45,15 +51,72 @@ SOUTEC_YELLOW: RGB = (0.9490, 0.8196, 0.2471)  # #F2D13F - warning
 SOUTEC_MAGENTA: RGB = (0.7843, 0.1176, 0.3294)  # #C81E54 - danger
 WHITE: RGB = (1.0, 1.0, 1.0)
 
+def mix(color: RGB, base: RGB, amount: float) -> RGB:
+    """Mezcla lineal color*amount + base*(1-amount). Sirve para derivar superficies
+    claras (tintes de callouts y badges) sin inventar tonos a ojo: cada tinte es un color
+    de marca a un porcentaje explicito sobre blanco. Nunca se usa como color de texto ni de
+    dato, solo como fondo; el color "vivo" siempre es el hex exacto de la paleta."""
+    return (
+        color[0] * amount + base[0] * (1 - amount),
+        color[1] * amount + base[1] * (1 - amount),
+        color[2] * amount + base[2] * (1 - amount),
+    )
+
+
 # Neutros derivados solo para superficies (no son parte de la paleta de marca):
 # gris de linea de tabla y tinte zebra muy claro con matiz azulado.
 RULE_GRAY: RGB = (0.82, 0.85, 0.86)
 ZEBRA_TINT: RGB = (0.93, 0.96, 0.97)
 
-POSITIVE_STATUS = {"sin hallazgos", "passed", "remediated", "ready for it review"}
-NEGATIVE_STATUS = {"open", "failed", "blocked", "not ready for it review"}
-WARNING_STATUS = {"pending", "ready with conditions"}
+# Tintes de callout (color al N% sobre blanco): fondos amplios, van claros para no competir
+# con el texto en carbon que llevan encima.
+CYAN_TINT: RGB = mix(SOUTEC_CYAN, WHITE, 0.12)
+DEEP_TINT: RGB = mix(SOUTEC_DEEP, WHITE, 0.10)
+GREEN_TINT: RGB = mix(SOUTEC_GREEN, WHITE, 0.14)
+YELLOW_TINT: RGB = mix(SOUTEC_YELLOW, WHITE, 0.22)
+MAGENTA_TINT: RGB = mix(SOUTEC_MAGENTA, WHITE, 0.10)
+CARBON_TINT: RGB = mix(SOUTEC_CARBON, WHITE, 0.10)
+
+# Tintes de badge: mas saturados que los de callout. Un pill es pequeno y con el tinte
+# claro de callout el color casi no se percibe; se sube el porcentaje de marca para que el
+# estado/severidad se lea por color de un vistazo. El texto del pill sigue en carbon, que
+# conserva contraste holgado (>=6:1) sobre todos estos fondos.
+GREEN_BADGE: RGB = mix(SOUTEC_GREEN, WHITE, 0.30)
+YELLOW_BADGE: RGB = mix(SOUTEC_YELLOW, WHITE, 0.50)
+MAGENTA_BADGE: RGB = mix(SOUTEC_MAGENTA, WHITE, 0.26)
+CYAN_BADGE: RGB = mix(SOUTEC_CYAN, WHITE, 0.30)
+CARBON_BADGE: RGB = mix(SOUTEC_CARBON, WHITE, 0.24)
+
+# Estados reconocidos -> marcador semantico. Incluye variantes en espanol usadas por la
+# plantilla (el review nativo emite ingles; el informe para IT se redacta en espanol).
+POSITIVE_STATUS = {
+    "sin hallazgos", "passed", "remediated", "ready for it review",
+    "remediado", "aprobado", "conforme",
+    "listo para revision de it", "listo para revisión de it",
+}
+NEGATIVE_STATUS = {
+    "open", "failed", "blocked", "not ready for it review",
+    "abierto", "fallido", "bloqueado",
+}
+WARNING_STATUS = {
+    "pending", "ready with conditions",
+    "pendiente", "listo con condiciones",
+}
+
+# Severidades -> color. Critical y High comparten el rojo de peligro; Medium=warning,
+# Low=info (cyan), Informativo=neutro. Cubre variantes ES/EN que aparecen en las tablas.
+SEVERITY_DANGER = {"critical", "critico", "crítico", "high", "alta", "alto"}
+SEVERITY_WARN = {"medium", "media", "medio"}
+SEVERITY_INFO = {"low", "baja", "bajo"}
+SEVERITY_NEUTRAL = {"informativo", "informativa", "informational", "info"}
+
 MARKER_SIZE = 5.2
+# Badge (pill) de estado/severidad: geometria compartida entre el dibujo y el calculo de
+# anchos de columna, para que el texto reserve el espacio real que ocupa el badge.
+CHIP_PAD_X = 5.0
+CHIP_DOT = 3.6
+CHIP_GAP = 3.6
+CHIP_EXTRA = CHIP_PAD_X * 2 + CHIP_DOT + CHIP_GAP
 
 
 @dataclass(frozen=True)
@@ -79,6 +142,33 @@ STYLES = {
     "code": Style("F3", 8.2, 10.5, 4, 7, 10),
     "table": Style("F1", 7.8, 10, 3, 11.3),
     "small": Style("F1", 7.5, 9),
+    "callout": Style("F1", 9.2, 13, 6, 9),
+    "callout_label": Style("F2", 8.4, 11),
+}
+
+# Callouts (anotaciones destacadas). Sintaxis en el Markdown, estilo GitHub:
+#   > [!TIPO] Titulo opcional
+#   > Cuerpo del callout...
+# El color vive en la barra de acento y el tinte de fondo; la etiqueta usa un color de
+# marca con contraste suficiente sobre el tinte (deep/carbon/magenta), nunca cyan/verde
+# claros como texto. Cada tupla: (etiqueta, barra, tinte, color de etiqueta).
+CALLOUT_RE = re.compile(r"^\s*\[!(\w+)\]\s*(.*)$", re.IGNORECASE)
+CALLOUT_TYPES = {
+    "NOTE": ("Nota", SOUTEC_CYAN, CYAN_TINT, SOUTEC_DEEP),
+    "NOTA": ("Nota", SOUTEC_CYAN, CYAN_TINT, SOUTEC_DEEP),
+    "INFO": ("Nota", SOUTEC_CYAN, CYAN_TINT, SOUTEC_DEEP),
+    "TIP": ("Recomendación", SOUTEC_CYAN, CYAN_TINT, SOUTEC_DEEP),
+    "IMPORTANT": ("Importante", SOUTEC_DEEP, DEEP_TINT, SOUTEC_DEEP),
+    "IMPORTANTE": ("Importante", SOUTEC_DEEP, DEEP_TINT, SOUTEC_DEEP),
+    "SUCCESS": ("Conforme", SOUTEC_GREEN, GREEN_TINT, SOUTEC_DEEP),
+    "CONFORME": ("Conforme", SOUTEC_GREEN, GREEN_TINT, SOUTEC_DEEP),
+    "OK": ("Conforme", SOUTEC_GREEN, GREEN_TINT, SOUTEC_DEEP),
+    "WARNING": ("Atención", SOUTEC_YELLOW, YELLOW_TINT, SOUTEC_CARBON),
+    "ATENCION": ("Atención", SOUTEC_YELLOW, YELLOW_TINT, SOUTEC_CARBON),
+    "ATENCIÓN": ("Atención", SOUTEC_YELLOW, YELLOW_TINT, SOUTEC_CARBON),
+    "CAUTION": ("Atención", SOUTEC_YELLOW, YELLOW_TINT, SOUTEC_CARBON),
+    "DANGER": ("Bloqueante", SOUTEC_MAGENTA, MAGENTA_TINT, SOUTEC_MAGENTA),
+    "BLOQUEANTE": ("Bloqueante", SOUTEC_MAGENTA, MAGENTA_TINT, SOUTEC_MAGENTA),
 }
 
 
@@ -111,12 +201,15 @@ class FillRect:
 
 
 @dataclass
-class Marker:
+class RoundRect:
     x: float
     y: float
-    size: float
-    color: RGB
-    border: RGB = SOUTEC_CARBON
+    w: float
+    h: float
+    r: float
+    fill: Optional[RGB] = None
+    stroke: Optional[RGB] = None
+    line_width: float = 0.6
 
 
 class PdfLayout:
@@ -157,17 +250,70 @@ class PdfLayout:
         self.y -= height + gap_after
 
     def add_cover(self, title: str) -> None:
-        style = STYLES["cover_title"]
-        lines = wrap_text(title, style.size, PAGE_WIDTH - 2 * MARGIN_LEFT, style.font) or [title]
-        band_height = 34 + len(lines) * style.leading
-        self.current.append(FillRect(0, PAGE_HEIGHT - band_height, PAGE_WIDTH, band_height, SOUTEC_DEEP))
-        self.current.append(FillRect(0, PAGE_HEIGHT - band_height - 4, PAGE_WIDTH, 4, SOUTEC_CYAN))
-        y = PAGE_HEIGHT - 40
+        # Portada: banda deep a sangre con kicker de marca (cyan), titulo (blanco), un
+        # acento cyan corto y un subtitulo tenue. El kicker y el subtitulo son texto de
+        # marca fijo: este renderer es especifico del informe de seguridad Soutec.
+        title_style = STYLES["cover_title"]
+        lines = wrap_text(title, title_style.size, PAGE_WIDTH - 2 * MARGIN_LEFT, title_style.font) or [title]
+        kicker = "SOUTEC GROUP   ·   EVIDENCIA DE SEGURIDAD PARA IT"
+        subtitle = "Informe técnico de revisión de seguridad   ·   Generado el " + datetime.now(timezone.utc).strftime("%d/%m/%Y %H:%M UTC")
+        pad_top = 38.0
+        kicker_to_title = 21.0
+        title_lead = title_style.leading
+        title_to_accent = 12.0
+        accent_h = 2.4
+        accent_to_sub = 15.0
+        pad_bottom = 17.0
+        band_height = (
+            pad_top + kicker_to_title + len(lines) * title_lead
+            + title_to_accent + accent_h + accent_to_sub + pad_bottom
+        )
+        band_bottom = PAGE_HEIGHT - band_height
+        self.current.append(FillRect(0, band_bottom, PAGE_WIDTH, band_height, SOUTEC_DEEP))
+        self.current.append(FillRect(0, band_bottom - 4, PAGE_WIDTH, 4, SOUTEC_CYAN))
+        y = PAGE_HEIGHT - pad_top
+        self.current.append(DrawLine(kicker, MARGIN_LEFT, y, "F2", 8.5, SOUTEC_CYAN))
+        y -= kicker_to_title
         for line in lines:
-            self.current.append(DrawLine(line, MARGIN_LEFT, y, style.font, style.size, style.color))
-            y -= style.leading
-        self.y = PAGE_HEIGHT - band_height - 4 - 22
+            self.current.append(DrawLine(line, MARGIN_LEFT, y, title_style.font, title_style.size, title_style.color))
+            y -= title_lead
+        y += title_lead  # el bucle bajo una linea de mas; volvemos a la ultima baseline
+        y -= title_to_accent + accent_h
+        self.current.append(FillRect(MARGIN_LEFT, y, 66, accent_h, SOUTEC_CYAN))
+        y -= accent_to_sub
+        self.current.append(DrawLine(subtitle, MARGIN_LEFT, y, "F1", 9.5, mix(WHITE, SOUTEC_DEEP, 0.82)))
+        self.y = band_bottom - 4 - 24
         self.cover_drawn = True
+
+    def add_callout(self, label: str, body: str, bar: RGB, tint: RGB, label_color: RGB) -> None:
+        body_style = STYLES["callout"]
+        label_style = STYLES["callout_label"]
+        pad_x = 13.0
+        pad_top = 8.0
+        pad_bottom = 9.0
+        bar_w = 3.5
+        label_to_body = 4.0
+        text_x = MARGIN_LEFT + pad_x
+        text_w = CONTENT_WIDTH - 2 * pad_x
+        body_lines = wrap_text(body, body_style.size, text_w, body_style.font) or [""]
+        content_h = label_style.leading + label_to_body + len(body_lines) * body_style.leading
+        box_h = pad_top + content_h + pad_bottom
+        self.space(body_style.space_before)
+        self.ensure(box_h + 4)
+        top = self.y
+        bottom = top - box_h
+        self.current.append(RoundRect(MARGIN_LEFT, bottom, CONTENT_WIDTH, box_h, 4.5, fill=tint))
+        self.current.append(RoundRect(MARGIN_LEFT + 4, bottom + 5, bar_w, box_h - 10, bar_w / 2, fill=bar))
+        label_baseline = top - pad_top - label_style.size * 0.78
+        self.current.append(
+            DrawLine(label.upper(), text_x, label_baseline, label_style.font, label_style.size, label_color)
+        )
+        body_baseline = label_baseline - label_style.leading * 0.15 - label_to_body - body_style.size * 0.78
+        for idx, line in enumerate(body_lines):
+            self.current.append(
+                DrawLine(line, text_x, body_baseline - idx * body_style.leading, body_style.font, body_style.size, body_style.color)
+            )
+        self.y = bottom - body_style.space_after
 
     def add_wrapped(
         self,
@@ -179,14 +325,22 @@ class PdfLayout:
         self.space(style.space_before)
         x = MARGIN_LEFT + style.indent
         width = CONTENT_WIDTH - style.indent
-        lines = wrap_text(prefix + text, style.size, width, style.font)
-        if not lines:
-            lines = [""]
+        # Solo el texto con negrita inline pasa por el camino de runs; el resto conserva
+        # exactamente el layout previo (una linea = un DrawLine con la fuente del estilo).
+        if "**" in text or "__" in text:
+            lines = wrap_runs(prefix, text, style.size, width, style.font)
+        else:
+            flat = wrap_text(prefix + text, style.size, width, style.font) or [""]
+            lines = [[(line, style.font)] for line in flat]
         total = len(lines) * style.leading + style.space_after
         self.ensure(total)
         for idx, line in enumerate(lines):
             draw_x = x if idx == 0 else x + hanging
-            self.current.append(DrawLine(line, draw_x, self.y, style.font, style.size, style.color))
+            cx = draw_x
+            for frag, font in line:
+                if frag:
+                    self.current.append(DrawLine(frag, cx, self.y, font, style.size, style.color))
+                cx += display_width(frag, style.size, font)
             self.y -= style.leading
         self.y -= style.space_after
 
@@ -241,7 +395,7 @@ class PdfLayout:
             for i, cell in enumerate(row):
                 avail = widths[i] - 8
                 if row_idx != 0:
-                    avail -= status_marker_extra(clean_inline(cell))
+                    avail -= chip_extra(cell)
                 cell_lines.append(wrap_text(cell, style.size, max(avail, 16), style.font) or [""])
             row_lines = max(len(c) for c in cell_lines)
             row_height = row_lines * style.leading + top_pad + bottom_pad
@@ -261,19 +415,32 @@ class PdfLayout:
             text_color = WHITE if is_header else style.color
             for col_idx, lines in enumerate(cell_lines):
                 cell_x = x + 3
-                if not is_header:
-                    status = clean_inline(row[col_idx]).strip().lower()
-                    marker_color: Optional[RGB] = None
-                    if status in POSITIVE_STATUS:
-                        marker_color = SOUTEC_GREEN
-                    elif status in NEGATIVE_STATUS:
-                        marker_color = SOUTEC_MAGENTA
-                    elif status in WARNING_STATUS:
-                        marker_color = SOUTEC_YELLOW
-                    if marker_color is not None:
-                        marker_y = first_baseline + (style.size * 0.24) - (MARKER_SIZE / 2)
-                        self.current.append(Marker(cell_x, marker_y, MARKER_SIZE, marker_color))
-                        cell_x += MARKER_SIZE + 4
+                chip = None if is_header else chip_style(row[col_idx])
+                if chip is not None and len(lines) == 1 and lines[0]:
+                    # Badge (pill) para estado/severidad de una sola linea: fondo tinte,
+                    # punto de color solido y texto en carbon (siempre legible).
+                    dot_color, bg = chip
+                    text = lines[0]
+                    tw = display_width(text, style.size, font)
+                    pill_h = style.size + 3.4
+                    pill_w = CHIP_PAD_X * 2 + CHIP_DOT + CHIP_GAP + tw
+                    pill_bottom = first_baseline - (pill_h - ascent) / 2
+                    self.current.append(RoundRect(cell_x, pill_bottom, pill_w, pill_h, pill_h / 2, fill=bg))
+                    dot_y = pill_bottom + (pill_h - CHIP_DOT) / 2
+                    self.current.append(
+                        RoundRect(cell_x + CHIP_PAD_X, dot_y, CHIP_DOT, CHIP_DOT, CHIP_DOT / 2, fill=dot_color)
+                    )
+                    self.current.append(
+                        DrawLine(text, cell_x + CHIP_PAD_X + CHIP_DOT + CHIP_GAP, first_baseline, font, style.size, SOUTEC_CARBON)
+                    )
+                    x += widths[col_idx]
+                    continue
+                if chip is not None:
+                    # Fallback multilinea: punto de color redondeado + texto sin pill,
+                    # para que un estado largo no se parta dentro del badge.
+                    dot_y = first_baseline + (style.size * 0.24) - (MARKER_SIZE / 2)
+                    self.current.append(RoundRect(cell_x, dot_y, MARKER_SIZE, MARKER_SIZE, MARKER_SIZE / 2, fill=chip[0]))
+                    cell_x += MARKER_SIZE + 4
                 for line_idx, line in enumerate(lines):
                     self.current.append(
                         DrawLine(
@@ -302,6 +469,19 @@ def clean_inline(text: str) -> str:
     text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"\1", text)
     text = re.sub(r"(?<!_)_([^_]+)_(?!_)", r"\1", text)
     return text.strip()
+
+
+def clean_markup(text: str) -> str:
+    """Como clean_inline pero conserva **negrita**/__negrita__ y no recorta espacios.
+    Se usa para trocear runs con formato inline: la negrita se maneja aparte en
+    parse_inline_runs, y preservar los espacios en los bordes de cada run es lo que
+    mantiene correcto el espaciado entre un tramo en negrita y el texto normal."""
+    text = re.sub(r"!\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r"\1 (\2)", text)
+    text = re.sub(r"`([^`]+)`", r"\1", text)
+    text = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"\1", text)
+    text = re.sub(r"(?<!_)_([^_]+)_(?!_)", r"\1", text)
+    return text
 
 
 def _afm_widths(spec: Sequence[Tuple[int, str]]) -> dict:
@@ -416,12 +596,148 @@ def wrap_text(text: str, size: float, max_width: float, font: str) -> List[str]:
     return lines
 
 
-def status_marker_extra(cell_text: str) -> float:
-    """Ancho reservado por el marcador de estado si la celda es un estado conocido."""
-    status = cell_text.strip().lower()
-    if status in POSITIVE_STATUS or status in NEGATIVE_STATUS or status in WARNING_STATUS:
-        return MARKER_SIZE + 4
-    return 0.0
+# Negrita inline (**texto** / __texto__). El renderer aplana el resto del markup, pero la
+# negrita si se dibuja: se trocea el texto en runs y se envuelve por fragmentos, cada uno
+# con su fuente (F1 normal / F2 negrita). Un "fragmento de linea" es (texto, fuente).
+Frag = Tuple[str, str]
+INLINE_BOLD_RE = re.compile(r"\*\*(.+?)\*\*|__(.+?)__")
+
+
+def parse_inline_runs(text: str) -> List[Tuple[str, bool]]:
+    """Trocea el texto en runs (segmento, es_negrita) segun **...** / __...__."""
+    runs: List[Tuple[str, bool]] = []
+    pos = 0
+    for m in INLINE_BOLD_RE.finditer(text):
+        if m.start() > pos:
+            runs.append((text[pos:m.start()], False))
+        runs.append((m.group(1) if m.group(1) is not None else m.group(2), True))
+        pos = m.end()
+    if pos < len(text):
+        runs.append((text[pos:], False))
+    return [(clean_markup(seg), bold) for seg, bold in runs]
+
+
+def _runs_to_words(prefix: str, runs: Sequence[Tuple[str, bool]], base_font: str) -> List[List[Frag]]:
+    # Cada "palabra" es una lista de fragmentos (texto, fuente). Las palabras se separan
+    # por espacios; un limite de run sin espacio funde fragmentos en la misma palabra, para
+    # que "**APIs**:" quede pegado (negrita + ":" normal) sin espacio intermedio.
+    seq: List[Frag] = []
+    if prefix:
+        seq.append((prefix, base_font))
+    for seg, bold in runs:
+        seq.append((seg, "F2" if bold else base_font))
+    words: List[List[Frag]] = []
+    cur: List[Frag] = []
+    for seg, font in seq:
+        for piece in re.split(r"(\s+)", seg):
+            if piece == "":
+                continue
+            if piece.isspace():
+                if cur:
+                    words.append(cur)
+                    cur = []
+            else:
+                cur.append((piece, font))
+    if cur:
+        words.append(cur)
+    return words
+
+
+def _word_width(word: Sequence[Frag], size: float) -> float:
+    return sum(display_width(frag, size, font) for frag, font in word)
+
+
+def _split_word_chars(word: Sequence[Frag], size: float, max_width: float) -> List[List[Frag]]:
+    pieces: List[List[Frag]] = []
+    cur: List[Frag] = []
+    cur_w = 0.0
+    for frag, font in word:
+        for ch in frag:
+            cw = display_width(ch, size, font)
+            if cur and cur_w + cw > max_width:
+                pieces.append(cur)
+                cur = []
+                cur_w = 0.0
+            cur.append((ch, font))
+            cur_w += cw
+    if cur:
+        pieces.append(cur)
+    return pieces
+
+
+def _merge_line(words: Sequence[Sequence[Frag]], base_font: str) -> List[Frag]:
+    frags: List[Frag] = []
+    for wi, word in enumerate(words):
+        if wi > 0:
+            frags.append((" ", base_font))
+        frags.extend(word)
+    merged: List[Frag] = []
+    for frag, font in frags:
+        if merged and merged[-1][1] == font:
+            merged[-1] = (merged[-1][0] + frag, font)
+        else:
+            merged.append((frag, font))
+    return merged
+
+
+def wrap_runs(prefix: str, text: str, size: float, max_width: float, base_font: str) -> List[List[Frag]]:
+    """Envuelve texto con negrita inline; cada linea es una lista de fragmentos (texto,
+    fuente) ya fusionados por fuente. Solo se invoca cuando el texto trae ** o __."""
+    runs = parse_inline_runs(text)
+    words = _runs_to_words(prefix, runs, base_font)
+    space_w = display_width(" ", size, base_font)
+    lines: List[List[List[Frag]]] = []
+    cur: List[List[Frag]] = []
+    cur_w = 0.0
+    for word in words:
+        ww = _word_width(word, size)
+        if ww > max_width:
+            if cur:
+                lines.append(cur)
+                cur = []
+                cur_w = 0.0
+            for piece in _split_word_chars(word, size, max_width):
+                lines.append([piece])
+            continue
+        if not cur:
+            cur = [word]
+            cur_w = ww
+        elif cur_w + space_w + ww <= max_width:
+            cur.append(word)
+            cur_w += space_w + ww
+        else:
+            lines.append(cur)
+            cur = [word]
+            cur_w = ww
+    if cur:
+        lines.append(cur)
+    return [_merge_line(w, base_font) for w in lines] or [[("", base_font)]]
+
+
+def chip_style(cell_text: str) -> Optional[Tuple[RGB, RGB]]:
+    """(color solido, color tinte) del badge si la celda es un estado o severidad
+    conocidos; None en caso contrario. El color solido es el punto; el tinte, el fondo."""
+    key = clean_inline(cell_text).strip().lower()
+    if key in POSITIVE_STATUS:
+        return (SOUTEC_GREEN, GREEN_BADGE)
+    if key in NEGATIVE_STATUS:
+        return (SOUTEC_MAGENTA, MAGENTA_BADGE)
+    if key in WARNING_STATUS:
+        return (SOUTEC_YELLOW, YELLOW_BADGE)
+    if key in SEVERITY_DANGER:
+        return (SOUTEC_MAGENTA, MAGENTA_BADGE)
+    if key in SEVERITY_WARN:
+        return (SOUTEC_YELLOW, YELLOW_BADGE)
+    if key in SEVERITY_INFO:
+        return (SOUTEC_CYAN, CYAN_BADGE)
+    if key in SEVERITY_NEUTRAL:
+        return (SOUTEC_CARBON, CARBON_BADGE)
+    return None
+
+
+def chip_extra(cell_text: str) -> float:
+    """Ancho horizontal que reserva el badge si la celda es un estado/severidad conocido."""
+    return CHIP_EXTRA if chip_style(cell_text) is not None else 0.0
 
 
 def calculate_column_widths(rows: Sequence[Sequence[str]], total: float, size: float) -> List[float]:
@@ -439,7 +755,7 @@ def calculate_column_widths(rows: Sequence[Sequence[str]], total: float, size: f
         widest_cell = 0.0
         for row in rows:
             cell = clean_inline(row[i])
-            extra = status_marker_extra(cell)  # el marcador va pegado al primer token
+            extra = chip_extra(cell)  # el badge va pegado al primer token
             widest_cell = max(widest_cell, display_width(cell, size, "F1") + extra)
             for token in re.split(r"\s+", cell):
                 widest_word = max(widest_word, display_width(token, size, "F1") + extra)
@@ -464,6 +780,9 @@ def is_table_separator(line: str) -> bool:
 
 
 def parse_markdown(text: str) -> List[Tuple[str, object]]:
+    # Los comentarios HTML (<!-- ... -->) son guias en el Markdown fuente y no deben
+    # aparecer en el PDF. Se quitan antes de trocear (soporta comentarios multilinea).
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.DOTALL)
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     blocks: List[Tuple[str, object]] = []
     paragraph: List[str] = []
@@ -534,8 +853,15 @@ def parse_markdown(text: str) -> List[Tuple[str, object]]:
         quote = re.match(r"^\s*>\s?(.*)$", line)
         if quote:
             flush_paragraph()
-            blocks.append(("quote", quote.group(1)))
+            qlines = [quote.group(1)]
             i += 1
+            while i < len(lines):
+                m = re.match(r"^\s*>\s?(.*)$", lines[i])
+                if not m:
+                    break
+                qlines.append(m.group(1))
+                i += 1
+            blocks.append(("blockquote", qlines))
             continue
         paragraph.append(stripped)
         i += 1
@@ -585,8 +911,23 @@ def layout_markdown(blocks: Iterable[Tuple[str, object]]) -> PdfLayout:
             number, text = payload  # type: ignore[misc]
             prefix = f"{number}. "
             layout.add_wrapped(str(text), STYLES["bullet"], prefix=prefix, hanging=12)
-        elif kind == "quote":
-            layout.add_quote(str(payload), STYLES["quote"])
+        elif kind == "blockquote":
+            qlines = list(payload)  # type: ignore[arg-type]
+            m = CALLOUT_RE.match(qlines[0]) if qlines else None
+            spec = CALLOUT_TYPES.get(m.group(1).upper()) if m else None
+            if m and spec:
+                default_label, bar, tint, label_color = spec
+                rest = m.group(2).strip()
+                body_lines = qlines[1:]
+                if rest and not body_lines:
+                    title, body_src = default_label, [rest]
+                else:
+                    title, body_src = (rest or default_label), body_lines
+                body = " ".join(s.strip() for s in body_src if s.strip())
+                layout.add_callout(title, body, bar, tint, label_color)
+            else:
+                text = " ".join(s.strip() for s in qlines if s.strip())
+                layout.add_quote(text, STYLES["quote"])
         elif kind == "code":
             layout.add_code(payload)  # type: ignore[arg-type]
         elif kind == "table":
@@ -619,16 +960,45 @@ def _color_op(color: RGB, stroke: bool = False) -> bytes:
     return b"%.3f %.3f %.3f %s\n" % (color[0], color[1], color[2], op)
 
 
+def _round_rect_path(item: "RoundRect") -> bytes:
+    # Rectangulo de esquinas redondeadas via 4 curvas Bezier (el punto de esquina hace de
+    # ambos puntos de control: aproximacion de cuarto de circulo suficiente para badges).
+    rad = min(item.r, item.w / 2, item.h / 2)
+    x0, y0 = item.x, item.y
+    x1, y1 = item.x + item.w, item.y + item.h
+    parts: List[bytes] = []
+    if item.fill is not None:
+        parts.append(_color_op(item.fill))
+    if item.stroke is not None:
+        parts.append(_color_op(item.stroke, stroke=True))
+        parts.append(b"%.2f w\n" % item.line_width)
+    parts.append(b"%.2f %.2f m\n" % (x0 + rad, y0))
+    parts.append(b"%.2f %.2f l\n" % (x1 - rad, y0))
+    parts.append(b"%.2f %.2f %.2f %.2f %.2f %.2f c\n" % (x1, y0, x1, y0, x1, y0 + rad))
+    parts.append(b"%.2f %.2f l\n" % (x1, y1 - rad))
+    parts.append(b"%.2f %.2f %.2f %.2f %.2f %.2f c\n" % (x1, y1, x1, y1, x1 - rad, y1))
+    parts.append(b"%.2f %.2f l\n" % (x0 + rad, y1))
+    parts.append(b"%.2f %.2f %.2f %.2f %.2f %.2f c\n" % (x0, y1, x0, y1, x0, y1 - rad))
+    parts.append(b"%.2f %.2f l\n" % (x0, y0 + rad))
+    parts.append(b"%.2f %.2f %.2f %.2f %.2f %.2f c\n" % (x0, y0, x0, y0, x0 + rad, y0))
+    parts.append(b"h\n")
+    if item.fill is not None and item.stroke is not None:
+        parts.append(b"B\n")
+    elif item.stroke is not None:
+        parts.append(b"S\n")
+    else:
+        parts.append(b"f\n")
+    return b"".join(parts)
+
+
 def build_page_stream(items: Sequence[object], page_number: int, page_count: int) -> bytes:
     parts: List[bytes] = []
     for item in items:
         if isinstance(item, FillRect):
             parts.append(_color_op(item.color))
             parts.append(b"%.2f %.2f %.2f %.2f re f\n" % (item.x, item.y, item.w, item.h))
-        elif isinstance(item, Marker):
-            parts.append(_color_op(item.color))
-            parts.append(_color_op(item.border, stroke=True))
-            parts.append(b"0.6 w %.2f %.2f %.2f %.2f re B\n" % (item.x, item.y, item.size, item.size))
+        elif isinstance(item, RoundRect):
+            parts.append(_round_rect_path(item))
         elif isinstance(item, DrawLine):
             parts.append(_color_op(item.color))
             parts.append(
@@ -647,6 +1017,16 @@ def build_page_stream(items: Sequence[object], page_number: int, page_count: int
                 b"%.2f w %.2f %.2f m %.2f %.2f l S\n"
                 % (item.width, item.x0, item.y, item.x1, item.y)
             )
+    # Acento superior en paginas de contenido (la portada ya tiene su banda): linea gris
+    # fina con un tramo cyan a la izquierda, en espejo con la regla del footer.
+    if page_number > 1:
+        parts.append(_color_op(RULE_GRAY, stroke=True))
+        parts.append(
+            b"0.6 w %.2f %.2f m %.2f %.2f l S\n"
+            % (MARGIN_LEFT, PAGE_HEIGHT - 38, PAGE_WIDTH - MARGIN_RIGHT, PAGE_HEIGHT - 38)
+        )
+        parts.append(_color_op(SOUTEC_CYAN))
+        parts.append(b"%.2f %.2f 30 2 re f\n" % (MARGIN_LEFT, PAGE_HEIGHT - 39))
     parts.append(_color_op(RULE_GRAY, stroke=True))
     parts.append(b"0.6 w %.2f 34 m %.2f 34 l S\n" % (MARGIN_LEFT, PAGE_WIDTH - MARGIN_RIGHT))
     footer = f"Evidencia de revision de seguridad  |  Pagina {page_number} de {page_count}"
