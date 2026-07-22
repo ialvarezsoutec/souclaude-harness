@@ -186,11 +186,11 @@ T7* T8* T9* T10* T11*  (independientes, en paralelo conceptual) ──▶ T13
 ## Progreso (actualizar durante ejecución)
 
 - [x] T1 — hecho (ccem-planner reescrito en ambos árboles)
-- [ ] T2 — pendiente
-- [ ] T3 — pendiente
-- [ ] T4 — pendiente
-- [ ] T5 — pendiente
-- [ ] T6 — pendiente
+- [x] T2 — hecho (rock-plan con R1-R7 + checklist)
+- [x] T3 — hecho (rock-status, estado derivado + E2/E3)
+- [x] T4 — hecho (rock-close, evidencia por criterio E5)
+- [x] T5 — hecho (export-ninety, contrato por fases)
+- [x] T6 — hecho (4 entradas en el manifest, JSON válido)
 - [ ] T7 — pendiente
 - [ ] T8 — pendiente
 - [ ] T9 — pendiente

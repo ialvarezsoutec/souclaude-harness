@@ -28,6 +28,11 @@
     { "id": "skill-constitution-check", "src": "base/claude/skills/constitution-check/SKILL.md", "dest": ".claude/skills/constitution-check/SKILL.md", "policy": "managed" },
     { "id": "skill-harness-upgrade", "src": "base/claude/skills/harness-upgrade/SKILL.md", "dest": ".claude/skills/harness-upgrade/SKILL.md", "policy": "managed" },
 
+    { "id": "skill-rock-plan", "src": "base/claude/skills/ccem-rocas/rock-plan/SKILL.md", "dest": ".claude/skills/ccem-rocas/rock-plan/SKILL.md", "policy": "managed" },
+    { "id": "skill-rock-status", "src": "base/claude/skills/ccem-rocas/rock-status/SKILL.md", "dest": ".claude/skills/ccem-rocas/rock-status/SKILL.md", "policy": "managed" },
+    { "id": "skill-rock-close", "src": "base/claude/skills/ccem-rocas/rock-close/SKILL.md", "dest": ".claude/skills/ccem-rocas/rock-close/SKILL.md", "policy": "managed" },
+    { "id": "skill-export-ninety", "src": "base/claude/skills/ccem-rocas/export-ninety/SKILL.md", "dest": ".claude/skills/ccem-rocas/export-ninety/SKILL.md", "policy": "managed" },
+
     { "id": "agent-orchestrator", "src": "base/claude/agents/orchestrator.md", "dest": ".claude/agents/orchestrator.md", "policy": "managed" },
     { "id": "agent-spec-author", "src": "base/claude/agents/spec-author.md", "dest": ".claude/agents/spec-author.md", "policy": "managed" },
     { "id": "agent-implementer", "src": "base/claude/agents/implementer.md", "dest": ".claude/agents/implementer.md", "policy": "managed" },
