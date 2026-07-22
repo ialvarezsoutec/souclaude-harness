@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import re
 import sys
-from dataclasses import dataclass, field
+import unicodedata
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable, List, Optional, Sequence, Tuple
@@ -220,8 +221,13 @@ class PdfLayout:
     def add_table(self, rows: Sequence[Sequence[str]]) -> None:
         if not rows:
             return
-        style = STYLES["table"]
         cols = max(len(row) for row in rows)
+        # Una tabla ancha (6+ columnas, p.ej. la de trazabilidad) no cabe comoda en A4
+        # vertical al cuerpo normal: se reduce el tipo solo para esa tabla puntual, para
+        # que tokens cortos como "REMEDIATED" + su marcador entren sin invadir el margen.
+        style = STYLES["table"]
+        if cols >= 6:
+            style = replace(style, size=6.8, leading=8.8)
         normalized = [list(row) + [""] * (cols - len(row)) for row in rows]
         widths = calculate_column_widths(normalized, CONTENT_WIDTH, style.size)
         self.space(style.space_before)
@@ -229,7 +235,14 @@ class PdfLayout:
         top_pad = 3.0
         bottom_pad = 3.0
         for row_idx, row in enumerate(normalized):
-            cell_lines = [wrap_text(cell, style.size, widths[i] - 8, style.font) or [""] for i, cell in enumerate(row)]
+            # En celdas de estado el marcador va antes del texto, asi que se descuenta
+            # su ancho del espacio de envoltura para que el texto no invada la columna.
+            cell_lines = []
+            for i, cell in enumerate(row):
+                avail = widths[i] - 8
+                if row_idx != 0:
+                    avail -= status_marker_extra(clean_inline(cell))
+                cell_lines.append(wrap_text(cell, style.size, max(avail, 16), style.font) or [""])
             row_lines = max(len(c) for c in cell_lines)
             row_height = row_lines * style.leading + top_pad + bottom_pad
             self.ensure(row_height)
@@ -291,13 +304,79 @@ def clean_inline(text: str) -> str:
     return text.strip()
 
 
+def _afm_widths(spec: Sequence[Tuple[int, str]]) -> dict:
+    table: dict = {}
+    for width, chars in spec:
+        for ch in chars:
+            table[ch] = width
+    return table
+
+
+# Anchos AFM estandar (Adobe Core14), en 1/1000 de em. Permiten medir el texto con
+# precision real en vez de un factor promedio: un factor unico sobreestima las
+# minusculas (los parrafos cortaban antes del margen) y subestima las mayusculas
+# ("REMEDIATED" se salia de su columna). F1/F4 comparten anchos (Helvetica y su
+# oblicua); F2 es Helvetica-Bold; F3 (Courier) es monoespaciada.
+HELVETICA_WIDTHS = _afm_widths([
+    (278, " !,./:;I[\\]ft"),
+    (191, "'"),
+    (222, "ijl"),
+    (260, "|"),
+    (333, "()-`r"),
+    (334, "{}"),
+    (355, '"'),
+    (389, "*"),
+    (469, "^"),
+    (500, "Jcksvxyz"),
+    (556, "0123456789L_abdeghnopqu$#?"),
+    (584, "+<=>~"),
+    (611, "FTZ"),
+    (667, "&ABEKPSVXY"),
+    (722, "CDHNRUw"),
+    (778, "GOQ"),
+    (833, "Mm"),
+    (889, "%"),
+    (944, "W"),
+    (1015, "@"),
+])
+HELVETICA_WIDTHS.update({"¿": 611, "¡": 333})  # ¿ ¡
+
+HELVETICA_BOLD_WIDTHS = _afm_widths([
+    (278, " ,.I\\ijl"),
+    (238, "'"),
+    (280, "|"),
+    (333, "!()/:;-[]`ft"),
+    (389, "*{}r"),
+    (474, '"'),
+    (500, "z"),
+    (556, "0123456789J$#aceksvxy_"),
+    (584, "+<=>^~"),
+    (611, "?FLTZbdghnopqu"),
+    (667, "ESVXY"),
+    (722, "&ABCDHKNRU"),
+    (778, "GOQw"),
+    (833, "M"),
+    (889, "%m"),
+    (944, "W"),
+    (975, "@"),
+])
+HELVETICA_BOLD_WIDTHS.update({"¿": 611, "¡": 333})  # ¿ ¡
+
+
 def display_width(text: str, size: float, font: str) -> float:
-    factor = 0.52
-    if font == "F3":
-        factor = 0.60
-    elif font == "F2":
-        factor = 0.55
-    return len(text) * size * factor
+    if font == "F3":  # Courier: monoespaciada, 600/1000
+        return len(text) * size * 0.6
+    table = HELVETICA_BOLD_WIDTHS if font == "F2" else HELVETICA_WIDTHS
+    default = 611 if font == "F2" else 556
+    total = 0
+    for ch in text:
+        width = table.get(ch)
+        if width is None:
+            # Acentos: mide por la letra base (á->a, ñ->n, í->i, ü->u...).
+            base = unicodedata.normalize("NFD", ch)[:1]
+            width = table.get(base, default)
+        total += width
+    return total * size / 1000.0
 
 
 def split_long_token(token: str, size: float, max_width: float, font: str) -> List[str]:
@@ -337,18 +416,46 @@ def wrap_text(text: str, size: float, max_width: float, font: str) -> List[str]:
     return lines
 
 
+def status_marker_extra(cell_text: str) -> float:
+    """Ancho reservado por el marcador de estado si la celda es un estado conocido."""
+    status = cell_text.strip().lower()
+    if status in POSITIVE_STATUS or status in NEGATIVE_STATUS or status in WARNING_STATUS:
+        return MARKER_SIZE + 4
+    return 0.0
+
+
 def calculate_column_widths(rows: Sequence[Sequence[str]], total: float, size: float) -> List[float]:
+    # Reparto en dos capas: primero un minimo por columna que protege la palabra mas
+    # larga (para que un token corto como "REMEDIATED" nunca se parta letra a letra),
+    # y luego el sobrante se distribuye hacia las columnas que mas contenido tienen.
+    # Solo los tokens mas anchos que WORD_CAP (rutas de archivo largas) pueden partirse.
     cols = len(rows[0])
-    raw: List[float] = []
+    word_cap = 84.0
+    pad = 10.0
+    min_w: List[float] = []
+    pref_w: List[float] = []
     for i in range(cols):
-        longest = max((min(display_width(clean_inline(row[i]), size, "F1") + 12, 180) for row in rows), default=60)
-        raw.append(max(55, longest))
-    scale = min(1.0, total / sum(raw))
-    widths = [w * scale for w in raw]
-    if sum(widths) < total:
-        extra = (total - sum(widths)) / cols
-        widths = [w + extra for w in widths]
-    return widths
+        widest_word = 0.0
+        widest_cell = 0.0
+        for row in rows:
+            cell = clean_inline(row[i])
+            extra = status_marker_extra(cell)  # el marcador va pegado al primer token
+            widest_cell = max(widest_cell, display_width(cell, size, "F1") + extra)
+            for token in re.split(r"\s+", cell):
+                widest_word = max(widest_word, display_width(token, size, "F1") + extra)
+        mn = max(38.0, min(widest_word + pad, word_cap))
+        min_w.append(mn)
+        pref_w.append(max(mn, min(widest_cell + pad, 190.0)))
+    base = sum(min_w)
+    if base >= total:
+        scale = total / base
+        return [w * scale for w in min_w]
+    slack = [pref_w[i] - min_w[i] for i in range(cols)]
+    slack_total = sum(slack)
+    extra_space = total - base
+    if slack_total <= 0:
+        return [w + extra_space / cols for w in min_w]
+    return [min_w[i] + extra_space * (slack[i] / slack_total) for i in range(cols)]
 
 
 def is_table_separator(line: str) -> bool:
