@@ -7,7 +7,7 @@ Dominio: [describir en 1-2 líneas qué hace este proyecto].
 
 ## Metodología CCEM
 
-Harness `1.0.0`. Las skills viven **en este repo**, en `.claude/skills/`, y
+Harness `1.1.0`. Las skills viven **en este repo**, en `.claude/skills/`, y
 se aplican solas cuando el contexto lo amerita:
 
 `ccem-core` (6 principios rectores + selección de modelo) · `ccem-sdd` (Spec-Driven
@@ -16,6 +16,9 @@ Development) · `ccem-planner` (trazabilidad Planner ↔ CCEM ↔ Git) · `ccem-
 `soutec-github` (flujo Git obligatorio).
 
 Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`.
+
+Agentes de orquestación (opt-in) en `.claude/agents/`: `orchestrator`, `spec-author`,
+`implementer`, `reviewer`. El flujo completo está en `AGENTS.md`.
 
 ## Constitución
 

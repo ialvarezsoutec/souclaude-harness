@@ -7,7 +7,7 @@ disable-model-invocation: true
 effort: high
 allowed-tools:
   - Skill(security-review)
-  - Agent(leader)
+  - Agent(orchestrator)
   - Agent(security-evidence-compiler)
   - Read
   - Grep
@@ -156,7 +156,7 @@ Un `Medium` abierto produce el estado `READY WITH CONDITIONS`, nunca una declara
 
 Si no existen hallazgos `Critical` o `High`, omite esta fase y continúa con pruebas y review final.
 
-Si existen, invoca al agente `leader` en primer plano. Entrégale el reporte inicial completo y esta misión:
+Si existen, invoca al agente `orchestrator` en primer plano. Entrégale el reporte inicial completo y esta misión:
 
 ```text
 HUMAN_TRIGGER=/it-security-review
@@ -175,9 +175,9 @@ Obligaciones:
 9. Devolver rutas de archivos modificados, spec creado, pruebas ejecutadas, resultados y riesgos residuales.
 ```
 
-Registra la ruta del spec en `02-remediation-spec.md` y el resultado del leader en `03-remediation-summary.md`.
+Registra la ruta del spec en `02-remediation-spec.md` y el resultado del orchestrator en `03-remediation-summary.md`.
 
-Para secretos expuestos, eliminar el valor del código no basta. El leader debe tratar revocación o rotación, limpieza segura, configuración correcta y prevención de recurrencia. Si la rotación requiere una acción humana o de IT no disponible, el gate permanece bloqueado.
+Para secretos expuestos, eliminar el valor del código no basta. El orchestrator debe tratar revocación o rotación, limpieza segura, configuración correcta y prevención de recurrencia. Si la rotación requiere una acción humana o de IT no disponible, el gate permanece bloqueado.
 
 ## Fase 4 — Pruebas
 
@@ -231,13 +231,13 @@ Guarda la salida completa en:
 Si el review final mantiene o introduce hallazgos `Critical` o `High`:
 
 1. no generes el PDF;
-2. entrega los hallazgos al `leader` para actualizar el spec e implementar la siguiente iteración;
+2. entrega los hallazgos al `orchestrator` para actualizar el spec e implementar la siguiente iteración;
 3. vuelve a ejecutar pruebas;
 4. vuelve a ejecutar el security review nativo.
 
 Máximo: tres ciclos de remediación en una misma ejecución.
 
-Si después de tres ciclos persisten bloqueantes, o si el leader falla, crea únicamente:
+Si después de tres ciclos persisten bloqueantes, o si el orchestrator falla, crea únicamente:
 
 ```text
 SECURITY-REVIEW-BLOCKED.md

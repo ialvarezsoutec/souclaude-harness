@@ -1,51 +1,49 @@
-# AGENTS.md — Mapa de navegación para agentes de IA
+# AGENTS.md — Orquestación de agentes bajo CCEM
 
-> Este archivo es el **punto de entrada** para cualquier agente que trabaje en este
-> repositorio. NO es una biblia de reglas: es un **mapa**. Lee solo lo que
-> necesites cuando lo necesites (divulgación progresiva).
+Este archivo explica **cómo trabajan los agentes** en un repo con el harness de SOUTEC. No
+es una biblia de reglas: esas viven en `docs/constitution.md` y en las skills de
+`.claude/skills/`. Esto es el **mapa** del flujo multi-agente. Lee lo que necesites cuando lo
+necesites.
 
----
+## Los cuatro roles
 
-## 1. Antes de empezar (obligatorio)
+Viven en `.claude/agents/`. Cada uno tiene sus herramientas acotadas a propósito.
 
-1. Lee `CLAUDE.md` para el contexto del proyecto (stack, dominio, comandos).
-2. Lee `docs/constitution.md`: los principios P1-P10 son no-negociables.
-3. Si la tarea es una feature nueva, un refactor grande, una migración o un
-   cambio de contrato, aplica **Spec-Driven Development** — ver la skill
-   `ccem-sdd` y §3 de este archivo. Para un bug puntual, un ajuste cosmético
-   o un hotfix, la matriz de decisión de `ccem-sdd` puede indicar que SDD no
-   aplica: en ese caso, dilo y hacé el trabajo directamente.
+| Agente | Rol | Escribe código | Herramienta clave |
+|---|---|---|---|
+| `orchestrator` | Descompone y coordina; hace respetar los checkpoints. | ❌ | `Agent` (lanza a los otros) |
+| `spec-author` | Redacta `spec.md` / `plan.md` / `tasks.md`, una fase a la vez. | ❌ | `Write`/`Edit` (solo en `specs/`) |
+| `implementer` | Implementa la tarjeta task por task, cada cambio con su test. | ✅ | `Write`/`Edit` |
+| `reviewer` | Aprueba o rechaza de forma **independiente**. | ❌ | (sin `Write`/`Edit`: dictamina) |
 
-## 2. Mapa del repositorio
+La separación es el punto: quien especifica no implementa, y quien implementa **no se
+aprueba a sí mismo**.
 
-| Archivo / carpeta            | Qué contiene                                                                | Cuándo leerlo |
-|------------------------------|-----------------------------------------------------------------------------|---------------|
-| `CLAUDE.md`                  | Contexto del proyecto, stack, comandos, reglas de git                      | Siempre, al empezar |
-| `docs/constitution.md`       | Principios P1-P10 no-negociables                                            | Antes de cualquier decisión arquitectónica |
-| `specs/<feature-slug>/`      | `spec.md` + `plan.md` + `tasks.md` (o variantes `-lite`)                    | Antes de implementar cualquier feature con SDD |
-| `docs/decisions/`            | ADRs — decisiones con trade-off                                             | Al tomar una decisión que otro dev necesitará entender después |
-| `notes.md`                   | Scratchpad persistente de aprendizajes recientes                            | Para dejar o buscar un gotcha del día |
-| `.claude/skills/`            | Skills CCEM: `ccem-core`, `ccem-sdd`, `ccem-planner`, `ccem-stack`, etc.    | Se aplican solas cuando el contexto lo amerita |
-| `.claude/agents/`            | Definiciones de subagentes (`leader`, `spec_author`, `implementer`, `reviewer`) | Si orquestas trabajo complejo con subagentes reales |
+## El flujo
 
-## 3. Dos formas de trabajar, no dos flujos distintos
+```
+tarjeta Planner (ID) ─► rama tipo/<ID>-<slug>
+        │
+        ▼
+spec.md ─► ⏸ HUMANO ─► plan.md ─► ⏸ HUMANO ─► tasks.md ─► ⏸ HUMANO ─► implement ─► review ─► PR
+```
 
-Este repo soporta **Spec-Driven Development** (skill `ccem-sdd`) de dos
-maneras que producen los mismos artefactos en `specs/<slug>/`:
+Son **tres checkpoints humanos** antes de escribir código, no uno. Hasta que `spec.md`,
+`plan.md` y `tasks.md` estén aprobados, la rama **solo admite commits `docs:`**. Durante
+`implement`, el review es incremental (task por task), nunca en batch al final.
 
-- **Un solo Claude sigue la skill paso a paso** (Specify → Plan → Tasks →
-  Implement), instanciando specs con `/spec-new`. Es el modo por defecto y
-  cubre la gran mayoría de los casos.
-- **Orquestación multi-agente** (`.claude/agents/leader.md` +
-  `spec_author.md` + `implementer.md` + `reviewer.md`): útil cuando conviene
-  aislar contexto entre fases o paralelizar exploración antes de escribir la
-  spec. El `leader` decide cuándo lanzar cada subagente; nunca escribe
-  código él mismo. Ver `leader.md` para el protocolo completo.
+## Cómo se invoca (opt-in)
 
-Ambas rutas comparten el mismo gate humano: **hasta que `tasks.md` esté
-aprobado, no se toca código.**
+La orquestación **no** corre en cada sesión: la pides cuando la quieres.
 
-## 4. Agentes especialistas bajo demanda
+> "Actuá como `orchestrator` para la tarjeta PLN-XXX."
+
+Un subagente de Claude Code no siempre puede lanzar otros subagentes, así que en la práctica
+**la sesión principal adopta el rol `orchestrator`** y desde ahí lanza a `spec-author`,
+`implementer` y `reviewer` según la fase. Para un cambio que la matriz de `ccem-sdd` marca
+como "saltá SDD" (fix puntual, cosmético, spike, hotfix), no montes el flujo: hazlo directo.
+
+## Agentes especialistas bajo demanda
 
 Además del cuarteto de orquestación SDD, este harness puede incluir agentes
 especialistas invocados para una tarea concreta y acotada, no como parte del
@@ -57,22 +55,23 @@ explícito y entradas/salidas bien definidas. Si en el futuro aparece otro
 caso concreto de este tipo, se agrega con su propio nombre descriptivo, no
 como una casilla vacía a llenar.
 
-## 5. Reglas duras (no negociables)
+## Reglas que todos respetan
 
-- **Una sola feature a la vez.** No mezcles cambios de varias tareas en la
-  misma sesión.
-- **No declares una tarea terminada sin pruebas verdes.** Ejecuta la suite
-  de tests/lint/build del proyecto (comandos en `CLAUDE.md`).
-- **No saltes la fase de spec** cuando la matriz de `ccem-sdd` dice que
-  aplica.
-- **No saltes la puerta de aprobación humana** entre `tasks.md` aprobado e
-  Implement.
-- **Si no sabes algo, busca en `docs/`** antes de inventarlo.
-- **Si algo es ambiguo o parece mal: para y pregunta.** No adivines ni
-  reinterpretes.
+Los agentes **no redefinen** las reglas del harness; las cumplen. Fuente de verdad:
 
-## 6. Si te bloqueas
+- **`docs/constitution.md`** — P1-P10. P2 (dominio no importa frameworks), P9 (Simplicity),
+  P10 (Surgical) y P6 (human-in-the-loop, que es lo que hacen los checkpoints).
+- **`ccem-planner`** — el ID de Planner es el hilo: tarjeta ↔ `specs/<ID>-<slug>/` ↔ rama ↔
+  commits ↔ PR. Sin ID, el `orchestrator` para y lo pide; no lo inventa.
+- **`ccem-prompting`** (Anti-Hack) — el `reviewer` caza tests que no prueban, mocks que fingen
+  lógica y errores tragados. Ningún agente reporta "listo" con trabajo simulado.
+- **`ccem-core`** — selección de modelo por rol (razonamiento alto para diseño/review).
+- **`soutec-github`** — nombres de rama, Conventional Commits en español, plantilla de PR.
+  Nadie hace commit/merge a `main` ni crea tags/releases.
 
-- Relee la sección relevante de `docs/` o la skill correspondiente.
-- Si la herramienta no hace lo que esperas, **no inventes un workaround**:
-  reporta el bloqueo con contexto concreto y para.
+## Resultados por disco, no por chat
+
+Cada agente escribe su resultado en un archivo versionado y devuelve **solo una referencia**
+(`spec_ready -> specs/<ID>-<slug>/spec.md`, `done -> progress/impl_<ID>.md`,
+`APPROVED -> progress/review_<ID>.md`). El contenido vive en el repo, no en la conversación:
+así queda trazable y no se pierde entre sesiones.

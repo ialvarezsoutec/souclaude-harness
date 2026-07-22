@@ -2,6 +2,33 @@
 
 El harness y el CLI se versionan juntos.
 
+## [1.1.0] — no publicado
+
+Orquestación multi-agente: cuatro roles que siguen el flujo SDD de CCEM con separación de
+responsabilidades y checkpoints humanos.
+
+### Agregado
+
+- **Cuatro agentes** en `.claude/agents/`, distribuidos por el harness: `orchestrator`
+  (coordina, no escribe código), `spec-author` (redacta spec/plan/tasks, una fase por
+  invocación), `implementer` (task por task, cada cambio con su test) y `reviewer` (aprueba
+  o rechaza de forma **independiente**, sin `Write`/`Edit`).
+- **`AGENTS.md`** en la raíz: el mapa del flujo multi-agente, los cuatro roles, y las reglas
+  del harness que respetan **por referencia** (no las redefinen).
+- El patrón se subordina a la constitución: los checkpoints humanos y "ningún agente se
+  auto-aprueba ni marca `done`" son **P6 hecho producto**. El hilo sigue siendo el ID de
+  Planner; no se introduce `feature_list.json` ni un segundo sistema de estado.
+
+### Decisiones
+
+- **Opt-in, no líder global.** La orquestación se invoca a demanda; no se fuerza a cada
+  sesión vía `CLAUDE.md` — forzarlo secuestraría el proyecto consumidor (P9/P10). ADR:
+  `docs/decisions/20260721-orquestacion-multiagente.md`.
+- **Identificadores en inglés, prosa en español.** `name:`/`subagent_type` toca el framework
+  → inglés kebab-case; el cuerpo instructivo que lee el dev → español.
+- Patrón **derivado** de `betta-tech/harness-sdd` (repo sin LICENSE): se adopta el patrón, no
+  la prosa — todo redactado original. Evaluado con `ccem-research`.
+
 ## [1.0.0] — no publicado
 
 Primera versión. Reemplaza la copia manual de la carpeta `Kit/`.

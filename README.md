@@ -25,7 +25,7 @@ notes.md                      scratchpad persistente
   settings.json               permisos y effort (schema-correcto)
   harness.json                lockfile: versión + hash de cada archivo
   agents/
-    leader, spec_author, implementer, reviewer   orquestación multi-agente opcional del flujo SDD
+    orchestrator, spec-author, implementer, reviewer   orquestación multi-agente opcional del flujo SDD
     security-evidence-compiler                    compila evidencia de security review para IT
   skills/
     ccem-core, ccem-sdd, ccem-planner, ccem-research, ccem-stack, ccem-prompting

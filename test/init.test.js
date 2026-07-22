@@ -31,6 +31,12 @@ test('init en repo vacio: emite el harness completo + scaffolding', async () => 
     assert.ok(files.includes(`.claude/skills/${c}/SKILL.md`), `falta el comando ${c}`)
   }
 
+  // Los 4 agentes de orquestacion + el mapa AGENTS.md.
+  for (const a of ['orchestrator', 'spec-author', 'implementer', 'reviewer']) {
+    assert.ok(files.includes(`.claude/agents/${a}.md`), `falta el agente ${a}`)
+  }
+  assert.ok(files.includes('AGENTS.md'))
+
   // Scaffolding: solo porque el repo estaba vacio.
   assert.ok(files.includes('src/.gitkeep'))
   assert.ok(files.includes('tests/.gitkeep'))
@@ -171,7 +177,7 @@ test('el lockfile registra hash y policy de cada archivo emitido', async () => {
   await main(['init', ...YES], dir)
 
   const lock = JSON.parse(read(dir, '.claude/harness.json'))
-  assert.equal(lock.harnessVersion, '1.0.0')
+  assert.equal(lock.harnessVersion, '1.1.0')
   assert.equal(lock.vars.PROJECT_NAME, 'acme')
   assert.equal(lock.files['CLAUDE.md'].policy, 'user-owned')
   assert.equal(lock.files['.claude/skills/ccem-core/SKILL.md'].policy, 'managed')
