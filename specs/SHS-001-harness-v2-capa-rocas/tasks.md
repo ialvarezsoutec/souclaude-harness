@@ -191,11 +191,12 @@ T7* T8* T9* T10* T11*  (independientes, en paralelo conceptual) ──▶ T13
 - [x] T4 — hecho (rock-close, evidencia por criterio E5)
 - [x] T5 — hecho (export-ninety, contrato por fases)
 - [x] T6 — hecho (4 entradas en el manifest, JSON válido)
-- [ ] T7 — pendiente
-- [ ] T8 — pendiente
-- [ ] T9 — pendiente
-- [ ] T10 — pendiente
-- [ ] T11 — pendiente
+- [x] T7 — hecho (spec-new al hito + contrato de entrada)
+- [x] T8 — hecho (soutec-github: origen de rama = hito)
+- [x] T9 — hecho (3 agentes al hito)
+- [x] T10 — hecho (ambos CLAUDE.md + índice ccem-rocas)
+- [x] T11 — ajustado: el antipatrón v1 no está en el repo (vive en el Vault);
+      se agregó banner de superseción a vision-general-ccem-harness.md
 - [ ] T12 — pendiente
 - [ ] T13 — pendiente
 
