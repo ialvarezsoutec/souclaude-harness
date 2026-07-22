@@ -2,6 +2,44 @@
 
 El harness y el CLI se versionan juntos.
 
+## [2.0.0] — no publicado
+
+Capa de rocas: el **hito** reemplaza a Planner como emisor de IDs. Implementa la Fase 0 de la
+Metodología de Roca v2.1.0 en el repo de código.
+
+### BREAKING CHANGE
+
+- **El emisor de IDs pasa de la tarjeta de Planner al hito** (`<PREFIJO>-H<n>`, ej. `REA-H3`),
+  definido en el Paso 2 de la roca (`/rock-plan`). El hilo de trazabilidad es ahora
+  `Roca → Hito → specs/<ID-hito>-<slug>/ → rama → PR → tag`. Los repos consumidores reciben la
+  reescritura en el próximo `upgrade`. ADR: `docs/decisions/20260722-capa-rocas-hito-emisor-de-ids.md`
+  (supersede al de orquestación solo en cuanto al emisor).
+
+### Agregado
+
+- **Paquete de skills `ccem-rocas`** (4 comandos, distribuidos por el manifest): `/rock-plan`
+  (Paso 2, con las 7 reglas de construcción de hitos y el checklist de validación E1/E4),
+  `/rock-status` (snapshot semanal derivado de GitHub; falla ante campos derivados editados a
+  mano, E2/E3), `/rock-close` (cierre contra criterios congelados, exige evidencia por criterio,
+  E5) y `/export-ninety` (contrato por fases con Ninety; Fase 0 manual).
+
+### Cambiado
+
+- **`ccem-planner` reescrito**: el hito es el emisor, el estado del trabajo se **deriva** de
+  GitHub (rama/PR) en vez de un tablero, y el WIP pasa de "2-3 tarjetas por dev" a "**2 ramas
+  vivas por persona**" (`git branch -r`). Conserva su nombre para no romper manifest/lockfile.
+- **`spec-new`** suma el contrato de entrada hito → spec (criterios heredados, no-alcance,
+  entregable, rollback) y deja de hablar de Planner. Corrige una referencia P7 → P9.
+- **`soutec-github`**, los agentes `orchestrator`/`spec-author`/`implementer` y ambos `CLAUDE.md`
+  pasan de "tarjeta de Planner" al hito como origen del trabajo.
+
+### No incluido (tracks aparte)
+
+- El repo Vault (`00-System`, `id-registry.md`, `plantilla_apertura_roca.yaml`), los jobs
+  semanales (E2/E3 como cron), el cierre de hito con evidencia automatizado (E5) y la API de
+  Ninety (Fases 1-3). P7/P8 de la constitución se dejan como placeholder a propósito
+  (metodología §9).
+
 ## [1.1.0] — no publicado
 
 Orquestación multi-agente: cuatro roles que siguen el flujo SDD de CCEM con separación de

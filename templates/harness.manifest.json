@@ -1,5 +1,5 @@
 {
-  "harnessVersion": "1.1.0",
+  "harnessVersion": "2.0.0",
   "files": [
     { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned", "critical": true },
     { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned", "critical": true },
