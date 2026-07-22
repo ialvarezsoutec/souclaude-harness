@@ -13,7 +13,7 @@ Viven en `.claude/agents/`. Cada uno tiene sus herramientas acotadas a propósit
 |---|---|---|---|
 | `orchestrator` | Descompone y coordina; hace respetar los checkpoints. | ❌ | `Agent` (lanza a los otros) |
 | `spec-author` | Redacta `spec.md` / `plan.md` / `tasks.md`, una fase a la vez. | ❌ | `Write`/`Edit` (solo en `specs/`) |
-| `implementer` | Implementa la tarjeta task por task, cada cambio con su test. | ✅ | `Write`/`Edit` |
+| `implementer` | Implementa el spec del hito task por task, cada cambio con su test. | ✅ | `Write`/`Edit` |
 | `reviewer` | Aprueba o rechaza de forma **independiente**. | ❌ | (sin `Write`/`Edit`: dictamina) |
 
 La separación es el punto: quien especifica no implementa, y quien implementa **no se
@@ -22,7 +22,7 @@ aprueba a sí mismo**.
 ## El flujo
 
 ```
-tarjeta Planner (ID) ─► rama tipo/<ID>-<slug>
+hito (ID <PREFIJO>-H<n>) ─► rama tipo/<ID-hito>-<slug>
         │
         ▼
 spec.md ─► ⏸ HUMANO ─► plan.md ─► ⏸ HUMANO ─► tasks.md ─► ⏸ HUMANO ─► implement ─► review ─► PR
@@ -36,7 +36,7 @@ Son **tres checkpoints humanos** antes de escribir código, no uno. Hasta que `s
 
 La orquestación **no** corre en cada sesión: la pides cuando la quieres.
 
-> "Actuá como `orchestrator` para la tarjeta PLN-XXX."
+> "Actuá como `orchestrator` para el hito REA-H3."
 
 Un subagente de Claude Code no siempre puede lanzar otros subagentes, así que en la práctica
 **la sesión principal adopta el rol `orchestrator`** y desde ahí lanza a `spec-author`,
@@ -61,7 +61,7 @@ Los agentes **no redefinen** las reglas del harness; las cumplen. Fuente de verd
 
 - **`docs/constitution.md`** — P1-P10. P2 (dominio no importa frameworks), P9 (Simplicity),
   P10 (Surgical) y P6 (human-in-the-loop, que es lo que hacen los checkpoints).
-- **`ccem-planner`** — el ID de Planner es el hilo: tarjeta ↔ `specs/<ID>-<slug>/` ↔ rama ↔
+- **`ccem-planner`** — el ID del hito es el hilo: hito ↔ `specs/<ID-hito>-<slug>/` ↔ rama ↔
   commits ↔ PR. Sin ID, el `orchestrator` para y lo pide; no lo inventa.
 - **`ccem-prompting`** (Anti-Hack) — el `reviewer` caza tests que no prueban, mocks que fingen
   lógica y errores tragados. Ningún agente reporta "listo" con trabajo simulado.
