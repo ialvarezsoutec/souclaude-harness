@@ -43,6 +43,18 @@ Un subagente de Claude Code no siempre puede lanzar otros subagentes, así que e
 `implementer` y `reviewer` según la fase. Para un cambio que la matriz de `ccem-sdd` marca
 como "saltá SDD" (fix puntual, cosmético, spike, hotfix), no montes el flujo: hazlo directo.
 
+## Agentes especialistas bajo demanda
+
+Además del cuarteto de orquestación SDD, este harness puede incluir agentes
+especialistas invocados para una tarea concreta y acotada, no como parte del
+flujo diario. El caso real hoy es `security-evidence-compiler.md`: se activa
+solo cuando la skill `it-security-review` completa un gate de seguridad
+(`FINAL_SECURITY_GATE=PASSED`) y compila la evidencia en un informe para IT.
+No es un rol genérico de "asesor" — es un agente con contrato de activación
+explícito y entradas/salidas bien definidas. Si en el futuro aparece otro
+caso concreto de este tipo, se agrega con su propio nombre descriptivo, no
+como una casilla vacía a llenar.
+
 ## Reglas que todos respetan
 
 Los agentes **no redefinen** las reglas del harness; las cumplen. Fuente de verdad:

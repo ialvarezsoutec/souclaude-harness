@@ -28,6 +28,9 @@ jobs:
 
       - run: npm test
 
+      - name: verifica integridad del manifest (huerfanos, rutas rotas, duplicados, criticos)
+        run: node bin/cli.mjs verify --strict
+
       # El CLI tiene que poder instalarse sobre un repo real sin escribir nada.
       - name: dry-run sobre el propio repo
         run: node bin/cli.mjs upgrade --dry-run --yes
