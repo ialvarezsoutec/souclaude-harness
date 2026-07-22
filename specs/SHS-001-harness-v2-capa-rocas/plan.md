@@ -1,10 +1,10 @@
 # Plan: Harness v2.0.0 — capa de rocas (el hito reemplaza a Planner)
 
 **Spec**: [spec.md](spec.md)
-**Status**: draft
+**Status**: approved
 **Owner**: Ignacio A
 **Creado**: 2026-07-22
-**Aprobado**: pending
+**Aprobado**: 2026-07-22
 
 ---
 

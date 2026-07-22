@@ -185,7 +185,7 @@ T7* T8* T9* T10* T11*  (independientes, en paralelo conceptual) ──▶ T13
 
 ## Progreso (actualizar durante ejecución)
 
-- [ ] T1 — pendiente
+- [x] T1 — hecho (ccem-planner reescrito en ambos árboles)
 - [ ] T2 — pendiente
 - [ ] T3 — pendiente
 - [ ] T4 — pendiente
