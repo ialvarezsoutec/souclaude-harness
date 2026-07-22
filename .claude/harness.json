@@ -146,19 +146,19 @@
     },
     ".claude/agents/security-evidence-compiler.md": {
       "policy": "managed",
-      "hash": "5b47ffa53a247867"
+      "hash": "5de738323ab07e37"
     },
-    ".claude/skills/it-security-approval/SKILL.md": {
+    ".claude/skills/it-security-review/SKILL.md": {
       "policy": "managed",
-      "hash": "82d18bdda72586cf"
+      "hash": "4152991d368439d8"
     },
-    ".claude/skills/it-security-approval/report-template.md": {
+    ".claude/skills/it-security-review/report-template.md": {
       "policy": "managed",
       "hash": "db63f29aacc79de3"
     },
-    ".claude/skills/it-security-approval/scripts/render_security_report.py": {
+    ".claude/skills/it-security-review/scripts/render_security_report.py": {
       "policy": "managed",
-      "hash": "ffed7eb33f142786"
+      "hash": "41340c8270b79cca"
     },
     ".claude/skills/security-report-standard/SKILL.md": {
       "policy": "managed",

@@ -1,6 +1,6 @@
 ---
 name: security-evidence-compiler
-description: Compila evidencia de security review, remediación SDD y pruebas en un informe Markdown y PDF para IT. Solo usar cuando el workflow /it-security-approval entregue FINAL_SECURITY_GATE=PASSED.
+description: Compila evidencia de security review, remediación SDD y pruebas en un informe Markdown y PDF para IT. Solo usar cuando el workflow /it-security-review entregue FINAL_SECURITY_GATE=PASSED.
 tools: Read, Grep, Glob, Write, Edit, Bash
 permissionMode: default
 model: inherit

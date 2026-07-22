@@ -50,7 +50,7 @@ aprobado, no se toca código.**
 Además del cuarteto de orquestación SDD, este harness puede incluir agentes
 especialistas invocados para una tarea concreta y acotada, no como parte del
 flujo diario. El caso real hoy es `security-evidence-compiler.md`: se activa
-solo cuando la skill `it-security-approval` completa un gate de seguridad
+solo cuando la skill `it-security-review` completa un gate de seguridad
 (`FINAL_SECURITY_GATE=PASSED`) y compila la evidencia en un informe para IT.
 No es un rol genérico de "asesor" — es un agente con contrato de activación
 explícito y entradas/salidas bien definidas. Si en el futuro aparece otro

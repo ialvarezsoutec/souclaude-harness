@@ -1,5 +1,5 @@
 ---
-name: it-security-approval
+name: it-security-review
 version: 1.0.0
 description: Ejecuta el /security-review nativo de Claude Code, coordina la remediación SDD de hallazgos Critical/High y genera un PDF de evidencia para IT solo después de superar el gate final.
 argument-hint: "[scope opcional: full | branch | diff | ruta-o-modulo]"
@@ -22,12 +22,12 @@ allowed-tools:
   - Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/render_security_report.py *)
 ---
 
-# IT Security Approval Workflow
+# IT Security Review Workflow
 
 Este workflow se inicia exclusivamente cuando un humano ejecuta:
 
 ```text
-/it-security-approval $ARGUMENTS
+/it-security-review $ARGUMENTS
 ```
 
 No reemplaces ni sobrescribas el comando nativo `/security-review`. Debes invocarlo mediante el `Skill` tool como parte de este proceso.
@@ -159,7 +159,7 @@ Si no existen hallazgos `Critical` o `High`, omite esta fase y continúa con pru
 Si existen, invoca al agente `leader` en primer plano. Entrégale el reporte inicial completo y esta misión:
 
 ```text
-HUMAN_TRIGGER=/it-security-approval
+HUMAN_TRIGGER=/it-security-review
 
 Crear y ejecutar un plan de remediación de seguridad siguiendo la metodología SDD del repositorio.
 

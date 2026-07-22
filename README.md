@@ -30,7 +30,7 @@ notes.md                      scratchpad persistente
   skills/
     ccem-core, ccem-sdd, ccem-planner, ccem-research, ccem-stack, ccem-prompting
     spec-new, adr-new, constitution-check, harness-upgrade, soutec-github
-    it-security-approval, security-report-standard
+    it-security-review, security-report-standard
 .gitignore                    bloque gestionado, tus líneas intactas
 ```
 
