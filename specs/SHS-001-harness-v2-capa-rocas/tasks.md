@@ -198,7 +198,10 @@ T7* T8* T9* T10* T11*  (independientes, en paralelo conceptual) ──▶ T13
 - [x] T11 — ajustado: el antipatrón v1 no está en el repo (vive en el Vault);
       se agregó banner de superseción a vision-general-ccem-harness.md
 - [x] T12 — hecho (package.json, manifest y CHANGELOG en 2.0.0)
-- [ ] T13 — pendiente
+- [x] T13 — hecho. Grep sin residuos (atrapó y corrigió AGENTS.md + PR template).
+      Suite 49/50 (el único rojo, `dogfood`, es ambiental por backups gitignored,
+      ajeno a SHS-001). Tests init.test.js:125/180 sincronizados al hito y a la
+      versión dinámica. `status` exit 1 = "upgrade disponible" (esperado).
 
 ---
 

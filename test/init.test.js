@@ -4,6 +4,7 @@ import { main } from '../src/cli.js'
 import { mkRepo, read, has, tree, snapshot, replan, verdicts } from './helpers.js'
 import { NOOP } from '../src/core/plan.js'
 import { missingVars } from '../src/core/render.js'
+import { loadManifest } from '../src/core/manifest.js'
 
 const YES = ['--yes', '--name', 'acme', '--type', 'backend', '--lang', 'es']
 
@@ -122,7 +123,7 @@ test('se emiten los archivos obligatorios de Fase 1 de la guia Git', async () =>
 
   assert.ok(has(dir, '.github/pull_request_template.md'))
   assert.ok(has(dir, '.github/CODEOWNERS'))
-  assert.ok(read(dir, '.github/pull_request_template.md').includes('Planner / SharePoint ID'))
+  assert.ok(read(dir, '.github/pull_request_template.md').includes('ID del hito'))
 
   // Las skills SOUTEC.
   assert.ok(has(dir, '.claude/skills/ccem-planner/SKILL.md'))
@@ -177,7 +178,7 @@ test('el lockfile registra hash y policy de cada archivo emitido', async () => {
   await main(['init', ...YES], dir)
 
   const lock = JSON.parse(read(dir, '.claude/harness.json'))
-  assert.equal(lock.harnessVersion, '1.1.0')
+  assert.equal(lock.harnessVersion, loadManifest().harnessVersion)
   assert.equal(lock.vars.PROJECT_NAME, 'acme')
   assert.equal(lock.files['CLAUDE.md'].policy, 'user-owned')
   assert.equal(lock.files['.claude/skills/ccem-core/SKILL.md'].policy, 'managed')
