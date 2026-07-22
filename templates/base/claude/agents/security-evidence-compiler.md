@@ -83,45 +83,47 @@ Genera:
 <evidence-dir>/IT-Security-Review.md
 ```
 
-Usa el estándar `security-report-standard` y esta estructura:
+Usa el estándar `security-report-standard` y la estructura de
+`${CLAUDE_SKILL_DIR}/report-template.md`:
 
 ```markdown
-# IT Security Review Report
+# Revisión de Seguridad — {{PROJECT}}
 
-## Review status
+## Estado de la revisión
 
-## Executive summary
+## Resumen para IT
 
-## Project identification
+## Sobre el proyecto
 
-## Scope, exclusions and limitations
+## Qué se revisó y metodología
 
-## Review methodology
+## Alcance, exclusiones y limitaciones
 
-## System and attack-surface overview
+## Resultado de la revisión final
 
-## Initial findings summary
+## Resumen de hallazgos por severidad
 
-## Critical and High remediation traceability
+## Trazabilidad de hallazgos Critical/High corregidos
 
-## SDD remediation specification
+## Evidencia de pruebas
 
-## Implemented security changes
+## Hallazgos Medium, Low e informativos pendientes
 
-## Test and validation evidence
+## Riesgo residual y condiciones para producción
 
-## Final security review results
+## Recomendación para IT
 
-## Remaining Medium, Low and informational findings
+## Índice de evidencia
 
-## Residual risk and deployment conditions
-
-## Recommendation to IT
-
-## Evidence index
-
-## Assurance statement
+## Declaración de assurance
 ```
+
+El informe debe leerse con lenguaje claro y sin jerga innecesaria — está dirigido a IT,
+no solo a perfiles de seguridad — pero sin perder la trazabilidad técnica exigida por
+`security-report-standard`: cada hallazgo Critical/High corregido conserva su ID,
+severidad inicial, activo afectado, requisito/spec, cambio aplicado, prueba de
+regresión y estado final en la tabla de trazabilidad. No resumas esa tabla a costa de
+omitir alguno de esos campos.
 
 Incluye tablas claras para:
 

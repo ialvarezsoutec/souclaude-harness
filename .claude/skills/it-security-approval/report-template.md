@@ -1,92 +1,99 @@
-# IT Security Review Report
+# Revisión de Seguridad — {{PROJECT}}
 
-> Este archivo es una referencia estructural. El agente `security-evidence-compiler` debe sustituir los placeholders usando evidencia real y no debe inventar resultados.
+> Referencia estructural para el agente `security-evidence-compiler`. Sustituye cada
+> placeholder con evidencia real y verificada. No inventes resultados, no rebajes
+> severidades y no elimines hallazgos corregidos del historial.
 
-## Review status
+## Estado de la revisión
 
-| Field | Value |
+| Campo | Valor |
 |---|---|
-| Project | {{PROJECT}} |
-| Status | {{STATUS}} |
-| Review date | {{DATE}} |
-| Scope | {{SCOPE}} |
-| Branch | {{BRANCH}} |
-| Initial commit | {{INITIAL_COMMIT}} |
-| Final commit | {{FINAL_COMMIT}} |
-| IT approval | PENDING |
+| Proyecto | {{PROJECT}} |
+| Estado | {{STATUS}} |
+| Fecha de la revisión | {{DATE}} |
+| Rama | {{BRANCH}} |
+| Commit inicial | {{INITIAL_COMMIT}} |
+| Commit final | {{FINAL_COMMIT}} |
+| Alcance | {{SCOPE}} |
+| Aprobación de IT | PENDING |
 
-## Executive summary
+## Resumen para IT
 
 {{EXECUTIVE_SUMMARY}}
 
-## Project identification
+Este informe no reemplaza un pentest formal, una auditoría externa ni la validación de
+infraestructura de producción. Es un insumo para que IT tome su propia decisión
+informada sobre el paso a producción.
+
+## Sobre el proyecto
 
 {{PROJECT_IDENTIFICATION}}
 
-## Scope, exclusions and limitations
-
-{{SCOPE_AND_LIMITATIONS}}
-
-## Review methodology
-
-- Native Claude Code command: `/security-review`
-- SDD remediation cycles: {{REMEDIATION_CYCLES}}
-- Required tests: {{TEST_SUMMARY}}
-
-## System and attack-surface overview
+## Qué se revisó y metodología
 
 {{ATTACK_SURFACE}}
 
-## Initial findings summary
+- Método de revisión: comando nativo `/security-review` de Claude Code.
+- Ciclos de remediación SDD ejecutados: {{REMEDIATION_CYCLES}}.
+- Pruebas obligatorias: {{TEST_SUMMARY}}.
 
-| Severity | Initial | Remediated | Open |
+## Alcance, exclusiones y limitaciones
+
+{{SCOPE_AND_LIMITATIONS}}
+
+## Resultado de la revisión final
+
+{{FINAL_REVIEW}}
+
+## Resumen de hallazgos por severidad
+
+| Severidad | Iniciales | Remediados | Abiertos |
 |---|---:|---:|---:|
 | Critical | {{INITIAL_CRITICAL}} | {{FIXED_CRITICAL}} | 0 |
 | High | {{INITIAL_HIGH}} | {{FIXED_HIGH}} | 0 |
 | Medium | {{INITIAL_MEDIUM}} | {{FIXED_MEDIUM}} | {{OPEN_MEDIUM}} |
 | Low | {{INITIAL_LOW}} | {{FIXED_LOW}} | {{OPEN_LOW}} |
-| Informational | {{INITIAL_INFO}} | — | {{OPEN_INFO}} |
+| Informativo | {{INITIAL_INFO}} | — | {{OPEN_INFO}} |
 
-## Critical and High remediation traceability
+Ningún hallazgo `Critical` o `High` queda abierto al cierre de esta revisión.
 
-| ID | Initial severity | Requirement/spec | Change | Security test | Final status |
-|---|---|---|---|---|---|
-| {{ID}} | {{SEVERITY}} | {{SPEC_REF}} | {{CHANGE}} | {{TEST_REF}} | REMEDIATED |
+## Trazabilidad de hallazgos Critical/High corregidos
 
-## SDD remediation specification
+Registro técnico de cada hallazgo grave detectado y su remediación. No se elimina un
+hallazgo de esta tabla por haber sido corregido — el historial de corrección es parte
+de la evidencia.
 
-{{SDD_SPEC}}
+| ID | Severidad inicial | Activo/archivo afectado | Requisito o spec | Cambio aplicado | Prueba de regresión | Estado final |
+|---|---|---|---|---|---|---|
+| {{ID}} | {{SEVERITY}} | {{AFFECTED_ASSET}} | {{SPEC_REF}} | {{CHANGE}} | {{TEST_REF}} | REMEDIATED |
 
-## Implemented security changes
+{{REMEDIATION_TRACEABILITY_NOTE}}
 
-{{IMPLEMENTED_CHANGES}}
+## Evidencia de pruebas
 
-## Test and validation evidence
-
-| Command | Purpose | Result | Evidence |
+| Comando | Propósito | Resultado | Evidencia |
 |---|---|---|---|
 | {{COMMAND}} | {{PURPOSE}} | PASSED | {{EVIDENCE}} |
 
-## Final security review results
-
-{{FINAL_REVIEW}}
-
-## Remaining Medium, Low and informational findings
+## Hallazgos Medium, Low e informativos pendientes
 
 {{REMAINING_FINDINGS}}
 
-## Residual risk and deployment conditions
+## Riesgo residual y condiciones para producción
 
 {{RESIDUAL_RISK}}
 
-## Recommendation to IT
+## Recomendación para IT
 
 {{IT_RECOMMENDATION}}
 
-## Evidence index
+## Índice de evidencia
 
 {{EVIDENCE_INDEX}}
 
-## Assurance statement
+## Declaración de assurance
 
-En la revisión final automatizada no se identificaron hallazgos Critical o High dentro del alcance y las limitaciones declaradas. Este informe habilita la evaluación final de IT, pero no sustituye un pentest formal, la validación de infraestructura de producción ni la aprobación corporativa de despliegue.
+En la revisión final automatizada no se identificaron hallazgos Critical o High dentro
+del alcance y las limitaciones declaradas. Este informe habilita la evaluación final de
+IT, pero no sustituye un pentest formal, la validación de infraestructura de producción
+ni la aprobación corporativa de despliegue.
