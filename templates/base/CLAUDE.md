@@ -11,11 +11,13 @@ Harness `{{HARNESS_VERSION}}`. Las skills viven **en este repo**, en `.claude/sk
 se aplican solas cuando el contexto lo amerita:
 
 `ccem-core` (6 principios rectores + selección de modelo) · `ccem-sdd` (Spec-Driven
-Development) · `ccem-planner` (trazabilidad Planner ↔ CCEM ↔ Git) · `ccem-research`
+Development) · `ccem-planner` (trazabilidad Hito ↔ CCEM ↔ Git) · `ccem-research`
 (evaluar herramientas) · `ccem-stack` (convenciones) · `ccem-prompting` (Anti-Hack) ·
-`soutec-github` (flujo Git obligatorio).
+`soutec-github` (flujo Git obligatorio) · `ccem-rocas` (capa trimestral: la roca, el
+hito y el cierre — el hito emite los IDs).
 
-Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`.
+Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`; y de la
+capa de rocas: `/rock-plan`, `/rock-status`, `/rock-close`, `/export-ninety`.
 
 ## Constitución
 
@@ -36,13 +38,15 @@ Las dos reglas que más se violan sin querer:
 **Nunca** hagas commit, push ni merge directo a `main`. Todo pasa por rama + PR. Los
 hotfixes también.
 
-- **Toda rama nace de una tarjeta de Planner.** Formato: `tipo/<ID>-<slug>`
-  (`feature/PLN-023-login-usuarios`). Tipos: `feature` `fix` `hotfix` `docs` `chore`
-  `refactor` `experiment`. IDs: `PLN-XXX`, `RAM001`, `SP-XXX`…
-  **Si no tienes el ID, PREGUNTA. No lo inventes.**
+- **Toda rama nace de un hito de una roca.** Formato: `tipo/<ID-hito>-<slug>`
+  (`feature/REA-H3-captura-lead`). Tipos: `feature` `fix` `hotfix` `docs` `chore`
+  `refactor` `experiment`. El ID del hito es `<PREFIJO>-H<n>` (`REA-H3`), emitido en el
+  Paso 2 de la roca (`/rock-plan`). **Planner no se usa. Si no tienes el ID, PREGUNTA. No
+  lo inventes.**
 - La carpeta de spec lleva **el mismo ID y el mismo slug** que la rama:
-  `specs/<ID>-<slug>/`. Ese ID es el hilo que amarra tarjeta, spec, rama, commits, PR y
-  release. Sin él, la cadena está rota.
+  `specs/<ID-hito>-<slug>/`. Ese ID es el hilo que amarra hito, spec, rama, commits, PR y
+  release. Sin él, la cadena está rota. Un hito puede producir varios specs (mismo ID,
+  distinto slug); cada carpeta = una rama = un PR.
 - Commits: `tipo: descripción breve` (español, sin scope). Tipos: `feat` `fix` `docs`
   `chore` `refactor` `test` `style` `build` `ci` `perf` `revert`. Un hotfix se commitea
   como `fix:`. Prohibidos: `update`, `cosas`, `ahora sí`.
