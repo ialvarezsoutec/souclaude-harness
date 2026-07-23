@@ -48,6 +48,15 @@ se redacta a mano: los datos ya existen en el YAML.
 `proxima_roca` registra la roca que hereda el trabajo, si la hay. La retrospectiva del cierre
 alimenta la apertura del trimestre siguiente — nunca se aplica a mitad de camino.
 
+## 6. Revisión de política de modelos
+
+Parte de la retro: resumir `progress/model-router.jsonl` del trimestre (lanzamientos por
+agente/clase, escaladas, fallbacks, rework) y contrastarlo con la matriz de la skill
+`ccem-model-router`. Ajustar la matriz si las escaladas superan el 10 % de los
+lanzamientos, si una celda concentra el rework (tier corto) o si una celda nunca falla
+(puede bajar un tier). Un hito sin líneas en el JSONL se anota como desviación del
+protocolo del orchestrator. Si no existe el archivo, se registra "sin datos" y listo.
+
 ## Reglas
 
 - No editar los criterios congelados al cerrar. Si hubo que cambiarlos, eso fue un ADR y una

@@ -1,5 +1,5 @@
 {
-  "harnessVersion": "2.0.0",
+  "harnessVersion": "2.1.0",
   "files": [
     { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned", "critical": true },
     { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned", "critical": true },
@@ -22,6 +22,7 @@
     { "id": "skill-ccem-stack", "src": "base/claude/skills/ccem-stack/SKILL.md", "dest": ".claude/skills/ccem-stack/SKILL.md", "policy": "managed" },
     { "id": "skill-ccem-prompting", "src": "base/claude/skills/ccem-prompting/SKILL.md", "dest": ".claude/skills/ccem-prompting/SKILL.md", "policy": "managed" },
     { "id": "skill-soutec-github", "src": "base/claude/skills/soutec-github/SKILL.md", "dest": ".claude/skills/soutec-github/SKILL.md", "policy": "managed" },
+    { "id": "skill-ccem-model-router", "src": "base/claude/skills/ccem-model-router/SKILL.md", "dest": ".claude/skills/ccem-model-router/SKILL.md", "policy": "managed" },
 
     { "id": "skill-spec-new", "src": "base/claude/skills/spec-new/SKILL.md", "dest": ".claude/skills/spec-new/SKILL.md", "policy": "managed" },
     { "id": "skill-adr-new", "src": "base/claude/skills/adr-new/SKILL.md", "dest": ".claude/skills/adr-new/SKILL.md", "policy": "managed" },

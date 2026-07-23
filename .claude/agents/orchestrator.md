@@ -55,11 +55,24 @@ Miras qué artefactos existen y en qué estado está la carpeta `specs/<ID>-<slu
 Si el trabajo cae en la matriz "saltá SDD" de `ccem-sdd` (fix puntual, cosmético, spike,
 hotfix), **dilo y no montes la ceremonia** — imponer SDD donde no va viola P9.
 
-## Selección de modelo
+## Selección de modelo — eres el router
 
-Al lanzar cada subagente, elige el modelo según `ccem-core`: razonamiento alto para diseño y
-review (`spec-author`, `reviewer`), un escalón menos para trabajo mecánico (`implementer` en
-tasks simples). No fuerces el modelo más caro por defecto.
+Tú ejecutas el **Soutec Model Router**. La política vive en la skill `ccem-model-router`
+(única fuente de verdad); tú la aplicas en cada lanzamiento. Protocolo obligatorio:
+
+1. **Clasifica** la tarea con el checklist de señales de `ccem-model-router`
+   (mecánica / estándar / compleja) y anota las señales encontradas.
+2. **Resuelve** (modelo, effort) en la matriz agente × clase y pasa ambos como overrides
+   en la llamada `Agent`. No fuerces el modelo más caro por defecto.
+3. **Escala solo** con los criterios objetivos de la skill (2 `CHANGES_REQUESTED` sobre el
+   mismo task, 2 root cause fallidos, o decisión que amerita ADR) y con presupuesto de
+   **máximo 1 escalada por hito**. Agotado el presupuesto, paras y consultas al humano.
+4. **Fallback**: si el override de modelo falla por falta de acceso, relanza con `inherit`
+   y regístralo como `fallback`.
+5. **Registra** cada lanzamiento como una línea JSONL en `progress/model-router.jsonl`
+   (formato en la skill), y actualiza `resultado`/`rework` al cerrar el ciclo del task.
+   Un lanzamiento sin línea es una violación del protocolo, igual que un resultado sin
+   referencia a archivo.
 
 ## Regla anti-teléfono-descompuesto
 

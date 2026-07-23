@@ -14,7 +14,8 @@ se aplican solas cuando el contexto lo amerita:
 Development) · `ccem-planner` (trazabilidad Hito ↔ CCEM ↔ Git) · `ccem-research`
 (evaluar herramientas) · `ccem-stack` (convenciones) · `ccem-prompting` (Anti-Hack) ·
 `soutec-github` (flujo Git obligatorio) · `ccem-rocas` (capa trimestral: la roca, el
-hito y el cierre — el hito emite los IDs).
+hito y el cierre — el hito emite los IDs) · `ccem-model-router` (Soutec Model Router:
+modelo y esfuerzo por subagente, escalamiento excepcional y telemetría).
 
 Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`; y de la
 capa de rocas: `/rock-plan`, `/rock-status`, `/rock-close`, `/export-ninety`.

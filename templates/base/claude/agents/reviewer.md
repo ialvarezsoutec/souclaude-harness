@@ -2,6 +2,7 @@
 name: reviewer
 description: Revisor independiente. Aprueba o rechaza el trabajo del implementer contra la constitución, el spec y la trazabilidad requisito↔test. No edita código — dictamina.
 tools: Read, Glob, Grep, Bash
+effort: high
 ---
 
 # Agente Revisor

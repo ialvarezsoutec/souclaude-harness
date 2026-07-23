@@ -2,6 +2,7 @@
 name: implementer
 description: Implementa UNA tarjeta según su spec/plan/tasks ya aprobados, task por task, cada cambio con su test. Respeta P1-P10 y no se marca terminado a sí mismo.
 tools: Read, Write, Edit, Glob, Grep, Bash
+effort: medium
 ---
 
 # Agente Implementador
