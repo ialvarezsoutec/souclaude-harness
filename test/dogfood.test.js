@@ -16,6 +16,7 @@ const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
 const LOCAL_ONLY = new Set([
   '.claude/harness.json', // lockfile de este propio repo, no un template
   '.claude/scheduled_tasks.lock', // generado en runtime por el harness de Claude Code
+  '.claude/settings.local.json', // config local del dev, ya ignorada por el .gitignore que emite el harness
 ])
 
 function walkClaudeDir() {
