@@ -2,6 +2,34 @@
 
 El harness y el CLI se versionan juntos.
 
+## [2.1.0] — no publicado
+
+Soutec Model Router: cada subagente corre con el mejor modelo posible según el triángulo
+Calidad / Velocidad / Costo. El orchestrator es el router; la política es declarativa.
+
+### Agregado
+
+- **Skill `ccem-model-router`** (distribuida por el manifest, policy managed): única fuente
+  de verdad de la política de ruteo — clasificación de tarea (mecánica/estándar/compleja),
+  checklist de señales de dificultad, matriz agente × clase → (modelo, effort), escalamiento
+  excepcional (criterios objetivos + máximo 1 escalada por hito + fallback a `inherit`) y
+  telemetría en `progress/model-router.jsonl` con revisión trimestral en `/rock-close`.
+  El mapeo rol → alias (Decisiones→`fable`, Ejecución→`sonnet`, Volumen→`haiku`) vive en
+  una sola tabla, el único lugar a actualizar cuando cambie la familia de modelos.
+
+### Cambiado
+
+- **`orchestrator`**: la sección "Selección de modelo" pasa de prosa orientativa a protocolo
+  de router obligatorio (clasificar → resolver overrides `model`/`effort` en la llamada
+  Agent → escalar solo con criterios y presupuesto → registrar cada lanzamiento en JSONL).
+- **`spec-author` y `reviewer`** suman `effort: high`, **`implementer`** suma
+  `effort: medium` en el frontmatter — red de seguridad para invocaciones sin orchestrator.
+  Se mantiene la decisión de **no** emitir `model:` en frontmatter: forzar un modelo rompe
+  a quien no lo tiene; el modelo se decide por invocación con fallback a `inherit`.
+- **`ccem-core`** enlaza su sección "Selección de modelo" con la política operable;
+  **`/rock-close`** suma el paso "Revisión de política de modelos" (umbral de escaladas
+  >10 %, rework por celda).
+
 ## [2.0.0] — no publicado
 
 Capa de rocas: el **hito** reemplaza a Planner como emisor de IDs. Implementa la Fase 0 de la
