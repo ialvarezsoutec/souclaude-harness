@@ -68,6 +68,8 @@ Los agentes **no redefinen** las reglas del harness; las cumplen. Fuente de verd
 - **`ccem-core`** — selección de modelo por rol (razonamiento alto para diseño/review).
 - **`soutec-github`** — nombres de rama, Conventional Commits en español, plantilla de PR.
   Nadie hace commit/merge a `main` ni crea tags/releases.
+- **`CLAUDE.md` (Idioma)** — todo agente responde en **español neutro**, tuteo, nunca voseo
+  rioplatense ("usa", no "usá"; "dilo", no "decilo"). Vale para la salida de cada rol.
 
 ## Resultados por disco, no por chat
 

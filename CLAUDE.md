@@ -70,10 +70,16 @@ de pasar al siguiente. PR draft tras 2-3 commits, no al final.
 
 ## Language
 
-Responder siempre en espanol.
-
-Conjugación en español: **tuteo (tú)**, no voseo (vos) ni tratamiento formal (usted).
+Responder siempre en **español neutro** (estándar panhispánico), **no** en español
+rioplatense/argentino. Aplica a **toda** salida: la sesión principal y **todos los
+subagentes** (`orchestrator`, `spec-author`, `implementer`, `reviewer` y cualquier otro).
 Es el estándar de la organización — aplica a toda respuesta, no solo al código.
+
+- **Conjugación: tuteo (tú)**, nunca voseo (vos) ni tratamiento formal (usted). Los
+  imperativos van en tuteo: `usa` (no "usá"), `ten` (no "tené"), `dilo` (no "decilo"),
+  `fíjate` (no "fijate"), `empieza` (no "empezá"), `haz` (no "hacé").
+- **Evita localismos rioplatenses** en la prosa ("che", "bárbaro", "recién ahí",
+  "acordate", "de una"). Prefiere vocabulario entendible en toda Hispanoamérica.
 
 **El dominio se nombra en el lenguaje del negocio (español)**: entidades, value objects,
 policies y métodos de puerto (`Ticket`, `ContextoDeNegocio`, `generar_respuesta`). Es
