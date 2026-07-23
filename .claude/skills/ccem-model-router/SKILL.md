@@ -94,7 +94,7 @@ escrita por el orchestrator (Bash, `>>`). Campos:
 
 ```json
 {"ts": "2026-07-23T15:04:00Z", "hito": "REA-H3", "agente": "implementer",
- "clase": "estandar", "senales": ["mas_de_3_archivos"], "modelo": "sonnet",
+ "clase": "estandar", "senales": ["mas_de_3_archivos"], "modelo": "opus",
  "effort": "medium", "resultado": "approved", "rework": 0, "motivo": null}
 ```
 
@@ -116,8 +116,8 @@ Un hito sin líneas en el JSONL es una violación visible del protocolo del orch
 | Rol (`ccem-core`) | Alias de modelo |
 |---|---|
 | **Decisiones** | `fable` |
-| **Ejecución** | `sonnet` |
-| **Volumen** | `haiku` |
+| **Ejecución** | `opus` |
+| **Volumen** | `sonnet` |
 
 Los IDs y precios concretos cambian con cada release: al actualizar esta tabla, verifica
 la doc oficial de Anthropic en vez de confiar en memoria. Se usan **aliases de familia**,

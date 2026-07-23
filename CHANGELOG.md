@@ -14,7 +14,7 @@ Calidad / Velocidad / Costo. El orchestrator es el router; la política es decla
   checklist de señales de dificultad, matriz agente × clase → (modelo, effort), escalamiento
   excepcional (criterios objetivos + máximo 1 escalada por hito + fallback a `inherit`) y
   telemetría en `progress/model-router.jsonl` con revisión trimestral en `/rock-close`.
-  El mapeo rol → alias (Decisiones→`fable`, Ejecución→`sonnet`, Volumen→`haiku`) vive en
+  El mapeo rol → alias (Decisiones→`fable`, Ejecución→`opus`, Volumen→`sonnet`) vive en
   una sola tabla, el único lugar a actualizar cuando cambie la familia de modelos.
 
 ### Cambiado
