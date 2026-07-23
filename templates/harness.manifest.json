@@ -1,10 +1,10 @@
 {
-  "harnessVersion": "1.0.0",
+  "harnessVersion": "1.1.0",
   "files": [
     { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned", "critical": true },
     { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned", "critical": true },
     { "id": "notes", "src": "base/notes.md", "dest": "notes.md", "render": true, "policy": "user-owned", "critical": true },
-    { "id": "agents-md", "src": "base/AGENTS.md", "dest": "AGENTS.md", "render": true, "policy": "user-owned" },
+    { "id": "agents-md", "src": "base/AGENTS.md", "dest": "AGENTS.md", "policy": "managed" },
 
     { "id": "readme", "src": "base/README.md", "dest": "README.md", "render": true, "policy": "user-owned", "when": "empty-repo" },
     { "id": "env-example", "src": "base/env.example", "dest": ".env.example", "policy": "user-owned", "when": "empty-repo" },
@@ -28,8 +28,8 @@
     { "id": "skill-constitution-check", "src": "base/claude/skills/constitution-check/SKILL.md", "dest": ".claude/skills/constitution-check/SKILL.md", "policy": "managed" },
     { "id": "skill-harness-upgrade", "src": "base/claude/skills/harness-upgrade/SKILL.md", "dest": ".claude/skills/harness-upgrade/SKILL.md", "policy": "managed" },
 
-    { "id": "agent-leader", "src": "base/claude/agents/leader.md", "dest": ".claude/agents/leader.md", "policy": "managed" },
-    { "id": "agent-spec-author", "src": "base/claude/agents/spec_author.md", "dest": ".claude/agents/spec_author.md", "policy": "managed" },
+    { "id": "agent-orchestrator", "src": "base/claude/agents/orchestrator.md", "dest": ".claude/agents/orchestrator.md", "policy": "managed" },
+    { "id": "agent-spec-author", "src": "base/claude/agents/spec-author.md", "dest": ".claude/agents/spec-author.md", "policy": "managed" },
     { "id": "agent-implementer", "src": "base/claude/agents/implementer.md", "dest": ".claude/agents/implementer.md", "policy": "managed" },
     { "id": "agent-reviewer", "src": "base/claude/agents/reviewer.md", "dest": ".claude/agents/reviewer.md", "policy": "managed" },
     { "id": "agent-security-evidence-compiler", "src": "base/claude/agents/security-evidence-compiler.md", "dest": ".claude/agents/security-evidence-compiler.md", "policy": "managed" },
