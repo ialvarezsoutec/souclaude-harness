@@ -19,7 +19,6 @@ allowed-tools:
   - Bash(git branch *)
   - Bash(git diff *)
   - Bash(git log *)
-  - Bash(python3 ${CLAUDE_SKILL_DIR}/scripts/render_security_report.py *)
 ---
 
 # IT Security Review Workflow
@@ -290,9 +289,11 @@ Pásale:
 - spec y resumen de remediación cuando existan;
 - resultados de pruebas;
 - review final;
-- estado final calculado;
-- ruta del renderer:
-  `${CLAUDE_SKILL_DIR}/scripts/render_security_report.py`.
+- estado final calculado.
+
+El agente escribe `IT-Security-Review.md` con el formato de autoría de la skill
+`soutec-md-a-pdf` y genera el PDF invocando esa misma skill (motor `md_to_pdf.py`,
+ReportLab). No le pases ni uses un renderer embebido.
 
 El agente debe generar:
 
