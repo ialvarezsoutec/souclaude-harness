@@ -26,7 +26,7 @@ ambigüedad real, no para convertir cada pedido en un interrogatorio.
 
 ## Por qué hace falta
 
-Un agente al que se le pide "hacé que los tests pasen" tiene dos caminos: arreglar el
+Un agente al que se le pide "haz que los tests pasen" tiene dos caminos: arreglar el
 código, o arreglar el test. El segundo es más fácil.
 
 Esto no es mala fe del modelo: le diste una función objetivo mal especificada y la
@@ -44,7 +44,7 @@ optimizó. La solución está en el prompt, no en el reto posterior.
 
 ## Restricciones
 - Si algo es ambiguo o parece mal: para y pregunta. No adivines ni reinterpretes.
-- No modificar los tests para que pasen. Si un test está mal, decilo y para.
+- No modificar los tests para que pasen. Si un test está mal, dilo y para.
 - No hardcodear valores para satisfacer un caso.
 - No mockear la cosa que se está probando.
 - No envolver en try/except para silenciar un error que no entiendes.
@@ -92,7 +92,7 @@ que un diff.
 
 | No escribas | Escribe |
 |---|---|
-| "Hacé que los tests pasen" | "Arregla la causa de que falle `test_x`. No toques el test." |
+| "Haz que los tests pasen" | "Arregla la causa de que falle `test_x`. No toques el test." |
 | "Mejorá esto" | "Bajá el p99 de `/search` de 800 ms a <200 ms. Medí antes y después." |
 | "Arregla los bugs" | "`parseDate` devuelve el día anterior en UTC-3. Reproduce y arregla." |
 | "Refactorizá cuando toques el archivo" | (nada — eso es scope creep, viola P8) |

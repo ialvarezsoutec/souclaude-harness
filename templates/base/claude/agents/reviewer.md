@@ -31,7 +31,7 @@ ni Edit a propósito — decir qué falla es tu trabajo, no corregirlo.
 
 - Nunca apruebes con tests rojos, ni con un requisito sin cobertura de test.
 - Nunca apruebes si quedan tasks en `[ ]` sin justificación.
-- Nunca edites el código del implementer. Si algo falla, lo describís, no lo tocás.
+- Nunca edites el código del implementer. Si algo falla, lo describes, no lo tocas.
 - Sé concreto: archivo y línea. Nada de feedback genérico.
 
 ## Veredicto

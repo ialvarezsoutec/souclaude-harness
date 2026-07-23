@@ -1,6 +1,6 @@
 ---
 name: spec-new
-description: Arranca una feature con Spec-Driven Development. Crea la rama y specs/<ID-hito>-<slug>/ con spec, plan y tasks desde los templates, y entrevista para llenar la spec. Requiere el ID del hito y sus criterios de aceptación congelados. Usá --lite para la variante comprimida.
+description: Arranca una feature con Spec-Driven Development. Crea la rama y specs/<ID-hito>-<slug>/ con spec, plan y tasks desde los templates, y entrevista para llenar la spec. Requiere el ID del hito y sus criterios de aceptación congelados. Usa --lite para la variante comprimida.
 argument-hint: <REA-H3> <slug-corto> [--lite]
 disable-model-invocation: true
 ---
@@ -19,7 +19,7 @@ El ID (`REA-H3`, `PAC-H2`, `PLN-H1`…) es el hilo que amarra el hito, la carpet
 rama, los commits, el PR, el release y el despliegue. Una rama sin ID rompe la cadena. **El
 emisor es el hito, definido en el Paso 2 de la roca (`/rock-plan`). Planner no se usa.**
 
-Si `$1` no parece un ID de hito válido (`<PREFIJO>-H<n>`): **para y pedilo. No lo inventes.**
+Si `$1` no parece un ID de hito válido (`<PREFIJO>-H<n>`): **para y pídelo. No lo inventes.**
 Si el hito todavía no existe, se define primero en el plan de la roca.
 
 Esto vale también para hotfixes: la urgencia cambia la prioridad, no el procedimiento.
@@ -44,7 +44,7 @@ inventes requisitos que el hito no soporta (Anti-Hack, `ccem-prompting`).
 ## 3. ¿Aplica SDD?
 
 Lee la skill `ccem-sdd`. Si esto es un bug fix puntual, un ajuste cosmético, un spike o un
-script one-off, **decilo y no crees nada**: la ceremonia inútil viola P9. Ofrecé hacer el
+script one-off, **dilo y no crees nada**: la ceremonia inútil viola P9. Ofrece hacer el
 trabajo directo.
 
 Si dudas entre completo y `--lite`, pregunta cuánto estima el cambio.
@@ -78,7 +78,7 @@ criterio: una carpeta de spec = una rama = un PR.
 
 ## 5. Entrevistar
 
-Empezá por **Goals** y **Non-goals**, en ese orden, y no sigas hasta que estén: son la parte
+Empieza por **Goals** y **Non-goals**, en ese orden, y no sigas hasta que estén: son la parte
 que decide si la feature sale bien. Los Goals nacen de los criterios de aceptación del hito; los
 Non-goals, de su no-alcance. De a una sección. No llenes la spec entera y se la muestres al
 final — eso es justo lo que SDD trata de evitar.

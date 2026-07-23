@@ -76,7 +76,7 @@ passwords con la librería estándar del stack"*. Típicamente 8-12 tasks por fe
 | Hotfix en producción | No | ADR post-hoc |
 | Fix de typo | No | Overhead innecesario |
 
-Si el pedido cae en la columna "No", **decilo y hacé el trabajo**. Ceremonia que no
+Si el pedido cae en la columna "No", **dilo y haz el trabajo**. Ceremonia que no
 sirve es una violación de P7.
 
 ## SDD Lite
@@ -105,4 +105,4 @@ No son burocracia. Son el método.
   que no está excluido explícitamente, la spec está incompleta.
 - Si el plan contradice la constitución, **se corrige el plan**, no la constitución.
 - Si existe `specs/<slug>/`, léelo antes de tocar código. No improvises fuera del
-  plan. Si el plan está mal, decilo y corregilo — no lo esquives en silencio.
+  plan. Si el plan está mal, dilo y corregilo — no lo esquives en silencio.

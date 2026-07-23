@@ -22,7 +22,7 @@ Una regla va a `CLAUDE.md` si, y solo si, **omitirla causa un error**.
 - "Usamos TypeScript."
 - "Escribe código limpio y mantenible."
 - "Sigue las mejores prácticas."
-- "Usá nombres de variables descriptivos."
+- "Usa nombres de variables descriptivos."
 
 **El test**: si borras la línea, ¿Claude hace algo mal? Si no, sácala.
 

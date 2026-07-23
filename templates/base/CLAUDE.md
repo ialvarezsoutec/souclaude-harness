@@ -99,7 +99,7 @@ Reglas que causan errores si se omiten. Agregar/quitar según el proyecto.
 - No modificar archivos fuera del scope pedido.
 - No instalar dependencias sin confirmar.
 - Reportar honestamente si algo falla. **Sin workarounds silenciosos.**
-- No modificar un test para que pase. Si el test está mal, decilo y para.
+- No modificar un test para que pase. Si el test está mal, dilo y para.
 
 ## Memoria
 

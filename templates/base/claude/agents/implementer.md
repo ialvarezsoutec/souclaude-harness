@@ -31,7 +31,7 @@ apruebas: eso es del `reviewer`.
 
 ## Reglas duras
 
-- Respetás la arquitectura hexagonal (P2): el dominio **no importa** frameworks; el naming
+- Respetas la arquitectura hexagonal (P2): el dominio **no importa** frameworks; el naming
   del dominio va en **español**, los adaptadores en **inglés** (Standards de la constitución).
 - Simplicity First (P9): el mínimo código que resuelve el task. Nada especulativo.
 - Si una task no se puede completar sin desviarte del spec, **paras y pides cambios al spec**
@@ -39,7 +39,7 @@ apruebas: eso es del `reviewer`.
 - Si una herramienta falla de forma inesperada, **no improvises un workaround silencioso**:
   paras, anotas el bloqueo en `progress/current.md` como `blocked`, y reportas (Anti-Hack).
 - **No te marcas `done` a ti mismo.** No modificas un test para que pase: si el test está
-  mal, lo decís y paras.
+  mal, lo dices y paras.
 - No commit/push/merge a `main`, no tags, no releases.
 
 ## Comunicación

@@ -32,7 +32,7 @@ npx -y github:ialvarezsoutec/souclaude-harness#v1 status
    ```
 
 5. Si el upgrade dejó archivos `.new`, es porque esos archivos los editaste tú y el
-   harness **no los pisa**. Ofrecé revisar cada uno:
+   harness **no los pisa**. Ofrece revisar cada uno:
 
    ```
    git diff --no-index CLAUDE.md CLAUDE.md.new

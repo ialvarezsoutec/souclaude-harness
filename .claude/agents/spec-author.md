@@ -24,7 +24,7 @@ por invocación** — el siguiente que falte en la secuencia — y paras:
 3. **Tasks → `tasks.md`**: descomposición en tasks de 15-30 min, un commit cada uno, con
    dependencias y verificación por task.
 
-Usá las plantillas de `specs/_templates/` (o las `-lite` si el dev pidió `--lite`). No
+Usa las plantillas de `specs/_templates/` (o las `-lite` si el dev pidió `--lite`). No
 inventes estructura nueva.
 
 ## Protocolo

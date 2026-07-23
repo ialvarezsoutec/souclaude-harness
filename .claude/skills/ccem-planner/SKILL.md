@@ -21,7 +21,7 @@ El hito se define en el Paso 2 de la planificación de la roca (`/rock-plan`), c
 `<PREFIJO>-H<n>` (ej. `REA-H3`). Es el momento en que existe la información para nombrar el
 trabajo y todavía no existe la deuda de haberlo inventado antes.
 
-Si te piden implementar algo y no hay ID de hito: **pedilo**. No inventes uno, no arranques sin
+Si te piden implementar algo y no hay ID de hito: **pídelo**. No inventes uno, no arranques sin
 él. Una rama sin ID rompe la trazabilidad y es el anti-pattern más común. **Planner no se usa:
 el emisor es el hito.**
 
@@ -68,7 +68,7 @@ para que `grep -r REA-H3 specs/` y `git log --grep="REA-H3"` devuelvan lo mismo.
 criterio: **una carpeta de spec produce una rama y un PR**. Si el hito aterriza como un cambio
 coherente sobre un sistema, es uno; si toca el daemon, la UI y el pipeline, son tres.
 
-Usá `/spec-new REA-H3 captura-lead` para armar todo esto de una.
+Usa `/spec-new REA-H3 captura-lead` para armar todo esto de una.
 
 ## Recuperar contexto desde cualquier punto
 

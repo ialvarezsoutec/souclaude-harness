@@ -17,7 +17,7 @@
 
 > **Excepción documentada (adaptadores).** Un task que implementa un adaptador completo
 > puede llegar a 2-3 horas si es un componente único y verificable en aislamiento, y
-> fragmentarlo no mejoraría la testabilidad. Si usas esta excepción, **decilo acá abajo
+> fragmentarlo no mejoraría la testabilidad. Si usas esta excepción, **dilo acá abajo
 > y justifícalo**. No es un permiso general para tasks largos.
 
 ---
