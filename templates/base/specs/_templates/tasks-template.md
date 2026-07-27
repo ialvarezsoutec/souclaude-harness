@@ -13,7 +13,13 @@
 - Si un task toma 2+ horas, **fragmentarlo**.
 - Si un task toma <5 minutos, **combinarlo con otro**.
 - Total típico: 8-20 tasks por feature.
-- **Un commit por task.** No en batch al final.
+- **Un commit por task**, con footer `Refs: <ID-task>` en el cuerpo. No en batch al final.
+- **ID de task**: `<ID-hito>-T<nnn>` (ej. `TNP-H1-T001`). Numeración por **bloques de 100
+  según el orden de reserva del spec en `/rock-plan`**: 1.er spec del hito desde `T001`,
+  2.º desde `T101`, 3.º desde `T201`. Un spec creado fuera de `/rock-plan` toma el
+  siguiente centenar libre (`grep -r "<ID-hito>-T" specs/<ID-hito>-*/`). Dentro del
+  archivo, las referencias cortas (`T001`) bastan; el ID completo va en encabezados,
+  progreso, commits y telemetría.
 
 > **Excepción documentada (adaptadores).** Un task que implementa un adaptador completo
 > puede llegar a 2-3 horas si es un componente único y verificable en aislamiento, y
@@ -24,10 +30,10 @@
 
 ## Task inventory
 
-### T1: [Nombre descriptivo del task]
+### <ID-hito>-T001: [Nombre descriptivo del task]
 
 - **Estimación**: [XX min]
-- **Dependencies**: [ninguna | T0, T2]
+- **Dependencies**: [ninguna | T002, T003]
 - **Files**: `[path exacto — ej: src/auth/token.ts]`
 - **Descripción**:
   [Lógica concreta en 1-3 líneas — ejemplo: "Implementar función `validateToken`
@@ -38,10 +44,10 @@
 
 ---
 
-### T2: [Nombre descriptivo]
+### <ID-hito>-T002: [Nombre descriptivo]
 
 - **Estimación**: [XX min]
-- **Dependencies**: T1
+- **Dependencies**: T001
 - **Files**: `[path]`
 - **Descripción**: [lógica concreta]
 - **Verificación**:
@@ -49,7 +55,7 @@
 
 ---
 
-### T3 — T[N]: [continuar según necesario]
+### <ID-hito>-T003 — T[NNN]: [continuar según necesario]
 
 ---
 
@@ -58,20 +64,20 @@
 Diagrama de dependencias (asterisco = puede paralelizarse):
 
 ```
-T1 ──▶ T2 ──▶ T3
-              │
-              ▼
-         T4 ──▶ T5 ──▶ T6*
-                        │
-                        T7*
-                        │
-                        ▼
-                        T8 ──▶ T9 ──▶ T10
+T001 ──▶ T002 ──▶ T003
+                   │
+                   ▼
+             T004 ──▶ T005 ──▶ T006*
+                                │
+                                T007*
+                                │
+                                ▼
+                                T008 ──▶ T009 ──▶ T010
 ```
 
 ### Paralelización posible
-- T6 y T7 pueden ejecutarse en paralelo (subagentes)
-- T[X] es independiente de T[Y]
+- T006 y T007 pueden ejecutarse en paralelo (subagentes)
+- T[XXX] es independiente de T[YYY]
 
 ---
 
@@ -89,18 +95,18 @@ Pausas obligatorias para review del developer:
 
 | Batch | Tasks | Tiempo estimado |
 |-------|-------|-----------------|
-| Setup | T1-T3 | ~60 min |
-| Core logic | T4-T8 | ~3 horas |
-| Integration | T9-T11 | ~90 min |
-| Testing + docs | T12-T14 | ~90 min |
+| Setup | T001-T003 | ~60 min |
+| Core logic | T004-T008 | ~3 horas |
+| Integration | T009-T011 | ~90 min |
+| Testing + docs | T012-T014 | ~90 min |
 | **Total** | **14 tasks** | **~7 horas** |
 
 ---
 
 ## Progreso (actualizar durante ejecución)
 
-- [ ] T1: pendiente
-- [ ] T2: pendiente
+- [ ] <ID-hito>-T001: pendiente
+- [ ] <ID-hito>-T002: pendiente
 
 ---
 
@@ -109,7 +115,9 @@ Pausas obligatorias para review del developer:
 - [ ] Todos los tasks ejecutados y verificados
 - [ ] Tests pasando (unit + integration)
 - [ ] Documentación actualizada (`docs/`)
-- [ ] ADRs creados si aplica (`/adr-new`)
+- [ ] ADRs creados si aplica (`/adr-new`) — **obligatorio si algún task cambió la
+      arquitectura** (puerto nuevo, contrato público, dependencia entre capas): doc en
+      `docs/` + ADR, o el `reviewer` rechaza
 - [ ] `notes.md` actualizado con hallazgos
 - [ ] Stakeholder firmó off (UAT)
 - [ ] PR mergeado

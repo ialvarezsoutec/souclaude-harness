@@ -23,7 +23,10 @@ por invocación** — el siguiente que falte en la secuencia — y paras:
    contracts y el alignment contra la constitución principio por principio. Toda decisión
    significativa se respalda con un ADR (`/adr-new`); herramienta nueva pasa por `ccem-research`.
 3. **Tasks → `tasks.md`**: descomposición en tasks de 15-30 min, un commit cada uno, con
-   dependencias y verificación por task.
+   dependencias y verificación por task. **Tú emites los IDs de task**: `<ID-hito>-T<nnn>`,
+   numerando por bloques de 100 según el orden de reserva del spec en `/rock-plan` (1.er
+   spec desde `T001`, 2.º desde `T101`; fuera de /rock-plan: el siguiente centenar libre
+   por `grep -r "<ID-hito>-T" specs/<ID-hito>-*/`).
 
 Usa las plantillas de `specs/_templates/` (o las `-lite` si el dev pidió `--lite`). No
 inventes estructura nueva.

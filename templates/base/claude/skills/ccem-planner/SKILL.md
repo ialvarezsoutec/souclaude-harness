@@ -32,8 +32,8 @@ Esto incluye los hotfixes. Un incidente urgente cambia la **prioridad**, no el
 
 ```
 Roca <TRIMESTRE>-<PREFIJO>
- └─ Hito <PREFIJO>-H<n> → Carpeta specs/ → Rama Git → Commits → PR → Squash → Tag → Done
-             └──────────────── el mismo ID en todos ────────────────┘
+ └─ Hito <PREFIJO>-H<n> → Carpeta specs/ → Rama Git → Tasks <ID-hito>-T<nnn> → Commits → PR → Squash → Tag → Done
+             └──────────────────── el mismo ID en todos ────────────────────┘
 ```
 
 | Prefijo | Proyecto |
@@ -58,7 +58,8 @@ Dado el hito `REA-H3` + slug `captura-lead`:
 | Hito | `<PREFIJO>-H<n>` | `REA-H3` |
 | Rama | `<tipo>/<PREFIJO>-H<n>-<slug>` | `feature/REA-H3-captura-lead` |
 | **Carpeta de spec** | `specs/<PREFIJO>-H<n>-<slug>/` | `specs/REA-H3-captura-lead/` |
-| Commit | `tipo: descripción` (footer `· Refs: REA-H3` en los significativos) | `feat: capturar lead al cierre de la visita` |
+| **Task** | `<PREFIJO>-H<n>-T<nnn>` (emitido por el `spec-author` en `tasks.md`; bloques de 100 por spec según el orden de reserva en `/rock-plan`) | `REA-H3-T001` |
+| Commit | `tipo: descripción` (footer `Refs:` — **obligatorio con el ID de task en el commit-por-task**, ej. `Refs: REA-H3-T003`; con el ID de hito en los demás significativos) | `feat: capturar lead al cierre de la visita` |
 | Tag | `vX.Y.Z`, con el ID en el mensaje | `v1.2.0` · `"feat: captura de lead (REA-H3)"` |
 
 **La carpeta de spec lleva el mismo slug que la rama.** No son dos slugs distintos: es el mismo,

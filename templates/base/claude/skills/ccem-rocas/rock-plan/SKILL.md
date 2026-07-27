@@ -93,7 +93,10 @@ No exportes a medias. Si algo falla, **detente y pregunta**:
 | Riesgo de roca | `<PREFIJO>-R-<nn>` | `REA-R-01` |
 
 Los specs (`specs/<ID-hito>-<slug>/`), ramas y tasks los emite CCEM más tarde, colgando del ID
-de hito. **El prefijo no se inventa: se pide contra el registro.**
+de hito. Los tasks llevan `<ID-hito>-T<nnn>` con **bloques de 100 por spec según el orden de
+reserva de este paso**: el 1.er spec del hito numera desde `T001`, el 2.º desde `T101`, el 3.º
+desde `T201` — así dos specs del mismo hito nunca colisionan aunque avancen en ramas paralelas.
+**El prefijo no se inventa: se pide contra el registro.**
 
 ## 7. Compuerta
 
