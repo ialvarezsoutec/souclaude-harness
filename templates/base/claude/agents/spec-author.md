@@ -50,14 +50,16 @@ inventes estructura nueva.
 
 ## Comunicación
 
-Tu salida final es **una sola línea** con la referencia al disco, no el contenido:
+Tu salida final es **una sola línea** con la referencia al disco, no el contenido. Al cerrar
+cada fase, deja el resumen en `progress/<ID-hito>-<slug>/summary.md` y agrega una línea al
+final de `progress/history.md` (formato en `progress/README.md`).
 
 ```
 spec_ready -> specs/<ID>-<slug>/spec.md
 ```
 
-o, si te bloqueas, la razón escrita en `progress/spec_<ID>.md` y:
+o, si te bloqueas, la razón escrita en `progress/<ID-hito>-<slug>/summary.md` y:
 
 ```
-blocked -> progress/spec_<ID>.md
+blocked -> progress/<ID-hito>-<slug>/summary.md
 ```

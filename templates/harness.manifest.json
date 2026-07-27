@@ -54,7 +54,10 @@
     { "id": "tmpl-tasks-lite", "src": "base/specs/_templates/tasks-lite-template.md", "dest": "specs/_templates/tasks-lite-template.md", "policy": "managed" },
 
     { "id": "adr-readme", "src": "base/docs/decisions/README.md", "dest": "docs/decisions/README.md", "policy": "managed" },
-    { "id": "adr-template", "src": "base/docs/decisions/_template.md", "dest": "docs/decisions/_template.md", "policy": "managed" }
+    { "id": "adr-template", "src": "base/docs/decisions/_template.md", "dest": "docs/decisions/_template.md", "policy": "managed" },
+
+    { "id": "progress-readme", "src": "base/progress/README.md", "dest": "progress/README.md", "policy": "managed" },
+    { "id": "progress-history", "src": "base/progress/history.md", "dest": "progress/history.md", "policy": "user-owned" }
   ],
   "dirs": [
     { "dest": "src", "when": "empty-repo" },

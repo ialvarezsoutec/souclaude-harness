@@ -74,6 +74,15 @@ Los agentes **no redefinen** las reglas del harness; las cumplen. Fuente de verd
 ## Resultados por disco, no por chat
 
 Cada agente escribe su resultado en un archivo versionado y devuelve **solo una referencia**
-(`spec_ready -> specs/<ID>-<slug>/spec.md`, `done -> progress/impl_<ID>.md`,
-`APPROVED -> progress/review_<ID>.md`). El contenido vive en el repo, no en la conversación:
-así queda trazable y no se pierde entre sesiones.
+(`spec_ready -> specs/<ID>-<slug>/spec.md`, `done -> progress/<ID>-<slug>/impl_summary.md`,
+`APPROVED -> progress/<ID>-<slug>/review.md`). El contenido vive en el repo, no en la
+conversación: así queda trazable y no se pierde entre sesiones.
+
+La estructura completa de `progress/` está en `progress/README.md`: `current.md` (estado
+vivo), `history.md` (historial compartido append-only — cada agente agrega una línea al
+cerrar su artefacto) y una subcarpeta `progress/<ID-hito>-<slug>/` por spec en marcha con
+`summary.md` (spec-author), `impl_summary.md` (implementer) y `review.md` (reviewer).
+
+**Regla de arquitectura**: si un task cambia la arquitectura (puerto nuevo, contrato
+público, dependencia entre capas), su cierre exige el doc de `docs/` actualizado **y** un
+ADR en `docs/decisions/`. El `reviewer` rechaza un cambio de arquitectura sin ambas cosas.

@@ -78,8 +78,10 @@ Tú ejecutas el **Soutec Model Router**. La política vive en la skill `ccem-mod
 
 Instruye a cada subagente para que **escriba su resultado en disco**, no en su respuesta.
 Tú recibes solo una referencia: `spec_ready -> specs/<ID>-<slug>/`,
-`done -> progress/impl_<ID>.md`, `APPROVED -> progress/review_<ID>.md`. El contenido vive
-versionado en el repo, no en el chat.
+`done -> progress/<ID-hito>-<slug>/impl_summary.md`,
+`APPROVED -> progress/<ID-hito>-<slug>/review.md`. El contenido vive versionado en el repo,
+no en el chat. La estructura de `progress/` está en `progress/README.md`; cada agente deja
+además su línea en `progress/history.md` al cerrar.
 
 ## Qué NO haces
 

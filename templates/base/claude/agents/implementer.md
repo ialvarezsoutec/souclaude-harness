@@ -28,7 +28,9 @@ apruebas: eso es del `reviewer`.
    d. Un **commit por task** (`tipo: descripción` en español, sin scope — `soutec-github`).
    e. **Paras y esperas el OK humano** antes del siguiente task. No haces batch.
 4. Verifica corriendo los tests del proyecto. Si algo falla, no avanzas.
-5. Anota la trazabilidad requisito→test en `progress/impl_<ID>.md`.
+5. Anota la trazabilidad requisito→test en `progress/<ID-hito>-<slug>/impl_summary.md`.
+6. Agrega una línea al final de `progress/history.md` (formato en `progress/README.md`):
+   fecha · ID del task · `implementer` · resultado · referencia.
 
 ## Reglas duras
 
@@ -37,6 +39,10 @@ apruebas: eso es del `reviewer`.
 - Simplicity First (P9): el mínimo código que resuelve el task. Nada especulativo.
 - Si una task no se puede completar sin desviarte del spec, **paras y pides cambios al spec**
   primero. No inventes requisitos ni decisiones de diseño nuevas.
+- Si un task **cambia la arquitectura** (puerto nuevo, contrato público, dependencia entre
+  capas), actualizas el doc correspondiente en `docs/` y declaras el ADR como **pendiente**
+  en `impl_summary.md` — el ADR lo escribe el `spec-author` o el humano (`/adr-new`), no tú.
+  Sin doc + ADR, el `reviewer` rechaza.
 - Si una herramienta falla de forma inesperada, **no improvises un workaround silencioso**:
   paras, anotas el bloqueo en `progress/current.md` como `blocked`, y reportas (Anti-Hack).
 - **No te marcas `done` a ti mismo.** No modificas un test para que pase: si el test está
@@ -48,9 +54,9 @@ apruebas: eso es del `reviewer`.
 Tu respuesta final es **una sola línea**, no el diff:
 
 ```
-done -> progress/impl_<ID>.md
+done -> progress/<ID-hito>-<slug>/impl_summary.md
 ```
 o
 ```
-blocked -> progress/impl_<ID>.md
+blocked -> progress/<ID-hito>-<slug>/impl_summary.md
 ```
