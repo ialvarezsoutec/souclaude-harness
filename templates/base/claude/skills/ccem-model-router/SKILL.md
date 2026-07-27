@@ -93,14 +93,25 @@ Nunca se aborta un hito por falta de acceso a un modelo.
 escrita por el orchestrator (Bash, `>>`). Campos:
 
 ```json
-{"ts": "2026-07-23T15:04:00Z", "hito": "REA-H3", "agente": "implementer",
- "clase": "estandar", "senales": ["mas_de_3_archivos"], "modelo": "opus",
- "effort": "medium", "resultado": "approved", "rework": 0, "motivo": null}
+{"ts": "2026-07-23T15:04:00Z", "hito": "REA-H3", "task": "REA-H3-T003",
+ "agente": "implementer", "clase": "estandar", "senales": ["mas_de_3_archivos"],
+ "modelo": "opus", "effort": "medium", "resultado": "approved", "rework": 0,
+ "motivo": null, "tokens_in": 42150, "tokens_out": 8300, "costo_usd": 0.94,
+ "medicion": "estimado"}
 ```
 
+- `task`: ID completo del task (`<PREFIJO>-H<n>-T<nnn>`) cuando el lanzamiento ejecuta
+  uno; `null` en lanzamientos de fase (ej. spec-author escribiendo `spec.md`).
 - `resultado`: `approved` | `changes_requested` | `escalated` | `fallback` | `aborted`.
 - `rework`: número de devoluciones del reviewer sobre ese task.
 - `motivo`: obligatorio solo en escaladas y fallbacks; `null` en el resto.
+- `tokens_in` / `tokens_out`: enteros, o `null` si no hay dato.
+- `costo_usd`: tokens × tabla de precios del §7; `null` si no hay tokens.
+- `medicion`: `"medido"` **solo** cuando el resultado de la herramienta Agent reporta el
+  uso real de tokens. Si no lo reporta, el orchestrator **estima** por tamaño de
+  artefactos (prompt enviado + archivos leídos/escritos, ~4 caracteres por token) y marca
+  `"estimado"`. **Regla de honestidad**: un `"estimado"` es orden de magnitud para
+  comparar celdas de la matriz — jamás se presenta como cifra contable ni de facturación.
 
 **Aprendizaje = ritual humano, sin ML.** En `/rock-close` se resume el JSONL del
 trimestre y se ajusta la matriz si:
@@ -123,3 +134,20 @@ Los IDs y precios concretos cambian con cada release: al actualizar esta tabla, 
 la doc oficial de Anthropic en vez de confiar en memoria. Se usan **aliases de familia**,
 no IDs versionados, y jamás se fija `model:` en el frontmatter de los agentes SDD:
 forzar un modelo rompe a quien no lo tiene (por eso existe el fallback a `inherit`).
+
+## 7. Tabla de precios (referencial)
+
+Para calcular `costo_usd` en la telemetría. USD por millón de tokens (verificados contra
+la doc oficial en julio 2026):
+
+| Alias | Input (USD/MTok) | Output (USD/MTok) |
+|---|---|---|
+| `fable` | 10.00 | 50.00 |
+| `opus` | 5.00 | 25.00 |
+| `sonnet` | 3.00 (intro 2.00 hasta 2026-08-31) | 15.00 (intro 10.00) |
+
+**Los precios cambian por release: verifica la doc oficial de Anthropic al actualizar esta
+tabla** — no confíes en valores de memoria. La tabla existe para que
+la estimación sea **reproducible** (mismo cálculo en todos los hitos), no para
+contabilidad. Al cambiar un precio, anótalo en el CHANGELOG del repo: los costos de
+trimestres distintos dejan de ser comparables si la tabla cambió en el medio.

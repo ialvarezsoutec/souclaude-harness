@@ -57,6 +57,11 @@ lanzamientos, si una celda concentra el rework (tier corto) o si una celda nunca
 (puede bajar un tier). Un hito sin líneas en el JSONL se anota como desviación del
 protocolo del orchestrator. Si no existe el archivo, se registra "sin datos" y listo.
 
+**Resumen de costo**: del mismo JSONL, total de `costo_usd` por hito y por task. Reporta
+primero el **% de líneas con `medicion: "medido"`** — si es bajo, el total es orden de
+magnitud, no cifra contable (regla de honestidad de `ccem-model-router` §5). Sirve para
+comparar celdas de la matriz y hitos entre sí, nunca para facturación.
+
 ## Reglas
 
 - No editar los criterios congelados al cerrar. Si hubo que cambiarlos, eso fue un ADR y una

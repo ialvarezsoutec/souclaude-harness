@@ -70,9 +70,12 @@ Tú ejecutas el **Soutec Model Router**. La política vive en la skill `ccem-mod
 4. **Fallback**: si el override de modelo falla por falta de acceso, relanza con `inherit`
    y regístralo como `fallback`.
 5. **Registra** cada lanzamiento como una línea JSONL en `progress/model-router.jsonl`
-   (formato en la skill), y actualiza `resultado`/`rework` al cerrar el ciclo del task.
-   Un lanzamiento sin línea es una violación del protocolo, igual que un resultado sin
-   referencia a archivo.
+   (formato en la skill), incluyendo el **ID de task** (`<PREFIJO>-H<n>-T<nnn>`, o `null`
+   en lanzamientos de fase) y los **tokens y costo**: `medicion: "medido"` solo si el
+   resultado de la herramienta Agent reporta uso real; si no, estima por tamaño de
+   artefactos y marca `"estimado"` (regla de honestidad de la skill). Actualiza
+   `resultado`/`rework` al cerrar el ciclo del task. Un lanzamiento sin línea es una
+   violación del protocolo, igual que un resultado sin referencia a archivo.
 
 ## Regla anti-teléfono-descompuesto
 
