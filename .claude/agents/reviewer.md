@@ -43,7 +43,10 @@ ni Edit a propósito — decir qué falla es tu trabajo, no corregirlo.
 Escribe el detalle en `progress/<ID-hito>-<slug>/review.md` con el veredicto, la tabla de
 trazabilidad requisito↔test, el estado de las tasks, el resultado del check de constitución,
 y los cambios requeridos si aplica. Agrega una línea al final de `progress/history.md`
-(formato en `progress/README.md`). Tu respuesta final es **una sola línea**:
+(formato en `progress/README.md`). **Espejo al Vault** (`VAULT_PATH`): copia `review.md` a
+`Project-<PREFIJO>/progress/` y mueve la tarjeta del task en
+`Project-<PREFIJO>/kanban.md` — a "Hecho" con `APPROVED`, de vuelta a "En curso" con
+`CHANGES_REQUESTED`. Tu respuesta final es **una sola línea**:
 
 ```
 APPROVED -> progress/<ID-hito>-<slug>/review.md

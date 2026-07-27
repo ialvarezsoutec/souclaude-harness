@@ -114,13 +114,15 @@ El SDD (4 fases de `ccem-sdd`) vive dentro de este ciclo, en las fases de ejecuc
 
 El ciclo **no termina en Done**: lo aprendido en la fase 8 alimenta la roca del trimestre siguiente.
 
-### Qué NO cruza al nivel ejecutivo
+### Qué cruza a cada nivel
 
-- Decisiones técnicas (stack, librerías) → `plan.md`, ADR
-- Pasos de implementación → `tasks.md`
-- Diagramas técnicos → `docs/`
-
-A Ninety y al Vault solo sube el nivel **hito**. Nunca specs ni tasks.
+- **A Ninety** solo sube el nivel **hito**. Nunca specs ni tasks: decisiones técnicas →
+  `plan.md`/ADR, pasos de implementación → `tasks.md`, diagramas → `docs/`.
+- **Al Vault** suben, además de la roca y sus hitos, los **espejos** de los artefactos
+  SDD (`Project-<PREFIJO>/specs/`), los resúmenes de progreso
+  (`Project-<PREFIJO>/progress/`) y el **kanban con estado vivo**
+  (`Project-<PREFIJO>/kanban.md`) — reglas en `progress/README.md`. El repo sigue siendo
+  la fuente de verdad técnica; el Vault es la vista multi-proyecto.
 
 ## Límite de WIP
 

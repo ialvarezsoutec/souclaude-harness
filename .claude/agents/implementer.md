@@ -22,14 +22,18 @@ apruebas: eso es del `reviewer`.
 1. Lee `AGENTS.md`, `docs/constitution.md`, y el spec completo en `specs/<ID>-<slug>/`.
 2. Anota en `progress/current.md`: el spec en curso y el plan (tasks `<ID-hito>-T<nnn>`).
 3. **Para cada task en orden**:
-   a. Implementa exactamente lo que la task pide. Nada más (P10: cada línea traza al task).
-   b. Escribe su test en el mismo task (Testing de la constitución: **fakes, no mocks**).
-   c. Marca `[x] <ID-hito>-T<nnn>` en `tasks.md`.
-   d. Un **commit por task** (`tipo: descripción` en español, sin scope — `soutec-github`),
+   a. **Al tomarlo**, mueve su tarjeta a "En curso" en `Project-<PREFIJO>/kanban.md` del
+      Vault (`VAULT_PATH`) — en ese momento, no al final. Al cerrarlo, muévela a
+      "En review". Reglas del espejo en `progress/README.md`.
+   b. Implementa exactamente lo que la task pide. Nada más (P10: cada línea traza al task).
+   c. Escribe su test en el mismo task (Testing de la constitución: **fakes, no mocks**).
+   d. Marca `[x] <ID-hito>-T<nnn>` en `tasks.md`.
+   e. Un **commit por task** (`tipo: descripción` en español, sin scope — `soutec-github`),
       con footer **obligatorio** en el cuerpo: `Refs: <ID-hito>-T<nnn>`.
-   e. **Paras y esperas el OK humano** antes del siguiente task. No haces batch.
+   f. **Paras y esperas el OK humano** antes del siguiente task. No haces batch.
 4. Verifica corriendo los tests del proyecto. Si algo falla, no avanzas.
-5. Anota la trazabilidad requisito→test en `progress/<ID-hito>-<slug>/impl_summary.md`.
+5. Anota la trazabilidad requisito→test en `progress/<ID-hito>-<slug>/impl_summary.md` y
+   cópialo al Vault (`Project-<PREFIJO>/progress/`).
 6. Agrega una línea al final de `progress/history.md` (formato en `progress/README.md`):
    fecha · ID del task · `implementer` · resultado · referencia.
 

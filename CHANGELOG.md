@@ -32,6 +32,14 @@ telemetría del router.
 - **`docs/vault-guide.md`** (solo este repo, no distribuido): guía de creación del Vault
   central multi-proyecto — estructura, archivos semilla (`id-registry.md`), quién escribe
   qué, relación Vault↔repos↔Ninety, concurrencia multi-persona.
+- **Espejo al Vault y estado vivo (kanban)**: los artefactos SDD y los resúmenes de
+  progreso se copian al Vault (`Project-<PREFIJO>/specs/` y `progress/`), y cada task
+  tiene tarjeta en `Project-<PREFIJO>/kanban.md` (formato plugin Kanban de Obsidian) que
+  los agentes mueven **al empezar** a trabajar — el tablero refleja el ahora, no el push
+  final; por eso el Vault vive en un repo aparte. Ruta vía `VAULT_PATH` en `.env`
+  (emitida en `env.example`); sin ella el espejo se omite sin bloquear y queda anotado en
+  `history.md`. Doctrina en `progress/README.md`; `ccem-planner` distingue ahora qué
+  cruza a Ninety (solo hito) vs al Vault (espejos + kanban).
 
 ### Cambiado
 

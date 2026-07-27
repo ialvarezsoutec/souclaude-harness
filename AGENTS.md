@@ -86,3 +86,8 @@ cerrar su artefacto) y una subcarpeta `progress/<ID-hito>-<slug>/` por spec en m
 **Regla de arquitectura**: si un task cambia la arquitectura (puerto nuevo, contrato
 público, dependencia entre capas), su cierre exige el doc de `docs/` actualizado **y** un
 ADR en `docs/decisions/`. El `reviewer` rechaza un cambio de arquitectura sin ambas cosas.
+
+**Espejo al Vault y estado vivo**: los artefactos SDD y los resúmenes de progreso se
+copian además al Vault (`VAULT_PATH`, repo aparte para no ensuciar este), y la tarjeta de
+cada task se mueve en `Project-<PREFIJO>/kanban.md` **al empezar** a trabajarla — el
+tablero refleja el ahora, no el último push. Reglas y formato en `progress/README.md`.

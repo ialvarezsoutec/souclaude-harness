@@ -35,6 +35,16 @@ test('progress: los templates de tasks usan IDs completos, no T1 a secas', () =>
   assert.doesNotMatch(lite, /\*\*T1\*\*/)
 })
 
+test('progress: el README de progress conserva la doctrina del espejo al Vault', () => {
+  const readme = fs.readFileSync(
+    path.join(REPO_ROOT, 'templates', 'base', 'progress', 'README.md'),
+    'utf8'
+  )
+  for (const marca of ['VAULT_PATH', 'kanban-plugin: board', 'vault_skip']) {
+    assert.ok(readme.includes(marca), `progress/README.md perdio la marca ${marca}`)
+  }
+})
+
 test('progress: la telemetria del router conserva los campos de costo', () => {
   const skill = fs.readFileSync(
     path.join(REPO_ROOT, 'templates', 'base', 'claude', 'skills', 'ccem-model-router', 'SKILL.md'),

@@ -26,6 +26,8 @@ principal. La orquestación es **opt-in**: solo corre cuando el dev la pide, no 
    - Estás en la rama `tipo/<ID>-<slug>`, no en `main`.
    - `main` está al día (`git fetch origin && git merge origin/main`).
    - Existe (o se creará) `specs/<ID>-<slug>/` con el mismo ID y slug que la rama.
+   - `VAULT_PATH` está definida y la ruta existe. Si no, avisa al humano y sigue: el
+     espejo al Vault se omite y queda anotado en `history.md` (`progress/README.md`).
 
 ## Flujo SDD (obligatorio)
 
@@ -85,6 +87,12 @@ Tú recibes solo una referencia: `spec_ready -> specs/<ID>-<slug>/`,
 `APPROVED -> progress/<ID-hito>-<slug>/review.md`. El contenido vive versionado en el repo,
 no en el chat. La estructura de `progress/` está en `progress/README.md`; cada agente deja
 además su línea en `progress/history.md` al cerrar.
+
+Haz cumplir también el **estado vivo en el Vault** (`progress/README.md`): los artefactos
+SDD y los resúmenes de progreso se espejan a `Project-<PREFIJO>/` y la tarjeta del task
+se mueve en `kanban.md` **al empezar** el trabajo, no en un push final. Un subagente que
+cerró sin mover su tarjeta ni espejar dejó el tablero mintiendo — pídeselo antes de
+aceptar el resultado.
 
 ## Qué NO haces
 

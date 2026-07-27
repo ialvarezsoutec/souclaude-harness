@@ -44,6 +44,58 @@ Campos: fecha · ID (task o hito) · agente/persona · resultado · referencia a
 Al resolver un conflicto de merge aquí: **conserva ambas líneas y ordena por fecha** — dos
 appends nunca se contradicen.
 
+## Espejo al Vault y estado vivo (kanban)
+
+El Vault (repo aparte — ver su guía) es el centro de información de todos los proyectos.
+Vive **fuera** del repo del proyecto a propósito: ahí se acumula la visibilidad sin
+ensuciar este repo. Dos obligaciones para todo agente:
+
+1. **Espejo de artefactos**: al cerrar cada artefacto, además de escribirlo aquí, se
+   copia al Vault bajo `Project-<PREFIJO>/`:
+   - `spec.md`, `plan.md`, `tasks.md` → `Project-<PREFIJO>/specs/<ID-hito>-<slug>/`
+   - `summary.md`, `impl_summary.md`, `review.md` y `history.md` →
+     `Project-<PREFIJO>/progress/`
+   - No se copian: código, diffs, tests, telemetría cruda (`model-router.jsonl`) ni
+     evidencia técnica pesada. El repo sigue siendo la fuente de verdad técnica; el
+     Vault es la vista.
+2. **Estado vivo**: cuando un agente **empieza** a trabajar un task o una fase, mueve su
+   tarjeta en `Project-<PREFIJO>/kanban.md` del Vault **en ese momento** — no en un push
+   final. El tablero debe reflejar el ahora, no el último cierre.
+
+**Formato del kanban** (`Project-<PREFIJO>/kanban.md`, compatible con el plugin Kanban de
+Obsidian):
+
+```markdown
+---
+kanban-plugin: board
+---
+
+## Backlog
+
+- [ ] TNP-H1-T004 · validar formulario · @pendiente
+
+## En curso
+
+- [ ] TNP-H1-T003 · capturar lead al cierre · @nacho
+
+## En review
+
+- [ ] TNP-H1-T002 · persistencia del ticket · @nacho
+
+## Hecho
+
+- [x] TNP-H1-T001 · esqueleto del dominio · @nacho
+```
+
+Una tarjeta = un task (`<ID-hito>-T<nnn> · qué · @quién`). Movimientos: el spec-author
+crea las tarjetas en Backlog al emitir `tasks.md`; el implementer mueve a **En curso** al
+tomar el task y a **En review** al cerrarlo; el reviewer mueve a **Hecho** con
+`APPROVED` o la devuelve a **En curso** con `CHANGES_REQUESTED`.
+
+**Ruta**: los agentes leen `VAULT_PATH` del `.env`. Si no está definida o la ruta no
+existe, el espejo se **omite sin fallar** y se deja una línea en `history.md`
+(`vault_skip · motivo`) — el trabajo local nunca se bloquea por el Vault.
+
 ## Regla de arquitectura
 
 Si un task **cambia la arquitectura** (puerto nuevo, contrato público, dependencia entre

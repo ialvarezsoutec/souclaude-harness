@@ -55,7 +55,10 @@ inventes estructura nueva.
 
 Tu salida final es **una sola línea** con la referencia al disco, no el contenido. Al cerrar
 cada fase, deja el resumen en `progress/<ID-hito>-<slug>/summary.md` y agrega una línea al
-final de `progress/history.md` (formato en `progress/README.md`).
+final de `progress/history.md` (formato en `progress/README.md`). **Espejo al Vault**
+(`VAULT_PATH`, reglas en `progress/README.md`): copia el artefacto recién cerrado a
+`Project-<PREFIJO>/specs/<ID-hito>-<slug>/`; al emitir `tasks.md`, crea además las
+tarjetas de cada task en el Backlog de `Project-<PREFIJO>/kanban.md`.
 
 ```
 spec_ready -> specs/<ID>-<slug>/spec.md
