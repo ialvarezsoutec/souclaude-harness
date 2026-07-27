@@ -2,6 +2,44 @@
 
 El harness y el CLI se versionan juntos.
 
+## [2.2.0] — no publicado
+
+Progreso por disco formalizado, IDs de task amarrados al hito y costo por tarea en la
+telemetría del router.
+
+### Agregado
+
+- **Carpeta `progress/` formalizada y emitida por el harness**: `progress/README.md`
+  (managed — documenta la convención) y `progress/history.md` (user-owned — historial
+  compartido append-only, una línea por task/sesión cerrada, con regla de resolución de
+  merge en el encabezado). Subcarpeta `progress/<ID-hito>-<slug>/` por spec en marcha con
+  `summary.md` (spec-author), `impl_summary.md` (implementer) y `review.md` (reviewer) —
+  reemplaza la convención plana `spec_/impl_/review_<ID>.md`.
+- **IDs de task `<PREFIJO>-H<n>-T<nnn>`** (ej. `TNP-H1-T001`), emitidos por el spec-author
+  en la fase Tasks con **bloques de 100 por spec** según el orden de reserva en
+  `/rock-plan` (1.er spec desde T001, 2.º desde T101) — cero colisiones entre specs en
+  ramas paralelas. Footer `Refs: <ID-task>` obligatorio en el commit-por-task. La cadena
+  de `ccem-planner` se extiende: Roca → Hito → Spec → **Task** → commit.
+- **Costo por tarea en la telemetría del router**: `progress/model-router.jsonl` suma
+  `task`, `tokens_in`, `tokens_out`, `costo_usd` y `medicion` (`medido`|`estimado`, con
+  regla de honestidad: un estimado es orden de magnitud, nunca cifra contable), más la
+  tabla de precios referencial en `ccem-model-router` §7 (único lugar a actualizar).
+  `/rock-close` suma el bloque "Resumen de costo" (% medido primero, total después).
+- **Regla de arquitectura**: si un task cambia la arquitectura (puerto nuevo, contrato
+  público, dependencia entre capas), el cierre exige doc en `docs/` + ADR; el implementer
+  actualiza docs y declara el ADR pendiente (sigue siendo del spec-author), y el reviewer
+  rechaza sin ambas cosas.
+- **`docs/vault-guide.md`** (solo este repo, no distribuido): guía de creación del Vault
+  central multi-proyecto — estructura, archivos semilla (`id-registry.md`), quién escribe
+  qué, relación Vault↔repos↔Ninety, concurrencia multi-persona.
+
+### Cambiado
+
+- `AGENTS.md`, los 4 agentes SDD y el orchestrator usan las rutas nuevas de `progress/` y
+  agregan su línea a `history.md` al cerrar cada artefacto.
+- Templates `tasks-template.md` y `tasks-lite-template.md` con IDs completos y la regla de
+  numeración por bloques.
+
 ## [2.1.0] — no publicado
 
 Soutec Model Router: cada subagente corre con el mejor modelo posible según el triángulo
