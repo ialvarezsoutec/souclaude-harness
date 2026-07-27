@@ -1,37 +1,33 @@
-# Revisión de Seguridad — {{PROJECT}}
-
-> Referencia estructural para el agente `security-evidence-compiler`. Sustituye cada
-> placeholder con evidencia real y verificada. No inventes resultados, no rebajes
-> severidades y no elimines hallazgos corregidos del historial.
+---
+title: Revisión de Seguridad
+header: Revisión de Seguridad – {{PROJECT}}
+subtitle: Proyecto — {{PROJECT}}
+date: {{DATE}}
+author: Innovación y Desarrollo
+confidential: false
+url: www.soutec-group.com
+---
 
 <!--
-GUÍA DE FORMATO (este comentario no se renderiza en el PDF).
+Referencia estructural para el agente `security-evidence-compiler`. El estilo (portada con
+isotipo, banners cyan, índice con folios, contraportada) lo pone la skill `soutec-md-a-pdf`
+al renderizar; aquí va Markdown limpio. Reglas de autoría: la guía de esa skill
+(`references/guia-autoria-md.md`). Contenido y trazabilidad: `security-report-standard`.
 
-Anotaciones destacadas: el renderer convierte los blockquotes con la sintaxis
-
-    > [!TIPO] Título opcional
-    > Cuerpo de la anotación...
-
-en cajas de color. Tipos: NOTA (contexto), IMPORTANTE (advertencia clave), CONFORME
-(control positivo / sin hallazgos graves), ATENCIÓN (condiciones o riesgos que IT debe
-evaluar; úsala en el riesgo residual cuando el estado sea READY WITH CONDITIONS) y
-BLOQUEANTE (hallazgo crítico). Un blockquote sin [!TIPO] se renderiza como cita normal.
-
-Badges automáticos: las tablas resaltan solas los estados (Sin hallazgos, PASSED,
-REMEDIATED, PENDING, Open, Failed…) y las severidades (Critical, High, Medium, Low,
-Informativo) como badges de color. No hace falta marcarlos a mano.
-
-Negrita inline: usa **texto** para destacar el subtítulo al inicio de un bullet
-(ej. "- **Endpoints y APIs**: cómo reciben datos"). El renderer lo dibuja en negrita.
-
-Resumen general (arriba del todo): {{EXECUTIVE_CONCLUSION}} es la frase-resultado
-verificable del informe (p. ej. "No se identificaron hallazgos Critical o High abiertos al
-cierre de esta revisión…"). Va en un callout CONFORME justo debajo del título y ANTES del
-estado, como veredicto de una sola línea. Si el estado es READY WITH CONDITIONS, cámbialo
-a [!ATENCIÓN] y describe las condiciones.
-
-No abuses de las anotaciones: 3-4 por informe bastan. Lenguaje siempre verificable,
-nunca "la aplicación es segura" ni "certificada".
+- El título, subtítulo, fecha y sello CONFIDENCIAL salen del front-matter de arriba;
+  rellena {{PROJECT}} y {{DATE}} con datos reales. Como hay `title`, TODOS los `#` del
+  cuerpo son secciones numeradas (franja cyan). Usa `##`/`###` solo para sub-temas.
+- Los títulos de sección (`#`) deben ser CORTOS (≤ ~28 caracteres): el banner cyan tiene
+  ancho fijo y un título largo se sale del banner (texto blanco sobre blanco = ilegible).
+- Sustituye cada {{PLACEHOLDER}} con evidencia real y verificada. No inventes resultados,
+  no rebajes severidades y no elimines hallazgos corregidos del historial.
+- Callouts `> [!TIPO]`: Nota/Info = cyan, Conforme/OK = verde, Importante/Advertencia/
+  Atención = amarillo, Peligro/Crítico = magenta. 3-4 por informe bastan.
+- Las tablas salen con cabecera azul y filas cebra. La skill NO pinta badges de color:
+  severidad/estado (Critical, PASSED, REMEDIATED…) se leen como texto, no como pill.
+  Mantén ≤ 6-7 columnas y celdas concisas; si una tabla necesita más, parte la info.
+- Este comentario no se renderiza. Nunca uses afirmaciones absolutas ("la aplicación es
+  segura", "certificada").
 -->
 
 > [!CONFORME] Resumen general
@@ -71,7 +67,7 @@ nunca "la aplicación es segura" ni "certificada".
 - **Ciclos de remediación SDD ejecutados**: {{REMEDIATION_CYCLES}}.
 - **Pruebas obligatorias**: {{TEST_SUMMARY}}.
 
-## Alcance, exclusiones y limitaciones
+## Alcance y limitaciones
 
 {{SCOPE_AND_LIMITATIONS}}
 
@@ -79,7 +75,7 @@ nunca "la aplicación es segura" ni "certificada".
 
 {{FINAL_REVIEW}}
 
-## Resumen de hallazgos por severidad
+## Hallazgos por severidad
 
 | Severidad | Iniciales | Remediados | Abiertos |
 |---|---:|---:|---:|
@@ -92,13 +88,13 @@ nunca "la aplicación es segura" ni "certificada".
 > [!CONFORME]
 > Ningún hallazgo `Critical` o `High` queda abierto al cierre de esta revisión.
 
-## Trazabilidad de hallazgos Critical/High corregidos
+## Trazabilidad Critical/High
 
 Registro técnico de cada hallazgo grave detectado y su remediación. No se elimina un
 hallazgo de esta tabla por haber sido corregido — el historial de corrección es parte
 de la evidencia.
 
-| ID | Severidad inicial | Activo/archivo afectado | Requisito o spec | Cambio aplicado | Prueba de regresión | Estado final |
+| ID | Severidad | Activo afectado | Requisito/spec | Cambio aplicado | Prueba | Estado |
 |---|---|---|---|---|---|---|
 | {{ID}} | {{SEVERITY}} | {{AFFECTED_ASSET}} | {{SPEC_REF}} | {{CHANGE}} | {{TEST_REF}} | REMEDIATED |
 
@@ -111,11 +107,11 @@ de la evidencia.
 |---|---|---|---|
 | {{COMMAND}} | {{PURPOSE}} | PASSED | {{EVIDENCE}} |
 
-## Hallazgos Medium, Low e informativos pendientes
+## Hallazgos Medium/Low/Info
 
 {{REMAINING_FINDINGS}}
 
-## Riesgo residual y condiciones para producción
+## Riesgo residual y condiciones
 
 {{RESIDUAL_RISK}}
 

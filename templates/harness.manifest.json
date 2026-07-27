@@ -36,7 +36,6 @@
 
     { "id": "skill-it-security-review", "src": "base/claude/skills/it-security-review/SKILL.md", "dest": ".claude/skills/it-security-review/SKILL.md", "policy": "managed" },
     { "id": "skill-it-security-review-report-template", "src": "base/claude/skills/it-security-review/report-template.md", "dest": ".claude/skills/it-security-review/report-template.md", "policy": "managed" },
-    { "id": "skill-it-security-review-renderer", "src": "base/claude/skills/it-security-review/scripts/render_security_report.py", "dest": ".claude/skills/it-security-review/scripts/render_security_report.py", "policy": "managed" },
     { "id": "skill-security-report-standard", "src": "base/claude/skills/security-report-standard/SKILL.md", "dest": ".claude/skills/security-report-standard/SKILL.md", "policy": "managed" },
 
     { "id": "specs-readme", "src": "base/specs/README.md", "dest": "specs/README.md", "policy": "managed" },
