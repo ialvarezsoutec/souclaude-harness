@@ -25,7 +25,8 @@ Development) · `ccem-planner` (trazabilidad Planner ↔ CCEM ↔ Git) · `ccem-
 Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`.
 
 Agentes de orquestación (opt-in) en `.claude/agents/`: `orchestrator`, `spec-author`,
-`implementer`, `reviewer`. El flujo completo está en `AGENTS.md`.
+`implementer`, `reviewer`; y el especialista `security-evidence-compiler` (solo cuando
+`it-security-review` pasa el gate). El flujo completo está en `AGENTS.md`.
 
 ## Constitución
 
