@@ -2,6 +2,33 @@
 
 El harness y el CLI se versionan juntos.
 
+## [1.2.0] — no publicado
+
+Flujo de security review para IT y verificación de integridad del harness.
+
+### Agregado
+
+- **Agente `security-evidence-compiler`** en `.claude/agents/`: compila el security
+  review, las remediaciones SDD y la evidencia de pruebas en un informe Markdown y PDF
+  para IT. Contrato de activación explícito: solo corre cuando la skill
+  `it-security-review` entrega `FINAL_SECURITY_GATE=PASSED`. `AGENTS.md` documenta la
+  categoría nueva de "agentes especialistas bajo demanda" — con nombre descriptivo y
+  contrato concreto, no casillas vacías.
+- **Skills `it-security-review`** (el workflow del review, con su template de informe) y
+  **`security-report-standard`** (el estándar interno del informe técnico para IT).
+  Ambas se distribuyen por el harness: están en `templates/base/` y en el manifest.
+- **Skill `soutec-md-a-pdf`** commiteada en `.claude/skills/`: renderiza el PDF de
+  evidencia con la identidad corporativa. El ADR
+  `docs/decisions/20260722-render-pdf-evidencia-via-skill-soutec-md-a-pdf.md` ya la
+  referenciaba, pero los archivos no estaban en el repo.
+- **Comando `souclaude verify`**: verificación de integridad del harness instalado
+  (`src/commands/verify.js` + `src/core/verify.js`), con tests propios y test de
+  dogfooding.
+
+### Corregido
+
+- La suite de pruebas corre en Node ≥ 22.
+
 ## [1.1.0] — 2026-07-21
 
 Orquestación multi-agente: cuatro roles que siguen el flujo SDD de CCEM con separación de
