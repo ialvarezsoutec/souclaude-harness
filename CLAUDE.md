@@ -3,7 +3,14 @@
 ## Contexto
 
 Proyecto de automation. Stack: Node.js.
-Dominio: [describir en 1-2 líneas qué hace este proyecto].
+Dominio: CLI `souclaude` que instala, adopta y migra el harness de Claude Code de
+SOUTEC (metodología CCEM) en cualquier repo de la organización.
+
+**Este repo es el generador y a la vez la plantilla de los demás.** Lo que reciben los
+repos consumidores vive en `templates/` — este `CLAUDE.md`, la constitución y las skills
+de la raíz son la instancia *dogfooded* local. Un cambio de metodología se hace en
+`templates/base/` (y llega a todos vía `upgrade`); un cambio solo de este repo se hace
+en la raíz.
 
 ## Metodología CCEM
 
@@ -78,11 +85,26 @@ deliberado — el puerto habla en lenguaje de dominio, no de framework.
 
 ## Reglas técnicas críticas
 
-Reglas que causan errores si se omiten. Agregar/quitar según el proyecto.
+Reglas que causan errores si se omiten.
 
-### [Categoría — ej: API, Data, Deployment]
-- [Regla concreta 1]
-- [Regla concreta 2]
+### Templates y manifest
+- **`templates/harness.manifest.json` es el centro.** Casi ningún cambio de contenido
+  toca código: se edita `templates/base/<ruta>` y, si hace falta, una línea del manifest.
+- Los dotfiles se guardan **sin el punto** (`templates/base/gitignore`); el nombre real
+  va en `dest`.
+- `harnessVersion` (manifest) y `version` (`package.json`) **se mueven juntas**. Todo
+  cambio de contenido publicable sube la versión, o `status` no detecta el upgrade.
+- Un archivo `user-owned` (`CLAUDE.md`, constitución, `notes.md`) **no se pisa** en repos
+  instalados: el dev recibe un `.new`. Para corregir algo ya instalado, va una migración
+  en `src/migrations/index.js` — función chica, **nada de un DSL de migraciones**.
+
+### Tests
+- `node:test`, sin dependencias de testing. Los invariantes que atrapan casi todo:
+  **idempotencia** (correr `init` dos veces no cambia nada), **pureza de `--dry-run`**
+  (árbol byte-idéntico) y **NUNCA SE PISA** (un archivo editado por el usuario jamás se
+  sobrescribe).
+- Los fixtures usan rutas **con espacio** a propósito (los repos reales viven bajo
+  OneDrive). No lo "arregles".
 
 ## Behavior expectations
 
