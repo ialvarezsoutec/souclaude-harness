@@ -1,6 +1,6 @@
 # souclaude-harness
 
-**v1.0.0**
+**v1.1.0**
 
 CLI para instalar y migrar el harness de Claude Code de SOUTEC (metodología CCEM) en
 cualquier repo: uno nuevo, uno legacy de cinco años, o uno que ya tiene una versión
@@ -98,8 +98,8 @@ nada la segunda vez) y **pureza de `--dry-run`** (el árbol queda byte-idéntico
 ## Publicar una versión
 
 ```bash
-git tag v1.0.0 && git tag -f v1
-git push origin v1.0.0 && git push -f origin v1
+git tag vX.Y.Z && git tag -f v1
+git push origin vX.Y.Z && git push -f origin v1
 ```
 
 La organización usa `#v1` (tag móvil) y recibe los parches sin hacer nada.

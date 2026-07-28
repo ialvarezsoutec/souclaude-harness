@@ -2,7 +2,7 @@
 
 El harness y el CLI se versionan juntos.
 
-## [1.1.0] — no publicado
+## [1.1.0] — 2026-07-21
 
 Orquestación multi-agente: cuatro roles que siguen el flujo SDD de CCEM con separación de
 responsabilidades y checkpoints humanos.
@@ -29,7 +29,7 @@ responsabilidades y checkpoints humanos.
 - Patrón **derivado** de `betta-tech/harness-sdd` (repo sin LICENSE): se adopta el patrón, no
   la prosa — todo redactado original. Evaluado con `ccem-research`.
 
-## [1.0.0] — no publicado
+## [1.0.0] — 2026-07-15
 
 Primera versión. Reemplaza la copia manual de la carpeta `Kit/`.
 
