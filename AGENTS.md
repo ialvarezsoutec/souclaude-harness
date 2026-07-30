@@ -13,7 +13,7 @@ Viven en `.claude/agents/`. Cada uno tiene sus herramientas acotadas a propósit
 |---|---|---|---|
 | `orchestrator` | Descompone y coordina; hace respetar los checkpoints. | ❌ | `Agent` (lanza a los otros) |
 | `spec-author` | Redacta `spec.md` / `plan.md` / `tasks.md`, una fase a la vez. | ❌ | `Write`/`Edit` (solo en `specs/`) |
-| `implementer` | Implementa la tarjeta task por task, cada cambio con su test. | ✅ | `Write`/`Edit` |
+| `implementer` | Implementa el spec del hito task por task, cada cambio con su test. | ✅ | `Write`/`Edit` |
 | `reviewer` | Aprueba o rechaza de forma **independiente**. | ❌ | (sin `Write`/`Edit`: dictamina) |
 
 La separación es el punto: quien especifica no implementa, y quien implementa **no se
@@ -22,7 +22,7 @@ aprueba a sí mismo**.
 ## El flujo
 
 ```
-tarjeta Planner (ID) ─► rama tipo/<ID>-<slug>
+hito (ID <PREFIJO>-H<n>) ─► rama tipo/<ID-hito>-<slug>
         │
         ▼
 spec.md ─► ⏸ HUMANO ─► plan.md ─► ⏸ HUMANO ─► tasks.md ─► ⏸ HUMANO ─► implement ─► review ─► PR
@@ -36,7 +36,7 @@ Son **tres checkpoints humanos** antes de escribir código, no uno. Hasta que `s
 
 La orquestación **no** corre en cada sesión: la pides cuando la quieres.
 
-> "Actuá como `orchestrator` para la tarjeta PLN-XXX."
+> "Actuá como `orchestrator` para el hito REA-H3."
 
 Un subagente de Claude Code no siempre puede lanzar otros subagentes, así que en la práctica
 **la sesión principal adopta el rol `orchestrator`** y desde ahí lanza a `spec-author`,
@@ -61,17 +61,40 @@ Los agentes **no redefinen** las reglas del harness; las cumplen. Fuente de verd
 
 - **`docs/constitution.md`** — P1-P10. P2 (dominio no importa frameworks), P9 (Simplicity),
   P10 (Surgical) y P6 (human-in-the-loop, que es lo que hacen los checkpoints).
-- **`ccem-planner`** — el ID de Planner es el hilo: tarjeta ↔ `specs/<ID>-<slug>/` ↔ rama ↔
+- **`ccem-planner`** — el ID del hito es el hilo: hito ↔ `specs/<ID-hito>-<slug>/` ↔ rama ↔
   commits ↔ PR. Sin ID, el `orchestrator` para y lo pide; no lo inventa.
 - **`ccem-prompting`** (Anti-Hack) — el `reviewer` caza tests que no prueban, mocks que fingen
   lógica y errores tragados. Ningún agente reporta "listo" con trabajo simulado.
 - **`ccem-core`** — selección de modelo por rol (razonamiento alto para diseño/review).
 - **`soutec-github`** — nombres de rama, Conventional Commits en español, plantilla de PR.
   Nadie hace commit/merge a `main` ni crea tags/releases.
+- **`CLAUDE.md` (Idioma)** — todo agente responde en **español neutro**, tuteo, nunca voseo
+  rioplatense ("usa", no "usá"; "dilo", no "decilo"). Vale para la salida de cada rol.
 
 ## Resultados por disco, no por chat
 
 Cada agente escribe su resultado en un archivo versionado y devuelve **solo una referencia**
-(`spec_ready -> specs/<ID>-<slug>/spec.md`, `done -> progress/impl_<ID>.md`,
-`APPROVED -> progress/review_<ID>.md`). El contenido vive en el repo, no en la conversación:
-así queda trazable y no se pierde entre sesiones.
+(`spec_ready -> specs/<ID>-<slug>/spec.md`, `done -> progress/<ID>-<slug>/impl_summary.md`,
+`APPROVED -> progress/<ID>-<slug>/review.md`). El contenido vive en el repo, no en la
+conversación: así queda trazable y no se pierde entre sesiones.
+
+La estructura completa de `progress/` está en `progress/README.md`: `current.md` (estado
+vivo), `history.md` (historial compartido append-only — cada agente agrega una línea al
+cerrar su artefacto) y una subcarpeta `progress/<ID-hito>-<slug>/` por spec en marcha con
+`summary.md` (spec-author), `impl_summary.md` (implementer) y `review.md` (reviewer).
+
+**Regla de arquitectura**: si un task cambia la arquitectura (puerto nuevo, contrato
+público, dependencia entre capas), su cierre exige el doc de `docs/` actualizado **y** un
+ADR en `docs/decisions/`. El `reviewer` rechaza un cambio de arquitectura sin ambas cosas.
+
+**Espejo al Vault y estado vivo**: los artefactos SDD y los resúmenes de progreso se
+copian además al Vault (repo aparte para no ensuciar este; ruta local en
+`.claude/vault.local.json`), y la tarjeta de cada task se mueve en
+`Project-<PREFIJO>/kanban.md` **al empezar** a trabajarla — el tablero refleja el ahora, no
+el último push. Reglas y formato en `progress/README.md`.
+
+**Los dos repos**: el Vault tiene su propio remoto y su regla es la opuesta a la de este
+repo — **push directo a su `main`**, sin PR, para que el tablero esté vivo. Antes de tomar
+un task: `git -C "<vault>" pull --rebase` y leer el kanban. Si la tarjeta ya está **En
+curso** con otro dueño, la trabaja otra máquina: **paras y preguntas**, no la tomas. Al
+tomarla, mueves y pusheas en ese momento. Protocolo completo en `progress/README.md`.

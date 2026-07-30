@@ -57,7 +57,7 @@ Fase 4: Implement     → Claude Code ejecuta, con checkpoints humanos
 Crea `specs/mi-feature-nuevo/` con los tres archivos desde `_templates/`, ya
 prellenados con el slug y la fecha, y arranca la entrevista por Goals y Non-goals.
 
-Para un cambio mediano (4-8 h), usá la variante comprimida:
+Para un cambio mediano (4-8 h), usa la variante comprimida:
 
 ```
 /spec-new mi-cambio --lite

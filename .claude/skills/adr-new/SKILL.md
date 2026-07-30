@@ -14,7 +14,7 @@ Título pedido: `$ARGUMENTS`
 1. **Verifica que amerite un ADR.** Lee `docs/decisions/README.md`. Un ADR es para
    una decisión que alguien va a cuestionar en 6 meses: elección de tecnología,
    cambio de paradigma, trade-off con consecuencias. **No** para cambios de
-   implementación ni decisiones reversibles de bajo impacto. Si no amerita, decilo.
+   implementación ni decisiones reversibles de bajo impacto. Si no amerita, dilo.
 
 2. **Derivá el nombre del archivo**: `docs/decisions/<YYYYMMDD>-<slug>.md`, con la
    fecha de hoy y el slug en kebab-case sacado de `$ARGUMENTS`.

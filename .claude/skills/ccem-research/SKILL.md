@@ -62,4 +62,4 @@ Si el resultado es "adoptar" y la decisión es significativa → ADR.
 ## Bandera roja
 
 Si estás justificando una herramienta con "es el estándar de la industria" o "todo
-el mundo la usa", no respondiste ninguno de los 7 criterios. Volvé a empezar.
+el mundo la usa", no respondiste ninguno de los 7 criterios. Vuelve a empezar.

@@ -121,6 +121,10 @@ El primer eje de optimización. Escalá el modelo al problema, no al revés.
 Los IDs y precios concretos cambian con cada release: verifica la doc oficial en vez
 de confiar en una tabla hardcodeada.
 
+Estos roles son el marco conceptual. La **política operable** — clases de tarea, señales
+de dificultad, matriz agente × clase, escalamiento y telemetría — vive en la skill
+`ccem-model-router`; el orchestrator la aplica en cada lanzamiento.
+
 ### Advisor Strategy
 
 Patrón oficial de Anthropic: **el modelo de ejecución trabaja, el modelo de decisiones

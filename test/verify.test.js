@@ -47,6 +47,12 @@ test('verify: el manifest real del repo no tiene criticos faltantes', () => {
   assert.deepEqual(findMissingCriticalFiles(manifest), [])
 })
 
+test('verify: harnessVersion del manifest coincide con la version de package.json', () => {
+  const manifest = loadManifest()
+  const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  assert.equal(manifest.harnessVersion, pkg.version)
+})
+
 test('verify: detecta huerfano cuando templates/base tiene un archivo sin entry', () => {
   const root = mkTemplatesRoot({ 'base/claude/skills/fantasma/SKILL.md': 'x' })
   const manifest = { files: [] }

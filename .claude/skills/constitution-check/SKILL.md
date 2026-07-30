@@ -65,11 +65,11 @@ P1 [nombre] — cumple / viola / no aplica
 ...
 ```
 
-Cerrá con:
+Cierra con:
 - **Veredicto**: ¿se puede abrir el PR?
 - **Bloqueantes**: las violaciones que hay que arreglar sí o sí, en orden.
 - **Sugerencias aparte**: lo que mejorarías pero **nadie pidió** — explícitamente
   fuera de este cambio. Mencionarlas, no aplicarlas. Eso también es P8.
 
-Si el diff está limpio, decilo en una línea y no inventes hallazgos para justificar
+Si el diff está limpio, dilo en una línea y no inventes hallazgos para justificar
 la corrida.

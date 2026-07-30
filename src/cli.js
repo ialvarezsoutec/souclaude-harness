@@ -23,6 +23,9 @@ const OPTIONS = {
   type: { type: 'string' },
   stack: { type: 'string' },
   lang: { type: 'string' },
+  vault: { type: 'boolean', default: true },
+  'vault-path': { type: 'string' },
+  'vault-repo': { type: 'string' },
   'assume-version': { type: 'string' },
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean' },
@@ -33,7 +36,10 @@ const COMMANDS = { init, upgrade, status, adopt, verify }
 export async function main(argv, cwd) {
   let parsed
   try {
-    parsed = parseArgs({ args: argv, options: OPTIONS, allowPositionals: true, strict: true })
+    // allowNegative habilita la forma --no-<flag> para los booleanos con default
+    // true (--no-backup, --no-vault). Sin esto parseArgs los rechaza como opcion
+    // desconocida, aunque el help los documente. Requiere Node >= 22.4.
+    parsed = parseArgs({ args: argv, options: OPTIONS, allowPositionals: true, strict: true, allowNegative: true })
   } catch (err) {
     console.error(pc.red(err.message))
     printHelp()
@@ -106,6 +112,9 @@ ${pc.bold('FLAGS')}
   --no-backup          No copia a .claude/backup-<ts>/ antes de sobrescribir.
   -v, --verbose        Muestra tambien los archivos sin cambios.
   --name, --type, --stack, --lang    Responden las preguntas sin modo interactivo.
+  --vault-path <ruta>  Conecta el Vault ya clonado sin preguntar (escribe .claude/vault.local.json).
+  --vault-repo <url>   Repo del Vault a clonar. Por defecto, el del manifest.
+  --no-vault           Omite el paso del Vault por completo.
   --assume-version     (adopt) Version del harness que se asume instalada.
   --strict             (verify) Los warnings (huerfanos) tambien hacen fallar el comando.
 

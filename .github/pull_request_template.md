@@ -1,9 +1,9 @@
 ## Descripción del cambio
 Explica brevemente qué se cambió y por qué.
 
-## Tarea relacionada
-- Planner / SharePoint ID:
-- Link de la tarea:
+## Hito relacionado
+- ID del hito (`<PREFIJO>-H<n>`):
+- Roca / trimestre:
 
 ## Tipo de cambio
 - [ ] Nueva funcionalidad

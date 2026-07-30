@@ -1,5 +1,8 @@
 {
-  "harnessVersion": "1.1.0",
+  "harnessVersion": "2.3.0",
+  "vault": {
+    "repo": "https://github.com/ialvarezsoutec/soubunker-vault.git"
+  },
   "files": [
     { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned", "critical": true },
     { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned", "critical": true },
@@ -22,11 +25,17 @@
     { "id": "skill-ccem-stack", "src": "base/claude/skills/ccem-stack/SKILL.md", "dest": ".claude/skills/ccem-stack/SKILL.md", "policy": "managed" },
     { "id": "skill-ccem-prompting", "src": "base/claude/skills/ccem-prompting/SKILL.md", "dest": ".claude/skills/ccem-prompting/SKILL.md", "policy": "managed" },
     { "id": "skill-soutec-github", "src": "base/claude/skills/soutec-github/SKILL.md", "dest": ".claude/skills/soutec-github/SKILL.md", "policy": "managed" },
+    { "id": "skill-ccem-model-router", "src": "base/claude/skills/ccem-model-router/SKILL.md", "dest": ".claude/skills/ccem-model-router/SKILL.md", "policy": "managed" },
 
     { "id": "skill-spec-new", "src": "base/claude/skills/spec-new/SKILL.md", "dest": ".claude/skills/spec-new/SKILL.md", "policy": "managed" },
     { "id": "skill-adr-new", "src": "base/claude/skills/adr-new/SKILL.md", "dest": ".claude/skills/adr-new/SKILL.md", "policy": "managed" },
     { "id": "skill-constitution-check", "src": "base/claude/skills/constitution-check/SKILL.md", "dest": ".claude/skills/constitution-check/SKILL.md", "policy": "managed" },
     { "id": "skill-harness-upgrade", "src": "base/claude/skills/harness-upgrade/SKILL.md", "dest": ".claude/skills/harness-upgrade/SKILL.md", "policy": "managed" },
+
+    { "id": "skill-rock-plan", "src": "base/claude/skills/ccem-rocas/rock-plan/SKILL.md", "dest": ".claude/skills/ccem-rocas/rock-plan/SKILL.md", "policy": "managed" },
+    { "id": "skill-rock-status", "src": "base/claude/skills/ccem-rocas/rock-status/SKILL.md", "dest": ".claude/skills/ccem-rocas/rock-status/SKILL.md", "policy": "managed" },
+    { "id": "skill-rock-close", "src": "base/claude/skills/ccem-rocas/rock-close/SKILL.md", "dest": ".claude/skills/ccem-rocas/rock-close/SKILL.md", "policy": "managed" },
+    { "id": "skill-export-ninety", "src": "base/claude/skills/ccem-rocas/export-ninety/SKILL.md", "dest": ".claude/skills/ccem-rocas/export-ninety/SKILL.md", "policy": "managed" },
 
     { "id": "agent-orchestrator", "src": "base/claude/agents/orchestrator.md", "dest": ".claude/agents/orchestrator.md", "policy": "managed" },
     { "id": "agent-spec-author", "src": "base/claude/agents/spec-author.md", "dest": ".claude/agents/spec-author.md", "policy": "managed" },
@@ -47,7 +56,10 @@
     { "id": "tmpl-tasks-lite", "src": "base/specs/_templates/tasks-lite-template.md", "dest": "specs/_templates/tasks-lite-template.md", "policy": "managed" },
 
     { "id": "adr-readme", "src": "base/docs/decisions/README.md", "dest": "docs/decisions/README.md", "policy": "managed" },
-    { "id": "adr-template", "src": "base/docs/decisions/_template.md", "dest": "docs/decisions/_template.md", "policy": "managed" }
+    { "id": "adr-template", "src": "base/docs/decisions/_template.md", "dest": "docs/decisions/_template.md", "policy": "managed" },
+
+    { "id": "progress-readme", "src": "base/progress/README.md", "dest": "progress/README.md", "policy": "managed" },
+    { "id": "progress-history", "src": "base/progress/history.md", "dest": "progress/history.md", "policy": "user-owned" }
   ],
   "dirs": [
     { "dest": "src", "when": "empty-repo" },
