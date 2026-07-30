@@ -2,6 +2,50 @@
 
 El harness y el CLI se versionan juntos.
 
+## [2.3.0] — no publicado
+
+El Vault deja de ser un paso manual: el instalador lo conecta (y lo clona si hace falta), y
+los agentes saben que trabajan contra **dos repos**.
+
+### Agregado
+
+- **Paso de Vault en el instalador** (`init` y `upgrade`): pregunta si tienes el Vault en
+  esta máquina; si no, ofrece clonar
+  `https://github.com/ialvarezsoutec/soubunker-vault.git` (URL declarada en el manifest,
+  clave `vault.repo`) y deja la ruta escrita. Nunca bloquea: si el clone falla o lo
+  cancelas, avisa con el comando manual y la instalación sigue devolviendo 0.
+- **`.claude/vault.local.json`** — nueva fuente canónica de la ruta local del Vault,
+  gitignorada (es config de máquina) y **legible por los agentes**. Reemplaza a `VAULT_PATH`
+  del `.env` para ese uso: `.claude/settings.json` deniega `Read(./.env)`, así que ningún
+  agente podía leerla de ahí. `VAULT_PATH` en `.env.example` queda solo para el runtime de
+  la app. La ruta **no** va al lockfile: `.claude/harness.json` se commitea y viajaría a
+  otra máquina. Al lockfile va solo `VAULT_REPO`, que es igual para toda la organización.
+- **Flags nuevos**: `--vault-path <ruta>` (conecta sin preguntar), `--vault-repo <url>`
+  (repo alternativo) y `--no-vault` (omite el paso). Con `--yes` o en CI **nunca se clona**:
+  git clone es red y disco, y en CI correría en cada corrida.
+- **Doctrina de los dos repos** (`progress/README.md`, replicada en `CLAUDE.md`, `AGENTS.md`
+  y los cuatro agentes): el Vault es un repo git con su propio remoto y regla **opuesta** a
+  la del repo de proyecto — **push directo a su `main`, sin PR**, porque el tablero refleja
+  el ahora. Convención de commits del Vault: `chore:` para movimientos de kanban, `docs:`
+  para espejos. Nunca `--force`, en ninguno de los dos.
+- **Anti-solapamiento entre máquinas**: antes de tomar un task, el agente hace
+  `git -C "<vault>" pull --rebase` y lee el kanban. Si la tarjeta ya está en "En curso" o
+  "En review" **con otro dueño**, **para y pregunta al humano** — no la toma ni salta a otra
+  por su cuenta. Los conflictos en `kanban.md` se resuelven conservando ambas tarjetas; dos
+  rebases fallidos seguidos se anotan como `vault_skip` y se reportan.
+
+### Corregido
+
+- **`--no-backup` nunca funcionó**: el help lo documentaba pero `parseArgs` lo rechazaba como
+  opción desconocida. Ahora se parsea con `allowNegative: true`, que habilita también
+  `--no-vault`. Sube el requisito de Node de `>=20` a `>=22.4`.
+
+### Nota de actualización
+
+`CLAUDE.md` es `user-owned`: el `upgrade` **no** lo sobrescribe, deja `CLAUDE.md.new` al lado
+(garantía P8). **Hay que mergear ese `.new`**: sin la sección "Los dos repos", el agente lee
+"nunca push directo a `main`" sin matices y se niega a escribir en el Vault.
+
 ## [2.2.0] — no publicado
 
 Progreso por disco formalizado, IDs de task amarrados al hito y costo por tarea en la

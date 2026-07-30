@@ -88,6 +88,13 @@ público, dependencia entre capas), su cierre exige el doc de `docs/` actualizad
 ADR en `docs/decisions/`. El `reviewer` rechaza un cambio de arquitectura sin ambas cosas.
 
 **Espejo al Vault y estado vivo**: los artefactos SDD y los resúmenes de progreso se
-copian además al Vault (`VAULT_PATH`, repo aparte para no ensuciar este), y la tarjeta de
-cada task se mueve en `Project-<PREFIJO>/kanban.md` **al empezar** a trabajarla — el
-tablero refleja el ahora, no el último push. Reglas y formato en `progress/README.md`.
+copian además al Vault (repo aparte para no ensuciar este; ruta local en
+`.claude/vault.local.json`), y la tarjeta de cada task se mueve en
+`Project-<PREFIJO>/kanban.md` **al empezar** a trabajarla — el tablero refleja el ahora, no
+el último push. Reglas y formato en `progress/README.md`.
+
+**Los dos repos**: el Vault tiene su propio remoto y su regla es la opuesta a la de este
+repo — **push directo a su `main`**, sin PR, para que el tablero esté vivo. Antes de tomar
+un task: `git -C "<vault>" pull --rebase` y leer el kanban. Si la tarjeta ya está **En
+curso** con otro dueño, la trabaja otra máquina: **paras y preguntas**, no la tomas. Al
+tomarla, mueves y pusheas en ese momento. Protocolo completo en `progress/README.md`.

@@ -3,7 +3,7 @@ import { loadManifest } from '../core/manifest.js'
 import { resolveDetected } from '../core/detect.js'
 import { readLockfile } from '../core/lockfile.js'
 import { migrationsFor, migrations } from '../migrations/index.js'
-import { resolveVars, planAndApply } from './_shared.js'
+import { resolveVars, planAndApply, vaultStep } from './_shared.js'
 
 export async function upgrade(flags, cwd) {
   const manifest = loadManifest()
@@ -25,5 +25,6 @@ export async function upgrade(flags, cwd) {
   }
 
   const vars = await resolveVars({ flags, lock, detected, cwd, manifest })
-  return planAndApply({ manifest, cwd, lock, vars, detected, flags, title: 'upgrade' })
+  const code = await planAndApply({ manifest, cwd, lock, vars, detected, flags, title: 'upgrade' })
+  return vaultStep({ code, cwd, flags, manifest, lock })
 }

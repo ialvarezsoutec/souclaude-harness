@@ -18,6 +18,9 @@ secrets.json
 .claude/settings.local.json
 .claude/backup-*/
 
+# Ruta local al Vault: es de esta maquina, no del proyecto.
+.claude/vault.local.json
+
 # Propuestas del harness pendientes de merge. Son transitorias: revisalas con
 # `git diff --no-index <archivo> <archivo>.new` y borralas.
 *.new

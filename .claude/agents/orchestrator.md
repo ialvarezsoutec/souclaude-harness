@@ -26,8 +26,13 @@ principal. La orquestación es **opt-in**: solo corre cuando el dev la pide, no 
    - Estás en la rama `tipo/<ID>-<slug>`, no en `main`.
    - `main` está al día (`git fetch origin && git merge origin/main`).
    - Existe (o se creará) `specs/<ID>-<slug>/` con el mismo ID y slug que la rama.
-   - `VAULT_PATH` está definida y la ruta existe. Si no, avisa al humano y sigue: el
-     espejo al Vault se omite y queda anotado en `history.md` (`progress/README.md`).
+   - El Vault está conectado: `.claude/vault.local.json` existe, la ruta existe y
+     `git -C "<vault>" status` responde. Si no, avisa al humano y sigue: el espejo se omite
+     y queda anotado en `history.md` como `vault_skip` (`progress/README.md`). Para
+     conectarlo: `npx souclaude upgrade --vault-path <ruta>`.
+   - El Vault está al día: `git -C "<vault>" pull --rebase` **antes** de repartir tasks. Si
+     una tarjeta ya está "En curso" con otro dueño, la trabaja otra máquina: **no la
+     repartas**, pregunta al humano.
 
 ## Flujo SDD (obligatorio)
 
@@ -90,8 +95,10 @@ además su línea en `progress/history.md` al cerrar.
 
 Haz cumplir también el **estado vivo en el Vault** (`progress/README.md`): los artefactos
 SDD y los resúmenes de progreso se espejan a `Project-<PREFIJO>/` y la tarjeta del task
-se mueve en `kanban.md` **al empezar** el trabajo, no en un push final. Un subagente que
-cerró sin mover su tarjeta ni espejar dejó el tablero mintiendo — pídeselo antes de
+se mueve en `kanban.md` **al empezar** el trabajo, no en un push final. El Vault es otro
+repo: mover la tarjeta sin `git push` al Vault no la propaga a las demás máquinas, así que
+el movimiento y el push son el mismo paso. Un subagente que cerró sin pushear su tarjeta ni
+espejar dejó el tablero mintiendo — pídeselo antes de
 aceptar el resultado.
 
 ## Qué NO haces

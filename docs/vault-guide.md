@@ -94,7 +94,7 @@ sin salir del Vault.
 | `roca_*.yaml` — cierre | Dueño vía `/rock-close` | Contra criterios congelados, con evidencia por criterio. |
 | `roca_*.yaml` — campos derivados (`fecha_real`, desviaciones) | **Generado** (`/rock-status`) | Nunca a mano: un derivado escrito a mano es un dato falso. |
 | `Project-State.md` | **Generado** (`/rock-status`, semanal) | Derivado de GitHub (ramas/PRs). No editable. |
-| `kanban.md` | **Agentes**, en vivo | spec-author crea tarjetas; implementer y reviewer las mueven al cambiar el estado (§6). |
+| `kanban.md` | **Agentes**, en vivo | spec-author crea tarjetas; implementer y reviewer las mueven al cambiar el estado y **pushean en ese momento** (§6, §7). |
 | `specs/` y `progress/` (espejos) | **Agentes**, al cerrar cada artefacto | Copias desde el repo; nunca se editan aquí — se corrige en el repo y se re-espeja. |
 | `evidence/` | Humano | Solo evidencia **ejecutiva**; la técnica queda en el repo. |
 
@@ -161,16 +161,38 @@ crea las tarjetas en Backlog al emitir `tasks.md`; el `implementer` mueve a **En
 al tomar el task y a **En review** al cerrarlo; el `reviewer` mueve a **Hecho** con
 `APPROVED` o devuelve a **En curso** con `CHANGES_REQUESTED`.
 
-**Cómo llegan los agentes**: cada repo declara `VAULT_PATH` en su `.env` (ruta local al
-clon o carpeta del Vault). Si no está definida o no existe, el espejo se omite **sin
-bloquear el trabajo** y queda anotado en el `history.md` del repo (`vault_skip`).
+**Cómo llegan los agentes**: cada repo guarda la ruta local del Vault en
+`.claude/vault.local.json`, que escribe el instalador (`npx souclaude`, harness ≥ 2.3.0) y
+está gitignorado — la ruta es de esa máquina. **No se usa `VAULT_PATH` del `.env`**:
+`.claude/settings.json` deniega `Read(./.env)`, así que un agente no puede leerlo de ahí. Si
+no hay ruta configurada o no existe, el espejo se omite **sin bloquear el trabajo** y queda
+anotado en el `history.md` del repo (`vault_skip`).
+
+**El Vault es un repo, no una carpeta**: mover una tarjeta sin `git push` al Vault deja el
+cambio en una sola máquina. El movimiento y el push son el mismo paso — protocolo en la §7.
 
 ## 7. Concurrencia — varias personas, múltiples agentes
 
-- **Recomendado: el Vault como repo git** con la misma regla que los repos de código —
-  nada directo a `main`, cambios por PR para lo estratégico. Para el estado vivo
-  (kanban, espejos), cada persona/agente escribe **solo las tarjetas y espejos de su
-  proyecto y su task** — la partición natural por `Project-<PREFIJO>/` evita conflictos.
+- **El Vault es un repo git** (`soubunker-vault`) con una regla **opuesta** a la de los
+  repos de código: **push directo a `main`, sin PR**. No es un descuido, es la condición
+  para que el tablero sea estado vivo — una tarjeta que espera el merge de un PR ya no
+  refleja el ahora. Por eso el `main` del Vault **no** lleva revisión obligatoria. Cada
+  persona/agente escribe **solo las tarjetas y espejos de su proyecto y su task**: la
+  partición natural por `Project-<PREFIJO>/` evita casi todos los conflictos.
+- **Protocolo de dos repos** (el que ejecutan los agentes, definido en el
+  `progress/README.md` que instala el harness):
+  1. `git -C "<vault>" pull --rebase` **antes** de tomar un task.
+  2. Leer `Project-<PREFIJO>/kanban.md`. Si la tarjeta ya está en "En curso" o "En review"
+     con otro dueño, la trabaja otra máquina: **parar y preguntar al humano**. Este es el
+     anti-solapamiento: sin el `pull` previo, dos agentes en equipos distintos toman el
+     mismo task sin enterarse.
+  3. Mover la tarjeta y **pushear en ese momento**: `chore: <ID-task> a En curso (@dueño)`
+     para el kanban, `docs:` para los espejos. Nunca `git push --force`.
+  4. Conflicto en `kanban.md`: conservar **ambas** tarjetas (una tarjeta = una línea, como
+     `history.md`) y no borrar la de otro. Dos rebases fallidos seguidos → `vault_skip` en
+     el `history.md` del repo y reportar; el trabajo local nunca se bloquea.
+- Los dos remotos **nunca se cruzan**: código, diffs y tests jamás al Vault; artefactos del
+  Vault jamás al repo del proyecto.
 - Si es una carpeta compartida (OneDrive/SharePoint/vault de Obsidian sincronizado), la
   convención mínima: `id-registry.md` **solo agrega filas** (nunca editar ajenas), cada
   `roca_*.yaml` tiene **un solo dueño**, los generados no se tocan, y en `kanban.md`
@@ -199,8 +221,9 @@ en el repo queda la **materia prima técnica**. Y a Ninety, solo el nivel hito.
    vacías). Los YAML nacen en la próxima `/rock-plan`.
 5. Si el Vault es un vault de Obsidian: instalar el plugin **Kanban** para visualizar los
    tableros.
-6. En cada repo de proyecto: declarar `VAULT_PATH` en el `.env` apuntando al clon local.
-7. Si es repo git: proteger `main` para la capa estratégica y dar escritura a dueños de
-   roca y agentes (la capa de vista se particiona por proyecto).
+6. En cada repo de proyecto: correr `npx souclaude` y aceptar el paso del Vault (clona y
+   escribe `.claude/vault.local.json`). Sin interacción: `--vault-path <ruta>`.
+7. Dar escritura al equipo y a los agentes, **sin revisión obligatoria en `main`**: el push
+   directo es lo que mantiene vivo el tablero (§7).
 8. Anunciar la regla de oro: **sin ID del Vault no hay rama** — todo trabajo empieza con
    un hito que existe aquí.

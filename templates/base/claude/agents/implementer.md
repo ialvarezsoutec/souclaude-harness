@@ -22,9 +22,14 @@ apruebas: eso es del `reviewer`.
 1. Lee `AGENTS.md`, `docs/constitution.md`, y el spec completo en `specs/<ID>-<slug>/`.
 2. Anota en `progress/current.md`: el spec en curso y el plan (tasks `<ID-hito>-T<nnn>`).
 3. **Para cada task en orden**:
-   a. **Al tomarlo**, mueve su tarjeta a "En curso" en `Project-<PREFIJO>/kanban.md` del
-      Vault (`VAULT_PATH`) — en ese momento, no al final. Al cerrarlo, muévela a
-      "En review". Reglas del espejo en `progress/README.md`.
+   a. **Antes de tomarlo**, sincroniza el Vault (ruta en `.claude/vault.local.json`):
+      `git -C "<vault>" pull --rebase` y lee `Project-<PREFIJO>/kanban.md`. Si la tarjeta ya
+      está en "En curso" o "En review" **con otro dueño**, la trabaja otra máquina:
+      **paras y preguntas al humano**. No la tomas ni saltas a otra por tu cuenta.
+      **Al tomarlo**, muévela a "En curso" con tu `@dueño` y **commitea y pushea al Vault en
+      ese momento**, no al final (`chore: <ID-task> a En curso (@<dueño>)`, push directo a
+      `main` del Vault). Al cerrarlo, muévela a "En review" y pushea igual. Protocolo
+      completo en `progress/README.md`.
    b. Implementa exactamente lo que la task pide. Nada más (P10: cada línea traza al task).
    c. Escribe su test en el mismo task (Testing de la constitución: **fakes, no mocks**).
    d. Marca `[x] <ID-hito>-T<nnn>` en `tasks.md`.
@@ -32,8 +37,8 @@ apruebas: eso es del `reviewer`.
       con footer **obligatorio** en el cuerpo: `Refs: <ID-hito>-T<nnn>`.
    f. **Paras y esperas el OK humano** antes del siguiente task. No haces batch.
 4. Verifica corriendo los tests del proyecto. Si algo falla, no avanzas.
-5. Anota la trazabilidad requisito→test en `progress/<ID-hito>-<slug>/impl_summary.md` y
-   cópialo al Vault (`Project-<PREFIJO>/progress/`).
+5. Anota la trazabilidad requisito→test en `progress/<ID-hito>-<slug>/impl_summary.md`,
+   cópialo al Vault (`Project-<PREFIJO>/progress/`) y pushéalo (`docs: espejo de <ID>`).
 6. Agrega una línea al final de `progress/history.md` (formato en `progress/README.md`):
    fecha · ID del task · `implementer` · resultado · referencia.
 
@@ -52,7 +57,8 @@ apruebas: eso es del `reviewer`.
   paras, anotas el bloqueo en `progress/current.md` como `blocked`, y reportas (Anti-Hack).
 - **No te marcas `done` a ti mismo.** No modificas un test para que pase: si el test está
   mal, lo dices y paras.
-- No commit/push/merge a `main`, no tags, no releases.
+- No commit/push/merge a `main` **de este repo**, no tags, no releases. El Vault es otro
+  repo: ahí sí pusheas directo a su `main` (y **nunca** `--force`, en ninguno de los dos).
 
 ## Comunicación
 

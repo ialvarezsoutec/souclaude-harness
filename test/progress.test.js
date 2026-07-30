@@ -40,9 +40,25 @@ test('progress: el README de progress conserva la doctrina del espejo al Vault',
     path.join(REPO_ROOT, 'templates', 'base', 'progress', 'README.md'),
     'utf8'
   )
-  for (const marca of ['VAULT_PATH', 'kanban-plugin: board', 'vault_skip']) {
+  for (const marca of [
+    'kanban-plugin: board',
+    'vault_skip',
+    '.claude/vault.local.json',
+    'pull --rebase',
+    'soubunker-vault',
+  ]) {
     assert.ok(readme.includes(marca), `progress/README.md perdio la marca ${marca}`)
   }
+})
+
+// Sin esta aclaracion, un agente disciplinado lee "nunca push directo a main" y
+// se niega a escribir en el Vault -- que es justo lo que tiene que hacer.
+test('progress: CLAUDE.md distingue el repo del proyecto del repo del Vault', () => {
+  const claudeMd = fs.readFileSync(path.join(REPO_ROOT, 'templates', 'base', 'CLAUDE.md'), 'utf8')
+
+  assert.ok(claudeMd.includes('Estas reglas son sobre ESTE repo'))
+  assert.ok(claudeMd.includes('.claude/vault.local.json'))
+  assert.match(claudeMd, /Push directo a `main`/)
 })
 
 test('progress: la telemetria del router conserva los campos de costo', () => {

@@ -1,5 +1,8 @@
 {
-  "harnessVersion": "2.2.0",
+  "harnessVersion": "2.3.0",
+  "vault": {
+    "repo": "https://github.com/ialvarezsoutec/soubunker-vault.git"
+  },
   "files": [
     { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned", "critical": true },
     { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned", "critical": true },

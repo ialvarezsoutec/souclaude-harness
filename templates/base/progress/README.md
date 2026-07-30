@@ -92,9 +92,53 @@ crea las tarjetas en Backlog al emitir `tasks.md`; el implementer mueve a **En c
 tomar el task y a **En review** al cerrarlo; el reviewer mueve a **Hecho** con
 `APPROVED` o la devuelve a **En curso** con `CHANGES_REQUESTED`.
 
-**Ruta**: los agentes leen `VAULT_PATH` del `.env`. Si no está definida o la ruta no
-existe, el espejo se **omite sin fallar** y se deja una línea en `history.md`
-(`vault_skip · motivo`) — el trabajo local nunca se bloquea por el Vault.
+**Ruta**: los agentes leen la ruta local del Vault de `.claude/vault.local.json` (la escribe
+el instalador: `npx souclaude init` o `--vault-path`). Respaldo: la variable de entorno
+`VAULT_PATH`. **No se lee del `.env`**: `.claude/settings.json` deniega `Read(./.env)`, así
+que un agente no puede abrirlo. Si no hay ruta configurada o no existe, el espejo se **omite
+sin fallar** y se deja una línea en `history.md` (`vault_skip · motivo`) — el trabajo local
+nunca se bloquea por el Vault.
+
+## El Vault es OTRO repo: pull antes, push después
+
+El Vault (`https://github.com/ialvarezsoutec/soubunker-vault.git`) es un repo git con su
+propio remoto. Trabajas contra **dos repos a la vez** y no se parecen en nada:
+
+| | Repo del proyecto | Repo del Vault |
+|---|---|---|
+| Qué va | Código, tests, specs, progreso | Kanban, espejos, rocas, evidencia |
+| Cómo se escribe | Rama + PR. **Nunca** push directo a `main` | **Push directo a `main`**, sin PR |
+| Por qué | Todo cambio se revisa | El tablero refleja el ahora, no el último merge |
+
+Nunca se cruzan: código, diffs y tests jamás van al Vault; los artefactos del Vault jamás se
+commitean en el repo del proyecto.
+
+**Antes de tomar un task** (obligatorio — es el anti-solapamiento entre máquinas):
+
+```bash
+git -C "<vault>" pull --rebase
+```
+
+Luego lee `Project-<PREFIJO>/kanban.md`. Si la tarjeta ya está en **En curso** o **En review**
+con otro dueño, otro agente u otra persona la está trabajando: **paras y preguntas al humano**.
+No la tomas, no la mueves, no saltas a otra por tu cuenta.
+
+**Al tomarla**, la mueves y pusheas en ese momento — no al final:
+
+```bash
+git -C "<vault>" add Project-<PREFIJO>
+git -C "<vault>" commit -m "chore: <ID-task> a En curso (@<dueño>)"
+git -C "<vault>" pull --rebase && git -C "<vault>" push
+```
+
+Convención de commits del Vault: `chore:` para movimientos de kanban, `docs:` para espejos de
+artefactos. **Nunca `git push --force`**, en ninguno de los dos repos.
+
+**Conflictos en `kanban.md`**: una tarjeta = una línea, así que dos personas nunca se
+contradicen — conserva **ambas** tarjetas y nunca borres la de otro (misma lógica que
+`history.md`). Si el `pull --rebase` falla dos veces seguidas, no insistas: anota
+`vault_skip · motivo` en `history.md` del repo y repórtalo. El trabajo local nunca se bloquea
+por el Vault.
 
 ## Regla de arquitectura
 

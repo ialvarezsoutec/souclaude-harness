@@ -123,6 +123,10 @@ El ciclo **no termina en Done**: lo aprendido en la fase 8 alimenta la roca del 
   (`Project-<PREFIJO>/progress/`) y el **kanban con estado vivo**
   (`Project-<PREFIJO>/kanban.md`) — reglas en `progress/README.md`. El repo sigue siendo
   la fuente de verdad técnica; el Vault es la vista multi-proyecto.
+- **El Vault es un repo git con su propio remoto**, no una carpeta compartida: se hace
+  `pull --rebase` antes de leer el tablero y **push directo a su `main`** al mover una
+  tarjeta o dejar un espejo. Sin push, el estado no sale de tu máquina y dos agentes pueden
+  tomar el mismo task. Ruta local en `.claude/vault.local.json`.
 
 ## Límite de WIP
 

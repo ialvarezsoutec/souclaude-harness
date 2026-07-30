@@ -55,10 +55,12 @@ inventes estructura nueva.
 
 Tu salida final es **una sola línea** con la referencia al disco, no el contenido. Al cerrar
 cada fase, deja el resumen en `progress/<ID-hito>-<slug>/summary.md` y agrega una línea al
-final de `progress/history.md` (formato en `progress/README.md`). **Espejo al Vault**
-(`VAULT_PATH`, reglas en `progress/README.md`): copia el artefacto recién cerrado a
-`Project-<PREFIJO>/specs/<ID-hito>-<slug>/`; al emitir `tasks.md`, crea además las
-tarjetas de cada task en el Backlog de `Project-<PREFIJO>/kanban.md`.
+final de `progress/history.md` (formato en `progress/README.md`). **Espejo al Vault** (repo
+aparte, ruta en `.claude/vault.local.json`; reglas en `progress/README.md`): `pull --rebase`
+primero, copia el artefacto recién cerrado a `Project-<PREFIJO>/specs/<ID-hito>-<slug>/` y
+**pushea directo a `main` del Vault** (`docs: espejo de <ID-hito>-<slug>`). Al emitir
+`tasks.md`, crea además las tarjetas de cada task en el Backlog de
+`Project-<PREFIJO>/kanban.md` y pushéalas — si no están en el tablero, nadie las ve.
 
 ```
 spec_ready -> specs/<ID>-<slug>/spec.md
