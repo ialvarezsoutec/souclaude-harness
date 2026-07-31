@@ -1,6 +1,6 @@
 # Spec Lite: el CLI entrega el harness completo
 
-**Status**: draft
+**Status**: approved
 **Owner**: Ignacio A
 **Hito**: SHS-H2
 **Creado**: 2026-07-31
@@ -84,7 +84,8 @@ En orden de prioridad:
       y en CI sobre un checkout limpio.
 - [ ] `node bin/cli.mjs verify --strict` sale limpio y ahora falla si un fragmento de
       `.gitignore` existe sin que ninguna firma de detección de stack lo referencie.
-- [ ] CI corre en la versión de Node que `engines` declara, y `--no-vault` funciona en CI.
+- [ ] El desfase Node 20 (CI) contra `engines: >=22.4` queda documentado en `notes.md` como
+      gotcha conocido, sin cambiar ninguna versión (decisión del dueño, Q3).
 
 ## Riesgos
 
@@ -96,16 +97,27 @@ En orden de prioridad:
 - **Borrar las carpetas `backup-*/` versionadas es destructivo.** Se confirma con el dueño
   antes, y se verifica que no contengan nada que no esté ya en el historial de git.
 
-## Open questions
+## Open questions — resueltas
 
-- [ ] Q1: ¿`ccem-rocas` queda como skill paraguas real (con su `SKILL.md` explicando la
-      capa trimestral) o desaparece como carpeta y su contenido conceptual se absorbe en
-      `ccem-planner`? — Ignacio A. Afecta cuántas entradas nuevas lleva el manifest.
-- [ ] Q2: ¿Las cuatro carpetas `.claude/backup-*/` se borran o se dejan? Tres están vacías;
-      `backup-20260714T174401/` tiene contenido. — Ignacio A.
-- [ ] Q3: CI está en Node 20 y `engines` pide `>=22.4`. ¿Se sube CI a 22, o se baja
-      `engines` y se abandona `parseArgs({allowNegative})`? Lo primero es lo obvio, pero es
-      decisión del dueño porque cambia el piso de soporte. — Ignacio A.
+- [x] Q1: ¿`ccem-rocas` queda como skill paraguas o se absorbe en `ccem-planner`?
+      **Queda como skill paraguas real**, con su propio `SKILL.md` explicando la capa
+      trimestral y cuándo usar cada comando. — Ignacio A, 2026-07-31.
+- [x] Q2: ¿Las cuatro carpetas `.claude/backup-*/` se borran?
+      **Sí, se borran** las cuatro, previa verificación de que su contenido ya está en el
+      historial de git. — Ignacio A, 2026-07-31.
+- [x] Q3: ¿CI sube a Node 22 o `engines` baja a 20?
+      **Ninguna de las dos: no se tocan versiones.** CI sigue en Node 20 y `engines` sigue
+      en `>=22.4`. — Ignacio A, 2026-07-31.
+
+### Consecuencia de Q3, declarada
+
+La divergencia entre CI (Node 20) y `engines` (`>=22.4`) **queda en pie a propósito**. Hoy
+no rompe nada porque los dos pasos de CI (`verify --strict` y `upgrade --dry-run --yes`)
+no usan flags negados. Pero `parseArgs({allowNegative})` exige Node 22.4, así que **el día
+que CI ejecute `--no-vault`, `--no-backup` o cualquier otro flag negado, fallará solo en
+CI y no en local**. Se documenta en `notes.md` como gotcha conocido para que el próximo que
+agregue un paso de CI no pierda una tarde. No se agrega ningún paso de CI con flags negados
+en este spec.
 
 ---
 
@@ -114,5 +126,7 @@ En orden de prioridad:
 - [x] ¿Los goals son medibles, no aspiracionales?
 - [x] ¿Los non-goals cubren la asunción más probable de un lector? (que aquí se arregla
       también el Vault y los IDs — no, son S2 y S4)
-- [ ] ¿Sigue siendo un cambio de 4-8 horas? Si no → spec completo.
-- [ ] ¿El dueño respondió Q1, Q2 y Q3?
+- [x] ¿Sigue siendo un cambio de 4-8 horas? Sí: con Q3 resuelta como "no tocar", el
+      alcance se achica a mover archivos, agregar entradas al manifest, extender el
+      auditor y arreglar un test.
+- [x] ¿El dueño respondió Q1, Q2 y Q3? Sí, 2026-07-31.
