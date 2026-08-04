@@ -5,7 +5,7 @@ import { exists, listEntries, readIfExists } from './fsx.js'
 // de P2 (adapters -> application -> domain, nunca al reves). Sin enforcement en CI,
 // hexagonal degrada en 6 meses y queda como teatro: por eso el harness la nombra
 // explicitamente segun el stack en vez de dejar un placeholder.
-const SIGNATURES = [
+export const SIGNATURES = [
   { stack: 'node', label: 'Node.js', files: ['package.json'], enforcer: 'dependency-cruiser (o ESLint no-restricted-imports)' },
   { stack: 'python', label: 'Python', files: ['pyproject.toml', 'requirements.txt', 'Pipfile', 'setup.py'], enforcer: 'import-linter (.importlinter)' },
   { stack: 'java', label: 'Java / JVM', files: ['pom.xml', 'build.gradle', 'build.gradle.kts'], enforcer: 'ArchUnit' },
