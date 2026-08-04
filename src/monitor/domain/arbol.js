@@ -332,12 +332,22 @@ function materializarAgente(borrador, { indices, ahora, pidVivo }) {
 // La clave de agrupacion es el cwd, NUNCA el slug: dos rutas distintas pueden
 // colapsar al mismo slug. Sin cwd (ni en los eventos ni en los procesos vivos)
 // se cae al slug y la ruta queda explicitamente en null.
+//
+// El cwd se normaliza antes de usarlo como clave: Claude Code escribe a veces
+// "C:\Users\..." y a veces "c:\Users\..." para el MISMO proyecto, y sin
+// normalizar el panel lo muestra dos veces con el consumo partido a la mitad.
+// Se conserva la primera forma vista como `ruta`; solo la clave se normaliza.
+function normalizarClaveDeRuta(cwd) {
+  if (typeof cwd !== 'string' || cwd === '') return null
+  return cwd.replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
+}
+
 function agruparProyectos({ sesiones, ubicaciones }) {
   const porClave = new Map()
 
   for (const sesion of sesiones) {
     const ubicacion = ubicaciones.get(sesion.sessionId) ?? { cwd: null, slug: null }
-    const clave = ubicacion.cwd ?? ubicacion.slug ?? sesion.sessionId
+    const clave = normalizarClaveDeRuta(ubicacion.cwd) ?? ubicacion.slug ?? sesion.sessionId
     let p = porClave.get(clave)
     if (!p) {
       p = {

@@ -55,16 +55,19 @@ export function clasificarAgente(agente, { ahora, pidVivo }) {
 // `mtimeMs` (epoch ms de la ultima modificacion de su jsonl). Las sesiones no
 // tienen un toolUseResult propio que las cierre, asi que tieneCierre siempre
 // entra como false.
+// A diferencia de un agente, una sesion no tiene cierre que la termine: su
+// senal autoritativa es el pid. Un desarrollador que deja una sesion abierta
+// sin escribir por media hora TIENE una sesion abierta, no una terminada, asi
+// que mientras el proceso viva nunca baja de EN_DUDA. Si se aplicara el
+// umbral de 10 min como en los agentes, el panel diria "0 sesiones vivas"
+// con cuatro Claude Code abiertos, que es justo lo que vino a evitar.
 export function clasificarSesion(sesion, { ahora, pidVivo }) {
-  const antiguedadMs = ahora - sesion.mtimeMs
+  const referencia = sesion.ultimoTs ?? sesion.mtimeMs ?? sesion.startedAt
+  const antiguedadMs = referencia == null ? Infinity : ahora - referencia
   const escrituraReciente = antiguedadMs < UMBRAL_ESCRITURA_MS
 
-  return clasificar({
-    pidVivo,
-    escrituraReciente,
-    tieneCierre: false,
-    antiguedadMs,
-  })
+  if (!pidVivo) return TERMINADO
+  return escrituraReciente ? CORRIENDO : EN_DUDA
 }
 
 // true para los estados que un consumidor deberia tratar como "sigue vivo":
