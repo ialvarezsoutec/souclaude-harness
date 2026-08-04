@@ -6,7 +6,14 @@ import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { main } from '../src/cli.js'
 import { mkRepo, read, has, snapshot } from './helpers.js'
-import { cloneVault, looksLikeVault, readVaultConfig, VAULT_CONFIG, harnessDocsUrl } from '../src/core/vault.js'
+import {
+  cloneVault,
+  looksLikeVault,
+  readVaultConfig,
+  VAULT_CONFIG,
+  harnessDocsUrl,
+  isInsideCwd,
+} from '../src/core/vault.js'
 import { loadManifest } from '../src/core/manifest.js'
 
 // helpers.js pone CI=true, asi que todo lo que pasa por main() corre en modo
@@ -135,4 +142,23 @@ test('el hint del Vault apunta a una URL de GitHub, no a una ruta local', () => 
   const url = harnessDocsUrl('docs/vault-setup.md')
   assert.match(url, /^https:\/\/github\.com\/.+\/blob\/main\/docs\/vault-setup\.md$/)
   assert.ok(!url.startsWith('docs/'), 'quedo como ruta relativa en vez de URL')
+})
+
+test('isInsideCwd: un descendiente del repo esta adentro', () => {
+  const cwd = mkRepo({ 'README.md': '' })
+  assert.ok(isInsideCwd(cwd, path.join(cwd, 'sub', 'dir')))
+})
+
+test('isInsideCwd: un hermano del repo NO esta adentro', () => {
+  const cwd = mkRepo({ 'README.md': '' })
+  assert.ok(!isInsideCwd(cwd, path.join(path.dirname(cwd), 'sibling')))
+})
+
+test('isInsideCwd: el propio cwd cuenta como adentro', () => {
+  const cwd = mkRepo({ 'README.md': '' })
+  assert.ok(isInsideCwd(cwd, cwd))
+})
+
+test('isInsideCwd: discos distintos en Windows nunca estan adentro', { skip: process.platform !== 'win32' }, () => {
+  assert.ok(!isInsideCwd('C:\\repo', 'D:\\repo'))
 })

@@ -60,6 +60,15 @@ export function looksLikeVault(abs) {
   return exists(path.join(abs, '00-System'))
 }
 
+// Clonar el Vault -- otro repo git, con la memoria de TODOS los proyectos de la
+// organizacion -- adentro del repo que se esta instalando es el peor desenlace
+// posible de un prompt mal tipeado. path.relative() en vez de startsWith(): un
+// chequeo por prefijo de string confunde /repo con /repo-otro.
+export function isInsideCwd(cwd, target) {
+  const rel = path.relative(path.resolve(cwd), path.resolve(target))
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel))
+}
+
 // execFile con args en array: nunca pasa por el shell, asi que las rutas con
 // espacios (todo OneDrive) dejan de ser un problema. Mismo criterio que gitUserName.
 function git(args, opts = {}) {
