@@ -6,7 +6,7 @@ import path from 'node:path'
 import { execFileSync } from 'node:child_process'
 import { main } from '../src/cli.js'
 import { mkRepo, read, has, snapshot } from './helpers.js'
-import { cloneVault, looksLikeVault, readVaultConfig, VAULT_CONFIG } from '../src/core/vault.js'
+import { cloneVault, looksLikeVault, readVaultConfig, VAULT_CONFIG, harnessDocsUrl } from '../src/core/vault.js'
 import { loadManifest } from '../src/core/manifest.js'
 
 // helpers.js pone CI=true, asi que todo lo que pasa por main() corre en modo
@@ -125,4 +125,14 @@ test('cloneVault clona de verdad y el resultado parece un Vault', () => {
 
 test('el manifest declara el repo canonico del Vault', () => {
   assert.match(loadManifest().vault.repo, /soubunker-vault/)
+})
+
+// docs/vault-guide.md declara que no se distribuye a repos consumidores (es singleton
+// por organizacion), asi que el mensaje de ayuda no puede apuntar a una ruta local
+// (docs/vault-setup.md) que jamas existe en el repo destino -- tiene que ser la URL
+// donde el archivo si vive.
+test('el hint del Vault apunta a una URL de GitHub, no a una ruta local', () => {
+  const url = harnessDocsUrl('docs/vault-setup.md')
+  assert.match(url, /^https:\/\/github\.com\/.+\/blob\/main\/docs\/vault-setup\.md$/)
+  assert.ok(!url.startsWith('docs/'), 'quedo como ruta relativa en vez de URL')
 })
