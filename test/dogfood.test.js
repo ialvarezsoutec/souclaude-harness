@@ -1,7 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import fs from 'node:fs'
-import path from 'node:path'
+import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { loadManifest } from '../src/core/manifest.js'
 import { toPosix } from '../src/core/fsx.js'
@@ -19,18 +18,17 @@ const LOCAL_ONLY = new Set([
   '.claude/settings.local.json', // config local del dev, ya ignorada por el .gitignore que emite el harness
 ])
 
+// git ls-files, no fs.readdirSync: el disco tiene backups (.claude/backup-*/) y
+// propuestas pendientes (*.new) que el propio harness genera y el propio
+// .gitignore excluye a proposito. Caminar el disco crudo hace que este test
+// dependa de la copia de trabajo de quien lo corre en vez del repo. El manifest
+// describe que se COMMITEA, asi que la pregunta correcta es sobre git, no sobre fs.
 function walkClaudeDir() {
-  const abs = path.join(REPO_ROOT, '.claude')
-  const out = []
-  const walk = (cur, prefix) => {
-    for (const e of fs.readdirSync(cur, { withFileTypes: true })) {
-      const rel = prefix ? `${prefix}/${e.name}` : e.name
-      if (e.isDirectory()) walk(path.join(cur, e.name), rel)
-      else out.push(toPosix(`.claude/${rel}`))
-    }
-  }
-  walk(abs, '')
+  const out = execFileSync('git', ['ls-files', '.claude'], { cwd: REPO_ROOT, encoding: 'utf8' })
   return out
+    .split('\n')
+    .filter(Boolean)
+    .map((rel) => toPosix(rel))
 }
 
 test('dogfood: todo archivo de .claude/ del repo esta en el manifest o en LOCAL_ONLY', () => {
