@@ -7,7 +7,14 @@
       "Read(./.env.*)",
       "Read(./secrets/**)",
       "Read(./**/*.pem)",
-      "Read(./**/id_rsa*)"
+      "Read(./**/*.key)",
+      "Read(./**/*.pfx)",
+      "Read(./**/credentials.json)",
+      "Read(./**/secrets.json)",
+      "Read(./**/id_rsa*)",
+      "Read(~/.claude/.credentials.json)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.ssh/**)"
     ],
     "ask": [
       "Bash(git push:*)"
