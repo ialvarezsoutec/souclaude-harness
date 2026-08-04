@@ -2,6 +2,31 @@
 
 El harness y el CLI se versionan juntos.
 
+## [2.4.0] — no publicado
+
+`souclaude monitor`: panel de consumo de tokens de Claude Code en la terminal.
+
+### Agregado
+
+- **Comando `monitor`**: panel de límites de plan, agentes vivos, sesiones,
+  proyectos y desglose por tipo de token y por modelo, leído directamente de
+  `~/.claude/projects/**/*.jsonl`. Modos `--once`, `--compact`, `--agents`,
+  `--json` y panel en vivo con TTY (alternate buffer, resize, teclas). Sale
+  0/1/2 según el peor límite de plan — pensado para un hook. No suma ninguna
+  dependencia nueva.
+
+### Decisiones
+
+- **Deduplicación por `message.id`**: varias líneas `assistant` de un mismo
+  transcript comparten `message.id` y repiten el objeto `usage` completo. Sin
+  deduplicar, el consumo se infla 2-3x — el síntoma es un número mal, no una
+  excepción, así que la regla vive en el acumulador de dominio
+  (`domain/consumo.js`), no en un adapter donde se pueda saltear.
+- **Tokens medidos, costo estimado**: los tokens salen del `usage` de cada
+  respuesta (dato real); el costo en USD sale de una tabla de precios local,
+  porque la máquina no guarda lo que costó cada llamada (dato estimado). El
+  panel lo declara en su propio pie para que nunca se confundan.
+
 ## [2.3.0] — no publicado
 
 El Vault deja de ser un paso manual: el instalador lo conecta (y lo clona si hace falta), y

@@ -36,6 +36,35 @@ requisitos de features (van en `specs/`), convenciones del proyecto (van en
   corre Node más nuevo) — el síntoma no va a apuntar a la causa. Decisión del dueño
   (SHS-H2, 2026-07-31): no se sube CI ni se baja `engines` todavía. Si tocás CI, revisa
   esto primero.
+- **(2026-08-04, monitor de tokens) Varias líneas `assistant` comparten `message.id` y
+  repiten el objeto `usage` completo.** Una respuesta con un bloque `text` y uno
+  `tool_use` se escribe como dos líneas que comparten `message.id` y `requestId`, y el
+  `usage` de la respuesta entera va completo en cada una. Si sumas sin deduplicar,
+  el consumo se infla 2-3x. El síntoma es un número mal, no una excepción — nada revienta,
+  así que no se nota sin comparar contra el total real. Deduplica por `message.id` antes
+  de acumular.
+- **(2026-08-04, monitor de tokens) El slug de carpeta de `~/.claude/projects/` no es
+  reversible a ruta.** Espacios y acentos colapsan a `-` al generar el nombre de carpeta,
+  así que no hay forma de reconstruir la ruta real del proyecto a partir del slug. La ruta
+  real está en el campo `cwd` de dentro de cada línea del `.jsonl` — léela de ahí, nunca
+  del nombre de carpeta.
+- **(2026-08-04, monitor de tokens) Claude Code escribe el mismo proyecto a veces como
+  `C:\...` y a veces como `c:\...`.** Sin normalizar la clave (unidad en minúscula antes de
+  usarla como key de agrupación), el panel mostraba el mismo proyecto dos veces con el
+  consumo partido entre ambas entradas.
+- **(2026-08-04, monitor de tokens) Con `setRawMode(true)`, Ctrl+C deja de generar
+  `SIGINT`.** Llega como el byte `\u0003` dentro del stream de teclado. Si no lo
+  interceptas explícitamente, la terminal queda sin cursor y sin echo al salir — hay que
+  restaurar el modo de la TTY en un `finally`, no solo al final del flujo feliz.
+- **(2026-08-04, monitor de tokens) Truncar un string ya coloreado rompe el layout.**
+  `picocolors` inyecta códigos de escape ANSI que `String.length` cuenta como caracteres
+  pero la terminal no dibuja. Si truncas después de colorear, el ancho visual queda mal
+  aunque el conteo de `.length` parezca correcto. Trunca sobre el texto plano y colorea
+  después, nunca al revés.
+- **(2026-08-04, monitor de tokens) Junto a cada `agent-<id>.jsonl` hay un
+  `agent-<id>.meta.json` con `agentType` y una `description` legible.** Es mejor fuente
+  para mostrar el tipo de subagente que `attributionAgent`, que no siempre está presente
+  ni es legible para un humano.
 
 ## Comandos útiles
 

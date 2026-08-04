@@ -46,12 +46,82 @@ día proyecto por proyecto.
 | `souclaude upgrade` | Actualiza a la última versión. Aplica migraciones. |
 | `souclaude status` | Solo lectura. Exit 0 = al día · 1 = hay upgrade · 2 = drift. |
 | `souclaude adopt` | Para una estructura hecha a mano. **No toca ningún archivo**: solo escribe el lockfile. |
+| `souclaude monitor` | Panel de consumo de tokens de Claude Code. |
 
 Sin comando, se autodetecta: hay lockfile → `upgrade` · hay estructura previa →
 `adopt` · repo limpio → `init`.
 
 Flags que importan: `--dry-run` (imprime el plan, escribe cero bytes), `--yes`,
 `--force`, `--prune`, `--no-backup`, `--verbose`.
+
+## `souclaude monitor`
+
+Panel de consumo de tokens de Claude Code: límites de plan, agentes corriendo,
+sesiones, proyectos, y el desglose por tipo de token y por modelo.
+
+```bash
+node bin/cli.mjs monitor              # panel en vivo (con TTY)
+node bin/cli.mjs monitor --once       # un snapshot en texto plano y sale
+```
+
+Cuatro modos, excluyentes entre sí:
+
+- **En vivo** (default, con TTY): panel que se repinta solo, alternate buffer,
+  reacciona a resize. `q` sale con el exit code del último snapshot, `p` pausa.
+- `--once` — un snapshot en texto plano y sale. Sin TTY o en CI es lo mismo, aunque
+  no lo pidas.
+- `--compact` — una línea por sesión, sin caja.
+- `--agents` — solo la sección AHORA (agentes vivos).
+- `--json` — vuelca el modelo de datos completo y sale. No pinta panel.
+
+Flags útiles:
+
+| Flag | Qué hace |
+|---|---|
+| `--since <ventana>` | Ventana de datos: `30m`, `1h`, `6h`, `24h`, `7d` o `all`. Default `24h`. |
+| `--project <txt>` | Filtra por proyecto. `.` usa el directorio actual. |
+| `--top <n>` | Filas por contenedor. Default 10. No afecta los totales. |
+| `--sort <criterio>` | `tokens` (default), `costo` o `reciente`. |
+| `--ascii` | Fuerza glifos ASCII (equivale a `SOUCLAUDE_ASCII=1`). |
+| `--claude-home <ruta>` | Usa otra carpeta `~/.claude` (útil para fixtures y tests). |
+
+### Exit codes
+
+`monitor` sale con **0/1/2 según el peor límite de plan** — pensado para usarse
+desde un hook: 0 por debajo del 85 %, 1 entre 85 % y 94 %, 2 en 95 % o más (sin
+datos de límites, 0 — no saber no es lo mismo que estar mal). Por ejemplo, un hook
+que avise "estás al 91 % de Opus" solo necesita mirar el exit code, no parsear el
+panel.
+
+### `--emit-router`
+
+Puente entre `monitor` y la telemetría de `ccem-model-router`: activa un modo
+aparte que no dibuja panel, sino que escribe una línea en
+`progress/model-router.jsonl` con el costo **medido** de una tarea ya cerrada
+(reemplaza el estimado que el router anota al lanzar el subagente).
+
+| Flag | Qué hace |
+|---|---|
+| `--emit-router` | Activa el modo. No dibuja panel. |
+| `--hito <id>` | Obligatorio. ID del hito (ej. `SHS-H3`). |
+| `--task <id>` | ID completo del task (ej. `SHS-H3-T019`). Sin task, `null`. |
+| `--agente <rol>` | `spec-author`, `implementer`, `reviewer`... |
+| `--resultado <valor>` | `approved` \| `changes_requested` \| `escalated` \| `fallback` \| `aborted`. |
+| `--rework <n>` | Devoluciones del reviewer sobre ese task. Default 0. |
+| `--motivo <texto>` | Obligatorio si `--resultado` es `escalated` o `fallback`. |
+
+### Honestidad de los datos
+
+- **Los tokens son dato medido**: salen del campo `usage` de cada respuesta en los
+  transcripts (`~/.claude/projects/**/*.jsonl`), deduplicado por `message.id`.
+- **El costo en USD es estimado**: se calcula con una tabla de precios local
+  (`src/monitor/domain/precios.js`), porque la máquina no guarda lo que costó cada
+  llamada.
+- **El estado de los agentes es heurístico**: se infiere de pid vivo + mtime del
+  archivo + señales de cierre, no de un evento explícito de "terminé".
+
+El propio pie del panel lo declara: `tokens medidos · costo estimado · estado
+heurístico`.
 
 ## La garantía
 
