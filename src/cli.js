@@ -41,6 +41,7 @@ const OPTIONS = {
   compact: { type: 'boolean' },
   agents: { type: 'boolean' },
   ascii: { type: 'boolean' },
+  refresh: { type: 'boolean', default: true },
   'claude-home': { type: 'string' },
   // monitor --emit-router: el puente de telemetria estimada a medida.
   'emit-router': { type: 'boolean' },
@@ -156,6 +157,9 @@ ${pc.bold('FLAGS DE MONITOR')}
   --compact            Vista de una linea por sesion, sin caja.
   --agents             Solo la seccion AHORA (agentes vivos).
   --ascii              Fuerza glifos ASCII (equivale a SOUCLAUDE_ASCII=1).
+  --no-refresh         No consulta los limites de plan a la API. El caché de
+                       ~/.claude.json solo se actualiza cuando corres /usage,
+                       asi que sin refresco el dato puede tener 20-50 minutos.
   --claude-home <ruta> Usa otra carpeta ~/.claude (util para fixtures y tests).
 
 ${pc.bold('MONITOR --EMIT-ROUTER')}

@@ -8,12 +8,38 @@ import fs from 'node:fs'
 // El archivo crece con el historial por proyecto y puede llegar a pesar
 // varios MB. Re-parsearlo en cada tick del panel lo congelaria, asi que
 // cacheamos por mtime+ttl y agregamos un guard de tamano.
-export function createLimitsReader({ ttlMs = 30_000, maxBytes = 32 * 1024 * 1024 } = {}) {
+//
+// SEGUNDA FUENTE (opcional): un `fetcher` inyectado (ver usage-fetcher.js) que
+// le pega al endpoint de uso y trae el MISMO objeto de utilizacion, pero
+// fresco. Gana la fuente con `leidoEn` mas reciente y se usa entera: nunca se
+// mezclan campos de las dos. Sin `fetcher` inyectado el comportamiento es
+// identico al anterior, byte por byte.
+export function createLimitsReader({ ttlMs = 30_000, maxBytes = 32 * 1024 * 1024, fetcher = null } = {}) {
   let cached = null // { mtimeMs, cachedAtMs, value }
 
   async function read(configFile, { ahora } = {}) {
     const now = ahora ?? Date.now()
+    const desdeConfig = await readConfig(configFile, now)
+    if (!fetcher) return desdeConfig
 
+    // El fetcher nunca lanza, pero un adaptador de lectura tampoco puede
+    // confiar en eso: si alguien inyecta otra cosa, el panel no se cae.
+    let remoto = null
+    try {
+      remoto = await fetcher.obtener({ ahora: now })
+    } catch {
+      remoto = null
+    }
+
+    const desdeRed =
+      remoto && remoto.utilization
+        ? { limits: mapLimits(remoto.utilization, remoto.fetchedAtMs ?? null, now), warnings: [] }
+        : null
+
+    return elegirMasReciente(desdeConfig, desdeRed)
+  }
+
+  async function readConfig(configFile, now) {
     let stat
     try {
       stat = await fs.promises.stat(configFile)
@@ -57,16 +83,35 @@ export function createLimitsReader({ ttlMs = 30_000, maxBytes = 32 * 1024 * 1024
   return { read }
 }
 
+// El `edadMs` del cache de .claude.json se recalcula en cada read, pero cuando
+// el valor viene del cache interno se quedo congelado en el `now` de entonces.
+// Para elegir ganador comparamos `leidoEn`, que si es absoluto.
+function elegirMasReciente(desdeConfig, desdeRed) {
+  if (!desdeRed?.limits) return desdeConfig
+  if (!desdeConfig?.limits) return { limits: desdeRed.limits, warnings: desdeConfig?.warnings ?? [] }
+
+  const tConfig = typeof desdeConfig.limits.leidoEn === 'number' ? desdeConfig.limits.leidoEn : -Infinity
+  const tRed = typeof desdeRed.limits.leidoEn === 'number' ? desdeRed.limits.leidoEn : -Infinity
+
+  // Empate a favor de la red: es la fuente que realmente se refresca sola.
+  const ganador = tRed >= tConfig ? desdeRed.limits : desdeConfig.limits
+  return { limits: ganador, warnings: desdeConfig.warnings }
+}
+
 function buildValue(data, now, configFile) {
   const cu = data?.cachedUsageUtilization
   if (!cu || typeof cu !== 'object') {
     return { limits: null, warnings: [{ file: configFile, reason: 'sin cachedUsageUtilization: cuenta sin limites o version distinta' }] }
   }
 
-  const u = cu.utilization ?? {}
-  const leidoEn = cu.fetchedAtMs ?? null
+  return { limits: mapLimits(cu.utilization ?? {}, cu.fetchedAtMs ?? null, now), warnings: [] }
+}
 
-  const limits = {
+// Unico mapeo a nombres de dominio. Lo comparten las dos fuentes porque el
+// cuerpo del endpoint tiene exactamente la misma forma que
+// `cachedUsageUtilization.utilization` (verificado contra la maquina real).
+function mapLimits(u, leidoEn, now) {
+  return {
     cincoHoras: toVentana(u.five_hour),
     sieteDias: toVentana(u.seven_day),
     porGrupo: toPorGrupo(u.limits),
@@ -74,8 +119,6 @@ function buildValue(data, now, configFile) {
     leidoEn,
     edadMs: typeof leidoEn === 'number' ? now - leidoEn : null,
   }
-
-  return { limits, warnings: [] }
 }
 
 function toVentana(v) {

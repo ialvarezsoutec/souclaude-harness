@@ -4,12 +4,32 @@ import { parsearDuracion } from '../monitor/domain/ventanas.js'
 import { buildView } from '../monitor/application/build-view.js'
 import { resolveClaudeHome } from '../monitor/adapters/claude-home.js'
 import { createSnapshotSource } from '../monitor/adapters/snapshot-source.js'
+import { createLimitsReader } from '../monitor/adapters/usage-limits-reader.js'
+import { createUsageFetcher } from '../monitor/adapters/usage-fetcher.js'
 import { detectCaps } from '../monitor/adapters/caps.js'
 import { createTtyRenderer } from '../monitor/adapters/tty-renderer.js'
 import { renderPanel } from '../monitor/adapters/panel-layout.js'
 import { presentar } from '../monitor/adapters/panel-presenter.js'
 import { renderJson, renderPlain } from '../monitor/adapters/plain-renderer.js'
 import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writer.js'
+
+// El caché de limites de ~/.claude.json solo se reescribe cuando el humano corre
+// /usage, asi que sin esto el panel muestra un dato de 20-50 minutos. El fetcher
+// le pega al mismo endpoint que usa Claude Code, con un TTL de 5 minutos.
+//
+// Cuando NO se toca la red, y por que:
+//   --no-refresh    el usuario lo pidio explicitamente
+//   CI              un runner no debe salir a internet ni leer credenciales
+//   --claude-home   apunta a un fixture: no hay credenciales que leer, y ademas
+//                   ningun test puede depender de la red
+// En esos casos se lee solo el cache de .claude.json, como antes.
+function crearLimitsReader(flags) {
+  const sinRed = flags['no-refresh'] === true || flags.refresh === false || ui.isCI() || Boolean(flags['claude-home'])
+  if (sinRed) return undefined
+
+  const paths = resolveClaudeHome({ override: flags['claude-home'] })
+  return createLimitsReader({ fetcher: createUsageFetcher({ paths }) })
+}
 
 // `souclaude monitor`: panel de consumo de tokens. Tres modos excluyentes:
 //   --json                              -> modelo de dominio crudo y sale
@@ -57,7 +77,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
   }
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
-  const source = createSnapshotSource({ paths })
+  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags) })
   const clock = { now: () => Date.now() }
 
   const caps = detectCaps({ overrides: flags.ascii ? { unicode: false } : {} })
@@ -175,7 +195,7 @@ async function emitRouter(flags, cwd) {
   }
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
-  const source = createSnapshotSource({ paths })
+  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags) })
   const clock = { now: () => Date.now() }
 
   // top: null (sin recorte). Este modo busca UN agente o sesion puntual en
