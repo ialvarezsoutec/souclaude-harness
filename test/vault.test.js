@@ -13,6 +13,7 @@ import {
   VAULT_CONFIG,
   harnessDocsUrl,
   isInsideCwd,
+  ensureVault,
 } from '../src/core/vault.js'
 import { loadManifest } from '../src/core/manifest.js'
 
@@ -26,6 +27,18 @@ function mkVault() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'souclaude vault '))
   fs.mkdirSync(path.join(dir, '00-System', 'templates'), { recursive: true })
   fs.writeFileSync(path.join(dir, '00-System', 'id-registry.md'), '# prefijos\n', 'utf8')
+  return dir
+}
+
+// mkRepo() crea el repo bajo os.tmpdir() directo, asi que path.dirname(cwd) es
+// SIEMPRE os.tmpdir() -- el sibling ../soubunker-vault que usa ensureVault por
+// default terminaria siendo una ruta COMPARTIDA entre tests. Para los tests que
+// ejercen la autodeteccion del sibling o el clonado real, cada repo va adentro
+// de un padre unico para que su "afuera" tambien sea unico.
+function mkIsolatedRepo() {
+  const padre = fs.mkdtempSync(path.join(os.tmpdir(), 'souclaude aislado '))
+  const dir = path.join(padre, 'proyecto')
+  fs.mkdirSync(path.join(dir, '.git'), { recursive: true })
   return dir
 }
 
@@ -161,4 +174,111 @@ test('isInsideCwd: el propio cwd cuenta como adentro', () => {
 
 test('isInsideCwd: discos distintos en Windows nunca estan adentro', { skip: process.platform !== 'win32' }, () => {
   assert.ok(!isInsideCwd('C:\\repo', 'D:\\repo'))
+})
+
+// --- Sibling autodetectado -------------------------------------------------
+
+test('con el sibling ../soubunker-vault ya clonado, se conecta sin preguntar nada', async () => {
+  const cwd = mkIsolatedRepo()
+  const sibling = path.join(path.dirname(cwd), 'soubunker-vault')
+  fs.mkdirSync(path.join(sibling, '00-System'), { recursive: true })
+
+  const noPrompt = {
+    text: () => assert.fail('no debia preguntar: el sibling ya estaba detectado'),
+    confirm: () => assert.fail('no debia preguntar: el sibling ya estaba detectado'),
+  }
+  const abs = await ensureVault({
+    cwd,
+    flags: {},
+    manifest: loadManifest(),
+    lock: null,
+    yes: false,
+    prompts: noPrompt,
+  })
+  assert.equal(abs, sibling)
+  assert.equal(readVaultConfig(cwd).path, sibling.split(path.sep).join('/'))
+})
+
+// --- --vault-clone (camino no interactivo) ---------------------------------
+
+test('--vault-path dentro del repo + --vault-clone --yes no clona nada', async () => {
+  const dir = mkIsolatedRepo()
+  const dentro = path.join(dir, 'vault')
+
+  assert.equal(await main(['init', ...YES, '--vault-path', dentro, '--vault-clone'], dir), 0)
+  assert.ok(!has(dir, VAULT_CONFIG), 'se conecto o clono un Vault dentro del propio repo')
+  assert.ok(!fs.existsSync(dentro), 'se creo la carpeta de destino dentro del repo')
+})
+
+test('--vault-clone --yes con destino valido clona sin ningun prompt', async () => {
+  const dir = mkIsolatedRepo()
+  const origen = mkVaultRepo()
+  const destino = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'souclaude clone ')), 'soubunker-vault')
+
+  assert.equal(await main(['init', ...YES, '--vault-repo', origen, '--vault-path', destino, '--vault-clone'], dir), 0)
+  assert.ok(looksLikeVault(destino))
+  assert.equal(readVaultConfig(dir).path, destino.split(path.sep).join('/'))
+})
+
+// --- Camino interactivo: una sola pregunta, reintenta si cae dentro --------
+
+test('camino interactivo: quien rechaza el default y tipea una ruta dentro del repo, se rechaza y se vuelve a preguntar', async () => {
+  const cwd = mkIsolatedRepo()
+  const origen = mkVaultRepo()
+  const afuera = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'souclaude afuera ')), 'vault')
+
+  let textCalls = 0
+  const prompts = {
+    // Rechaza el default sugerido -- el unico camino donde se llega a tipear una ruta.
+    confirm: () => false,
+    text: () => {
+      textCalls += 1
+      // Primera respuesta: cae dentro del repo -> se rechaza. Segunda: afuera.
+      return textCalls === 1 ? path.join(cwd, 'vault-adentro') : afuera
+    },
+  }
+
+  const abs = await ensureVault({
+    cwd,
+    flags: { 'vault-repo': origen },
+    manifest: loadManifest(),
+    lock: null,
+    yes: false,
+    prompts,
+  })
+
+  assert.equal(textCalls, 2, 'no reintento tras la ruta invalida')
+  assert.equal(abs, afuera)
+  assert.ok(looksLikeVault(afuera))
+})
+
+test('camino interactivo: sin Vault detectado, una sola confirmacion y sin preguntar la ruta', async () => {
+  const cwd = mkIsolatedRepo()
+  const origen = mkVaultRepo()
+
+  let textCalls = 0
+  let confirmCalls = 0
+  const prompts = {
+    text: () => {
+      textCalls += 1
+      return assert.fail('no debia preguntar la ruta: el default ya cae afuera del repo')
+    },
+    confirm: () => {
+      confirmCalls += 1
+      return true
+    },
+  }
+
+  const abs = await ensureVault({
+    cwd,
+    flags: { 'vault-repo': origen },
+    manifest: loadManifest(),
+    lock: null,
+    yes: false,
+    prompts,
+  })
+
+  assert.equal(textCalls, 0, 'pregunto la ruta pudiendo usar el default (ya afuera del repo)')
+  assert.equal(confirmCalls, 1, 'el camino interactivo hizo mas de una confirmacion')
+  assert.equal(abs, path.join(path.dirname(cwd), 'soubunker-vault'))
 })
