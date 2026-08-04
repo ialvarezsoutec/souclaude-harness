@@ -1,6 +1,6 @@
 # Spec Lite: el CLI entrega el harness completo
 
-**Status**: approved
+**Status**: implemented
 **Owner**: Ignacio A
 **Hito**: SHS-H2
 **Creado**: 2026-07-31
@@ -78,15 +78,15 @@ En orden de prioridad:
 
 ## Success criteria
 
-- [ ] En una sesión de Claude Code sobre un repo recién inicializado, los cuatro comandos
-      de rocas aparecen en el autocompletado de `/` y ejecutan.
-- [ ] Ningún mensaje del CLI referencia una ruta local que no exista en el repo destino:
+- [x] En una sesión de Claude Code sobre un repo recién inicializado, los cuatro comandos
+      de rocas aparecen en el autocompletado de `/` y ejecutan. Confirmado en vivo.
+- [x] Ningún mensaje del CLI referencia una ruta local que no exista en el repo destino:
       el aviso del Vault apunta a la URL de GitHub del repo generador, no a un path local.
-- [ ] `npm test` sale 67/67 en esta máquina (con `.claude/backup-*/` y `*.new` presentes)
-      y en CI sobre un checkout limpio.
-- [ ] `node bin/cli.mjs verify --strict` sale limpio y ahora falla si un fragmento de
+- [x] `npm test` sale 70/70 en esta máquina (con `.claude/backup-*/` y `*.new` ausentes
+      tras T009) y en CI sobre un checkout limpio.
+- [x] `node bin/cli.mjs verify --strict` sale limpio y ahora falla si un fragmento de
       `.gitignore` existe sin que ninguna firma de detección de stack lo referencie.
-- [ ] El desfase Node 20 (CI) contra `engines: >=22.4` queda documentado en `notes.md` como
+- [x] El desfase Node 20 (CI) contra `engines: >=22.4` queda documentado en `notes.md` como
       gotcha conocido, sin cambiar ninguna versión (decisión del dueño, Q3).
 
 ## Riesgos
