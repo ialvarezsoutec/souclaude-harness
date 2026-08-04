@@ -26,6 +26,7 @@ const OPTIONS = {
   vault: { type: 'boolean', default: true },
   'vault-path': { type: 'string' },
   'vault-repo': { type: 'string' },
+  'vault-clone': { type: 'boolean' },
   'assume-version': { type: 'string' },
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean' },
@@ -114,6 +115,8 @@ ${pc.bold('FLAGS')}
   --name, --type, --stack, --lang    Responden las preguntas sin modo interactivo.
   --vault-path <ruta>  Conecta el Vault ya clonado sin preguntar (escribe .claude/vault.local.json).
   --vault-repo <url>   Repo del Vault a clonar. Por defecto, el del manifest.
+  --vault-clone        Con --yes, clona el Vault si no esta conectado (por defecto,
+                       --yes nunca clona). Rechaza cualquier destino dentro de este repo.
   --no-vault           Omite el paso del Vault por completo.
   --assume-version     (adopt) Version del harness que se asume instalada.
   --strict             (verify) Los warnings (huerfanos) tambien hacen fallar el comando.

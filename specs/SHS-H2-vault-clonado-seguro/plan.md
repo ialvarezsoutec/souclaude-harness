@@ -37,6 +37,16 @@
   preguntar con un mensaje claro de por qué se rechazó. En el camino no interactivo
   (`--vault-clone` + `--yes`), sí se aborta con warning — no hay a quién reprEguntarle.
 
+- **Corrección encontrada al implementar T102**: la única pregunta del camino feliz
+  (`Clonar <repo> en <destino>? [Y/n]`) usa un destino que **calcula el propio CLI**
+  (`../soubunker-vault`), nunca texto libre del usuario — por construcción, ese destino
+  jamás puede caer dentro de `cwd`. Poner el chequeo `isInsideCwd` ahí sería código muerto.
+  El texto libre — y por lo tanto el riesgo real del goal 1 — solo reaparece si el usuario
+  **rechaza** el destino sugerido: recién ahí se le pregunta una ruta, y es ahí donde vive
+  el bucle de reintento. El camino feliz sigue siendo una sola pregunta (goal 3); el
+  escape hatch (rechazar + tipear) es el único lugar donde `isInsideCwd` se ejecuta de
+  verdad.
+
 - **`--vault-clone` es un flag nuevo, no una reinterpretación de `--vault-path`.**
   `--vault-path` hoy significa "conectá esto que ya existe" — mezclar semánticas (a veces
   conecta, a veces clona) sería sorprendente. `--vault-clone` es explícito: "si no existe,

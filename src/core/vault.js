@@ -105,7 +105,9 @@ function manualHint(repo) {
 // Paso interactivo del instalador. NUNCA lanza: cualquier fallo se degrada a
 // warning y el comando sigue devolviendo 0. El Vault es la vista multi-proyecto,
 // no una dependencia dura para tener el harness instalado.
-export async function ensureVault({ cwd, flags = {}, manifest, lock, yes }) {
+// prompts (default: el modulo real de UI) se puede inyectar en tests para
+// ejercer el camino interactivo sin una TTY real ni mockear el modulo entero.
+export async function ensureVault({ cwd, flags = {}, manifest, lock, yes, prompts = ui }) {
   if (flags.vault === false) {
     ui.log.info('--no-vault: no se toca la conexion con el Vault.')
     return null
@@ -125,48 +127,76 @@ export async function ensureVault({ cwd, flags = {}, manifest, lock, yes }) {
     ui.log.warn(`La ruta configurada del Vault ya no existe: ${configured}`)
   }
 
-  // Con --yes o en CI no se clona: git clone es red y disco, y en CI correria en
-  // cada corrida. Quien quiera conectarlo sin interaccion pasa --vault-path.
+  const destino = path.join(path.dirname(cwd), 'soubunker-vault')
+
+  // Autodeteccion: si el sibling de siempre ya esta clonado y parece un Vault,
+  // conectar directo. Ahorra las preguntas en el caso mas comun -- alguien que ya
+  // clono el Vault junto a OTRO repo de la organizacion en esta misma maquina.
+  if (exists(destino) && looksLikeVault(destino)) {
+    return finish(cwd, destino, repo)
+  }
+
+  // Con --yes o en CI no se clona salvo pedido explicito (--vault-clone): git
+  // clone es red y disco, y en CI correria en cada corrida.
   if (yes) {
-    ui.log.warn('Modo no interactivo: el Vault no se conecto (usa --vault-path para hacerlo).')
+    if (flags['vault-clone'] && repo) {
+      return clonarSinPreguntar(cwd, repo, flags['vault-path'] ?? destino)
+    }
+    ui.log.warn('Modo no interactivo: el Vault no se conecto (usa --vault-path o --vault-clone).')
     if (repo) manualHint(repo)
     return null
   }
 
-  const tieneVault = await ui.confirm({
-    message: 'Tienes el Vault clonado en esta maquina?',
-    initialValue: false,
-  })
-
-  const destino = path.join(path.dirname(cwd), 'soubunker-vault')
-
-  if (tieneVault) {
-    const ruta = await ui.text({ message: 'Ruta local al Vault', initialValue: destino })
-    const abs = path.resolve(cwd, String(ruta).trim())
-    if (exists(abs)) {
-      if (!looksLikeVault(abs)) ui.log.warn(`${abs} no tiene 00-System/: no parece un Vault. Se usa igual.`)
-      return finish(cwd, abs, repo)
-    }
-    ui.log.warn(`Esa ruta no existe: ${abs}`)
-    return clonar(cwd, repo, abs)
-  }
-
-  const ruta = await ui.text({ message: 'Donde clono el Vault?', initialValue: destino })
-  return clonar(cwd, repo, path.resolve(cwd, String(ruta).trim()))
-}
-
-async function clonar(cwd, repo, abs) {
   if (!repo) {
     ui.log.warn('No hay URL del Vault en el manifest. Pasa --vault-repo para clonarlo.')
     return null
   }
 
-  const ok = await ui.confirm({ message: `Clonar ${repo} en ${abs}?`, initialValue: true })
-  if (!ok) {
-    manualHint(repo)
-    return null
+  return clonarInteractivo(cwd, repo, destino, prompts)
+}
+
+// Camino feliz: UNA pregunta (antes eran dos: "tenes el Vault?" -> "donde lo
+// clono?") -- confirmar el destino sugerido, que el propio CLI calcula y que
+// por construccion nunca cae dentro de cwd. Quien lo rechaza recien ahi tipea
+// una ruta -- y es ahi, no antes, donde isInsideCwd importa: reintenta -- nunca
+// clona -- mientras la ruta tipeada caiga dentro del repo del proyecto.
+async function clonarInteractivo(cwd, repo, destinoSugerido, prompts) {
+  const acepta = await prompts.confirm({ message: `Clonar ${repo} en ${destinoSugerido}?`, initialValue: true })
+  let abs = path.resolve(cwd, destinoSugerido)
+
+  if (!acepta) {
+    const ruta = await prompts.text({ message: 'Donde clonar el Vault? (vacio para cancelar)', initialValue: '' })
+    if (!String(ruta).trim()) {
+      manualHint(repo)
+      return null
+    }
+    abs = path.resolve(cwd, String(ruta).trim())
+    while (isInsideCwd(cwd, abs)) {
+      ui.log.warn(`${toPosix(abs)} queda dentro de este repo: el Vault no puede clonarse ahi.`)
+      const otra = await prompts.text({
+        message: 'Donde clono el Vault? (tiene que quedar fuera de este repo)',
+        initialValue: destinoSugerido,
+      })
+      abs = path.resolve(cwd, String(otra).trim())
+    }
   }
 
+  return clonar(cwd, repo, abs)
+}
+
+// Camino no interactivo (--vault-clone --yes): sin nadie a quien reprEguntarle,
+// una ruta dentro del repo aborta el paso entero en vez de reintentar.
+function clonarSinPreguntar(cwd, repo, destino) {
+  const abs = path.resolve(cwd, destino)
+  if (isInsideCwd(cwd, abs)) {
+    ui.log.warn(`${toPosix(abs)} queda dentro de este repo: el Vault no se clono. Pasa --vault-path con una ruta afuera.`)
+    manualHint(repo)
+    return Promise.resolve(null)
+  }
+  return clonar(cwd, repo, abs)
+}
+
+async function clonar(cwd, repo, abs) {
   try {
     cloneVault(repo, abs)
     ui.log.success(`Vault clonado en ${abs}`)
