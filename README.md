@@ -83,6 +83,7 @@ Flags útiles:
 | `--top <n>` | Filas por contenedor. Default 10. No afecta los totales. |
 | `--sort <criterio>` | `tokens` (default), `costo` o `reciente`. |
 | `--ascii` | Fuerza glifos ASCII (equivale a `SOUCLAUDE_ASCII=1`). |
+| `--no-refresh` | No consulta los límites de plan a la API. Sin este flag, el monitor le pega a `GET /api/oauth/usage` (el mismo endpoint que usa Claude Code) porque el caché de `~/.claude.json` solo se reescribe cuando el humano corre `/usage` — medido: cero refrescos en 12 minutos de actividad continua. Con `--no-refresh` el panel muestra la edad real del último dato en caché en vez de fingir que está al día. |
 | `--claude-home <ruta>` | Usa otra carpeta `~/.claude` (útil para fixtures y tests). |
 
 ### Exit codes
@@ -119,6 +120,24 @@ aparte que no dibuja panel, sino que escribe una línea en
   llamada.
 - **El estado de los agentes es heurístico**: se infiere de pid vivo + mtime del
   archivo + señales de cierre, no de un evento explícito de "terminé".
+- **Los límites de plan salen de dos fuentes, y gana la más fresca entera**: el
+  caché de `cachedUsageUtilization` en `~/.claude.json` (solo se reescribe cuando
+  corres `/usage`) y el refresco propio del monitor contra `GET
+  https://api.anthropic.com/api/oauth/usage`, con TTL de 5 minutos y caché aparte
+  en `~/.claude/souclaude/usage-cache.json`. Los campos de ambas fuentes nunca se
+  mezclan: se toma el snapshot entero de la lectura más reciente.
+  - Ese endpoint es **interno y no documentado** — es el mismo que usa Claude
+    Code, no un contrato publicado por Anthropic, y puede romperse con cualquier
+    actualización. Ante cualquier fallo (401, 404, cambio de forma de la
+    respuesta, timeout) el monitor cae al caché existente y el panel muestra la
+    edad real del dato. Nunca inventa un número ni rompe el comando.
+  - El refresco usa el token OAuth que Claude Code ya guarda en
+    `~/.claude/.credentials.json`. Se lee únicamente
+    `claudeAiOauth.accessToken`; el resto del archivo (incluidos los tokens de
+    conectores MCP de terceros) no se toca. El token no sale del proceso: no se
+    escribe a disco, no se loguea, no viaja en el valor de retorno de ninguna
+    función exportada. No hay renovación de token: un 401 se trata como un fallo
+    más, sin tocar `refreshToken`.
 
 El propio pie del panel lo declara: `tokens medidos · costo estimado · estado
 heurístico`.

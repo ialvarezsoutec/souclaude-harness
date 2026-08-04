@@ -65,6 +65,26 @@ requisitos de features (van en `specs/`), convenciones del proyecto (van en
   `agent-<id>.meta.json` con `agentType` y una `description` legible.** Es mejor fuente
   para mostrar el tipo de subagente que `attributionAgent`, que no siempre está presente
   ni es legible para un humano.
+- **(2026-08-04, monitor de tokens) `cachedUsageUtilization` de `~/.claude.json` solo se
+  refresca cuando el humano corre `/usage`.** Medido con un poller sobre `fetchedAtMs`:
+  cero refrescos en 12 minutos de actividad continua. `claude auth status` tampoco lo
+  toca, y no existen `claude usage` ni `claude status`. El panel llegaba a mostrar un
+  dato de 20-50 minutos de antigüedad como si fuera el estado actual.
+- **(2026-08-04, monitor de tokens) El endpoint real de límites de plan es `GET
+  https://api.anthropic.com/api/oauth/usage`**, con `Authorization: Bearer <token>` y la
+  cabecera `anthropic-beta: oauth-2025-04-20`. Es el mismo que usa Claude Code, pero es
+  interno y no documentado: puede romperse con cualquier actualización suya.
+- **(2026-08-04, monitor de tokens) Al manejar un token, no conservar el objeto de error
+  es una garantía más fuerte y más barata de auditar que sanear mensajes de excepción.**
+  Un mensaje de `fetch` fallido puede arrastrar la cabecera `Authorization` completa; en
+  vez de intentar limpiar ese mensaje, `usage-fetcher.js` directamente no lo guarda en
+  ningún lado — el `catch` devuelve `null` y listo.
+- **(2026-08-04, monitor de tokens) `~/.claude/.credentials.json` no es solo el token de
+  Claude: guarda los tokens OAuth de todos los conectores MCP de terceros** (GitHub,
+  Slack, Notion, Figma, Datadog...). Es probablemente el archivo más sensible de la
+  máquina — cualquier código que lo lea debe extraer un solo campo
+  (`claudeAiOauth.accessToken`) y dejar morir el resto del objeto parseado en el mismo
+  scope, sin que sobreviva al closure ni al valor de retorno.
 
 ## Comandos útiles
 
