@@ -1,3 +1,4 @@
+import path from 'node:path'
 import * as ui from '../ui.js'
 import { parsearDuracion } from '../monitor/domain/ventanas.js'
 import { buildView } from '../monitor/application/build-view.js'
@@ -8,6 +9,7 @@ import { createTtyRenderer } from '../monitor/adapters/tty-renderer.js'
 import { renderPanel } from '../monitor/adapters/panel-layout.js'
 import { presentar } from '../monitor/adapters/panel-presenter.js'
 import { renderJson, renderPlain } from '../monitor/adapters/plain-renderer.js'
+import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writer.js'
 
 // `souclaude monitor`: panel de consumo de tokens. Tres modos excluyentes:
 //   --json                              -> modelo de dominio crudo y sale
@@ -17,6 +19,10 @@ import { renderJson, renderPlain } from '../monitor/adapters/plain-renderer.js'
 // SIN TTY NO SE TOCA NADA DE LA TERMINAL: ni alternate buffer, ni setRawMode, ni
 // cursor. `souclaude monitor | cat` no puede colgarse esperando teclas ni ensuciar
 // la salida con escapes.
+//
+// --emit-router es un cuarto modo, ortogonal a los tres de arriba: no dibuja
+// panel, es estrictamente de lectura salvo por la UNICA escritura de todo el
+// comando (progress/model-router.jsonl). Ver ../monitor/adapters/router-log-writer.js.
 
 const INTERVALO_DEFAULT = 2000
 const INTERVALO_MINIMO = 250
@@ -34,6 +40,8 @@ const KEY_CTRL_C = '\u0003'
 const ORDENES = new Set(['tokens', 'costo', 'reciente'])
 
 export async function monitor(flags = {}, cwd = process.cwd()) {
+  if (flags['emit-router']) return await emitRouter(flags, cwd)
+
   const ventana = flags.since ?? VENTANA_DEFAULT
   if (parsearDuracion(ventana) === null) {
     // Un throw aca dejaria un stack trace donde el usuario necesita una instruccion.
@@ -143,6 +151,77 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags }) {
   }
 }
 
+// --- emit-router: el puente de estimado a medido ---
+//
+// Es la UNICA escritura de todo el comando; todo lo demas (buildView, la
+// resolucion del tramo) es lectura. No dibuja panel: imprime que escribio (o
+// por que no) y sale. 0 si escribio o si la idempotencia la rechazo (no es un
+// error correr el comando dos veces); 2 si faltan argumentos obligatorios o
+// si construirLinea no pudo armar la linea (motivo faltante, tramo ambiguo o
+// inexistente, etc).
+async function emitRouter(flags, cwd) {
+  if (typeof flags.hito !== 'string' || flags.hito === '') {
+    ui.log.error('Falta --hito: obligatorio para emitir telemetria del router (ver SKILL ccem-model-router).')
+    return 2
+  }
+
+  // Default 'all' (no 24h): este modo busca un lanzamiento puntual que ya
+  // paso, no el estado reciente del panel. Si el usuario pasa --since, se
+  // respeta igual.
+  const ventana = flags.since ?? 'all'
+  if (parsearDuracion(ventana) === null) {
+    ui.log.error(`Ventana invalida: "${ventana}". Usa 30m, 1h, 6h, 24h, 7d o all.`)
+    return 2
+  }
+
+  const paths = resolveClaudeHome({ override: flags['claude-home'] })
+  const source = createSnapshotSource({ paths })
+  const clock = { now: () => Date.now() }
+
+  // top: null (sin recorte). Este modo busca UN agente o sesion puntual en
+  // todo el arbol; el recorte de presentacion (pensado para el panel en vivo)
+  // podria dejarlo justo afuera de las primeras N filas.
+  const opciones = { ventana, orden: 'tokens', top: null, filtros: {} }
+
+  let vista
+  try {
+    vista = await buildView({ source, clock, opciones })
+  } catch (err) {
+    ui.log.error(`No se pudo leer la telemetria de Claude Code: ${err.message}`)
+    return 2
+  }
+
+  let linea
+  try {
+    linea = construirLinea(vista, {
+      hito: flags.hito,
+      task: typeof flags.task === 'string' && flags.task !== '' ? flags.task : null,
+      agente: typeof flags.agente === 'string' && flags.agente !== '' ? flags.agente : null,
+      resultado: flags.resultado,
+      rework: enteroNoNegativo(flags.rework, 0),
+      motivo: typeof flags.motivo === 'string' && flags.motivo !== '' ? flags.motivo : null,
+      clase: typeof flags.clase === 'string' && flags.clase !== '' ? flags.clase : null,
+      sessionId: typeof flags.session === 'string' && flags.session !== '' ? flags.session : undefined,
+      ahora: clock.now(),
+    })
+  } catch (err) {
+    ui.log.error(err.message)
+    return 2
+  }
+
+  const rutaJsonl = path.join(cwd, 'progress', 'model-router.jsonl')
+  const { escrita, motivo } = await emitirLinea(rutaJsonl, linea, { force: flags.force === true })
+
+  if (!escrita) {
+    ui.log.warn(motivo)
+    return 0
+  }
+
+  ui.log.success(`Linea de telemetria medida escrita en ${rutaJsonl}`)
+  ui.log.success(JSON.stringify(linea))
+  return 0
+}
+
 // --- helpers ---
 
 function filtrosDe(flags, cwd) {
@@ -160,6 +239,14 @@ function filtrosDe(flags, cwd) {
 function enteroPositivo(valor, porDefecto) {
   const n = Number(valor)
   if (!Number.isFinite(n) || n <= 0) return porDefecto
+  return Math.floor(n)
+}
+
+// Igual que enteroPositivo pero acepta 0 (rework: 0 devoluciones es el caso normal).
+function enteroNoNegativo(valor, porDefecto) {
+  if (valor === undefined) return porDefecto
+  const n = Number(valor)
+  if (!Number.isFinite(n) || n < 0) return porDefecto
   return Math.floor(n)
 }
 

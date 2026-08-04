@@ -42,6 +42,15 @@ const OPTIONS = {
   agents: { type: 'boolean' },
   ascii: { type: 'boolean' },
   'claude-home': { type: 'string' },
+  // monitor --emit-router: el puente de telemetria estimada a medida.
+  'emit-router': { type: 'boolean' },
+  hito: { type: 'string' },
+  task: { type: 'string' },
+  agente: { type: 'string' },
+  resultado: { type: 'string' },
+  rework: { type: 'string' },
+  motivo: { type: 'string' },
+  clase: { type: 'string' },
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean' },
 }
@@ -148,6 +157,22 @@ ${pc.bold('FLAGS DE MONITOR')}
   --agents             Solo la seccion AHORA (agentes vivos).
   --ascii              Fuerza glifos ASCII (equivale a SOUCLAUDE_ASCII=1).
   --claude-home <ruta> Usa otra carpeta ~/.claude (util para fixtures y tests).
+
+${pc.bold('MONITOR --EMIT-ROUTER')}
+  Escribe UNA linea "medida" en progress/model-router.jsonl a partir de la
+  telemetria real de un agente o sesion ya corridos (ver SKILL ccem-model-router).
+  Es la unica escritura del comando: sin este flag, monitor es de solo lectura.
+
+  --emit-router           Activa el modo. No dibuja panel.
+  --hito <id>             Obligatorio. ID del hito (ej. SHS-H3).
+  --task <id>             ID completo del task (ej. SHS-H3-T019). Sin task, null.
+  --agente <rol>          spec-author, implementer, reviewer...
+  --resultado <valor>     approved | changes_requested | escalated | fallback | aborted.
+  --rework <n>            Devoluciones del reviewer sobre ese task. Default 0.
+  --motivo <texto>        Obligatorio si --resultado es escalated o fallback.
+  --clase <valor>         mecanica | estandar | compleja.
+  --session <prefijo>     (mismo flag de arriba) sesion a medir, si no se mide un agente.
+  --force                 (mismo flag de arriba) reescribe aunque ya exista la linea (idempotencia).
 
 ${pc.bold('GARANTIA')}
   Un archivo tuyo NUNCA se sobrescribe en silencio. Si difiere del harness, la
