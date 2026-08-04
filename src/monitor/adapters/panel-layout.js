@@ -74,6 +74,16 @@ const COLS_ANCHO = 100
 
 const PIE = ['tokens medidos', 'costo estimado', 'estado heuristico']
 
+// Los tokens son dato duro; el dinero es derivado de una tabla local. Cuando
+// hay llamadas de un modelo sin precio conocido, el costo mostrado es un piso,
+// no el total, y el pie tiene que decirlo: un $0.00 junto a millones de tokens
+// se lee como "gratis" en vez de como "no lo sabemos".
+function pieDe(vista) {
+  const sinPrecio = vista?.sinPrecio ?? 0
+  if (!sinPrecio) return PIE
+  return [...PIE, `${sinPrecio} llamadas sin precio`]
+}
+
 // --- primitivas de ancho exacto ---
 
 function tenir(texto, tinte, color) {
@@ -629,7 +639,7 @@ function seccionSesiones(ctx, vista) {
             ctx,
             [
               { texto: '', ancho: 4 },
-              { texto: `${ctx.chars.ellipsis} y ${ocultas} sesiones mas`, ancho: RESTO, tinte: 'dim' },
+              { texto: `${ctx.chars.ellipsis} y ${ocultas} ${ocultas === 1 ? 'sesion' : 'sesiones'} mas`, ancho: RESTO, tinte: 'dim' },
             ],
             ctx.tinteMarco
           )
@@ -786,7 +796,7 @@ function renderFull(ctx, vista) {
     ...lineasLimites(ctx, limites),
     lineaVacia(ctx, ctx.tinteMarco),
   ]
-  const pie = regla(ctx, chars.frame.bl, chars.frame.br, PIE.join(` ${chars.separator} `), '', ctx.tinteMarco)
+  const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), '', ctx.tinteMarco)
 
   const disponible = ctx.rows - cabeza.length - 1
   const secciones = [
@@ -820,7 +830,7 @@ function renderAgents(ctx, vista) {
     ...lineasLimites(ctx, limites),
     lineaVacia(ctx, ctx.tinteMarco),
   ]
-  const pie = regla(ctx, chars.frame.bl, chars.frame.br, PIE.join(` ${chars.separator} `), '', ctx.tinteMarco)
+  const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), '', ctx.tinteMarco)
 
   const seccion = seccionAhora(ctx, vista)
   const disponible = Math.max(0, ctx.rows - cabeza.length - 1)
@@ -868,7 +878,7 @@ function renderCompact(ctx, vista, avisos) {
     `${num(vista?.sesiones?.vivas)} vivas`,
   ].join(` ${sep} `)
   lineas.push(lineaPlana(ctx, total, 'dim'))
-  lineas.push(lineaPlana(ctx, PIE.join(` ${sep} `), 'dim'))
+  lineas.push(lineaPlana(ctx, pieDe(vista).join(` ${sep} `), 'dim'))
 
   for (const a of avisos) lineas.push(lineaPlana(ctx, a, 'yellow'))
 
