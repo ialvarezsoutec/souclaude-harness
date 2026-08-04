@@ -53,14 +53,20 @@ muertos en `manifest.obsolete[]` aunque el repo **no tenga lockfile**
 mano. Los cuatro archivos viejos se ofrecen para borrar con `--prune` y doble confirmación.
 No hay que escribir código de migración.
 
-### Bloque 2 — Los docs del Vault llegan al usuario
+### Bloque 2 — El mensaje del Vault apunta a donde el archivo sí existe
+
+**Corrección de diseño, encontrada al planificar este bloque**: `docs/vault-guide.md`
+declara en su propio encabezado ([docs/vault-guide.md:3-5](../../docs/vault-guide.md#L3-L5))
+que **no se distribuye a los repos consumidores** — el Vault es singleton por
+organización, no por proyecto — y el `CHANGELOG.md:76` lo confirma como diseño
+deliberado. Convertir `vault-setup.md`/`vault-guide.md` en templates (como decía la
+versión anterior de este plan) violaría ese diseño, no lo completaría. El arreglo real
+del hallazgo D es otro: el mensaje debe apuntar a donde el archivo **sí** vive.
 
 | Archivo | Cambio |
 |---|---|
-| `templates/base/docs/vault-setup.md` | **Nuevo.** Copia de `docs/vault-setup.md` con los placeholders del render donde hoy hay valores de este repo |
-| `templates/base/docs/vault-guide.md` | **Nuevo.** Ídem con `docs/vault-guide.md` |
-| `templates/harness.manifest.json` | Dos entries nuevas, política `managed` |
-| `src/core/vault.js:77` | `'Detalle en docs/vault-setup.md.'` se mantiene — ahora el archivo sí existe en el repo destino |
+| `src/core/vault.js:71-80` (`manualHint`) | `'Detalle en docs/vault-setup.md.'` → URL de GitHub del repo generador (`https://github.com/ialvarezsoutec/souclaude-harness/blob/main/docs/vault-setup.md`), tomada de `package.json.repository.url` en vez de hardcodeada, para que no diverja si el repo se mueve |
+| `test/vault.test.js` | Caso nuevo: el mensaje de `manualHint` no contiene ninguna ruta relativa (`docs/`), solo la URL |
 
 ### Bloque 3 — El repo se audita a sí mismo
 

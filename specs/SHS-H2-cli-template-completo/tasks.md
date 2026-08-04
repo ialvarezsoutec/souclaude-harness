@@ -34,15 +34,14 @@
       Verificación: `node bin/cli.mjs verify --strict` sale limpio (0 errores, 0 warnings
       nuevos).
 
-- [ ] **SHS-H2-T004** — Crear `templates/base/docs/vault-setup.md` y
-      `templates/base/docs/vault-guide.md` a partir de los docs actuales del repo,
-      reemplazando valores propios de este repo por los placeholders del render (`{{...}}`)
-      donde corresponda. Registrar ambos en el manifest como `managed`.
-      `templates/base/docs/vault-setup.md` · `templates/base/docs/vault-guide.md` ·
-      `templates/harness.manifest.json` · 30 min
-      Verificación: `npx souclaude init` (o `upgrade --dry-run`) en un tmp dir muestra
-      ambos archivos como `CREATE`; ningún `{{PLACEHOLDER}}` sin resolver en el resultado
-      (mismo chequeo que ya hace `init.test.js`).
+- [ ] **SHS-H2-T004** — Corregir `manualHint()` en `src/core/vault.js` para que el aviso
+      apunte a la URL de GitHub del repo generador (leída de
+      `package.json.repository.url`, no hardcodeada) en vez de a `docs/vault-setup.md`,
+      ruta que nunca existe en el repo consumidor porque el doc es intencionalmente
+      singleton y no distribuido (`docs/vault-guide.md:3-5`, `CHANGELOG.md:76`).
+      `src/core/vault.js` · `test/vault.test.js` · 15 min
+      Verificación: `test/vault.test.js` nuevo caso — el mensaje de `manualHint` no
+      contiene ninguna ruta relativa `docs/`, solo la URL completa.
 
 - [ ] **SHS-H2-T005** — Reescribir `walkClaudeDir()` en `test/dogfood.test.js` para usar
       `git ls-files .claude` en vez de `fs.readdirSync` recursivo.

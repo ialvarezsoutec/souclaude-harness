@@ -30,9 +30,12 @@ Tres huecos concretos, verificados en la inspección de la rama `dev`:
 
 2. **El instalador manda al usuario a un archivo que no le llegó.** Cuando el Vault no se
    conecta, el CLI dice "Detalle en `docs/vault-setup.md`". Ese archivo vive solo en el
-   repo generador: no es una entrada del manifest y `package.json.files` tampoco lo
-   publica en el tarball de npm. El usuario recibe una ruta muerta justo en el momento en
-   que necesita ayuda.
+   repo generador **a propósito**: `docs/vault-guide.md` declara en su propio encabezado
+   que no se distribuye — el Vault es singleton por organización, no por proyecto, y el
+   CHANGELOG lo confirma como diseño deliberado. El usuario recibe una ruta local muerta
+   justo en el momento en que necesita ayuda; el arreglo no es distribuir el archivo (eso
+   contradice su propio diseño), es que el mensaje apunte a donde el archivo sí vive: la
+   URL del repo generador en GitHub.
 
 3. **El repo no puede auditarse a sí mismo.** `npm test` falla (66 de 67). El test de
    dogfood camina `.claude/**` sin excluir las carpetas `backup-*/` que crea el propio
@@ -77,9 +80,8 @@ En orden de prioridad:
 
 - [ ] En una sesión de Claude Code sobre un repo recién inicializado, los cuatro comandos
       de rocas aparecen en el autocompletado de `/` y ejecutan.
-- [ ] `npx souclaude init` en un directorio vacío deja en disco `docs/vault-setup.md` y
-      `docs/vault-guide.md`, y ningún mensaje del CLI referencia una ruta que no exista en
-      el repo destino.
+- [ ] Ningún mensaje del CLI referencia una ruta local que no exista en el repo destino:
+      el aviso del Vault apunta a la URL de GitHub del repo generador, no a un path local.
 - [ ] `npm test` sale 67/67 en esta máquina (con `.claude/backup-*/` y `*.new` presentes)
       y en CI sobre un checkout limpio.
 - [ ] `node bin/cli.mjs verify --strict` sale limpio y ahora falla si un fragmento de
