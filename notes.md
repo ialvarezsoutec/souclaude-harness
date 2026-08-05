@@ -28,6 +28,14 @@ requisitos de features (van en `specs/`), convenciones del proyecto (van en
   Mantené cortos los títulos de sección.
 - **La skill no pinta badges de color** en las tablas: severidad/estado quedan como texto.
   Cabecera azul + filas cebra, sí.
+- **CI corre en Node 20, pero `package.json.engines` exige `>=22.4` — y es real, no
+  decorativo.** `parseArgs({ allowNegative: true })` en `src/cli.js` necesita 22.4+ para
+  que `--no-vault`/`--no-backup`/cualquier flag negado no explote. Hoy ningún paso de CI
+  usa un flag negado, así que el desfase no se nota. El día que alguien agregue un test o
+  un paso de CI que sí lo use, va a fallar **solo en CI** y no en local (donde cada quien
+  corre Node más nuevo) — el síntoma no va a apuntar a la causa. Decisión del dueño
+  (SHS-H2, 2026-07-31): no se sube CI ni se baja `engines` todavía. Si tocás CI, revisa
+  esto primero.
 
 ## Comandos útiles
 

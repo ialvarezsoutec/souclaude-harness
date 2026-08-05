@@ -7,6 +7,7 @@ import { loadManifest } from '../src/core/manifest.js'
 import {
   verifyManifest,
   findOrphanTemplateFiles,
+  findOrphanFragments,
   findMissingSrcFiles,
   findDuplicateIds,
   findDuplicateDests,
@@ -45,6 +46,18 @@ test('verify: el manifest real del repo no tiene ids ni dest duplicados', () => 
 test('verify: el manifest real del repo no tiene criticos faltantes', () => {
   const manifest = loadManifest()
   assert.deepEqual(findMissingCriticalFiles(manifest), [])
+})
+
+test('verify: los fragmentos reales de gitignore corresponden todos a base o a un stack', () => {
+  assert.deepEqual(findOrphanFragments(), [])
+})
+
+test('verify: detecta un fragmento de gitignore que no corresponde a ningun stack', () => {
+  const root = mkTemplatesRoot({ 'fragments/gitignore/base.txt': 'x', 'fragments/gitignore/cobol.txt': 'y' })
+  const warnings = findOrphanFragments(root)
+  assert.equal(warnings.length, 1)
+  assert.equal(warnings[0].code, 'orphan-gitignore-fragment')
+  assert.match(warnings[0].message, /cobol\.txt/)
 })
 
 test('verify: harnessVersion del manifest coincide con la version de package.json', () => {

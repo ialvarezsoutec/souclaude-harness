@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { TEMPLATES_DIR } from './manifest.js'
 import { toPosix } from './fsx.js'
+import { SIGNATURES } from './detect.js'
 
 export const ERROR = 'error'
 export const WARNING = 'warning'
@@ -68,6 +69,31 @@ export function findMissingSrcFiles(manifest, root = TEMPLATES_DIR) {
   return errors
 }
 
+// Los fragmentos de .gitignore por stack (templates/fragments/gitignore/*.txt) no
+// pasan por manifest.files[]: el entry "gitignore" es append-block y su `src` es el
+// directorio entero, no un archivo, asi que findMissingSrcFiles/findOrphanTemplateFiles
+// los ignoran a proposito. Sin este chequeo, un fragmento renombrado, mal tipeado o
+// para un stack que detect.js no reconoce nunca se detectaria: nadie lo referencia,
+// nadie se entera. `base.txt` es la excepcion: se concatena siempre, no es por-stack.
+export function findOrphanFragments(root = TEMPLATES_DIR) {
+  const dir = path.join(root, 'fragments', 'gitignore')
+  let entries
+  try {
+    entries = fs.readdirSync(dir)
+  } catch {
+    return []
+  }
+
+  const known = new Set(['base.txt', ...SIGNATURES.map((s) => `${s.stack}.txt`)])
+  return entries
+    .filter((name) => name.endsWith('.txt') && !known.has(name))
+    .map((name) => ({
+      type: WARNING,
+      code: 'orphan-gitignore-fragment',
+      message: `templates/fragments/gitignore/${name} no corresponde a base.txt ni a ningun stack de detect.js: nunca se incluye en el .gitignore emitido.`,
+    }))
+}
+
 export function findDuplicateIds(manifest) {
   const seen = new Map()
   const errors = []
@@ -122,6 +148,6 @@ export function verifyManifest(manifest, root = TEMPLATES_DIR) {
     ...findDuplicateDests(manifest),
     ...findMissingCriticalFiles(manifest, root),
   ]
-  const warnings = [...findOrphanTemplateFiles(manifest, root)]
+  const warnings = [...findOrphanTemplateFiles(manifest, root), ...findOrphanFragments(root)]
   return { errors, warnings }
 }

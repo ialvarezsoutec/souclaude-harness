@@ -1,8 +1,22 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import * as ui from '../ui.js'
 import { exists, readIfExists, writeFileLF, toPosix } from './fsx.js'
+
+const PACKAGE_JSON = fileURLToPath(new URL('../../package.json', import.meta.url))
+
+// URL de vault-setup.md en GitHub, derivada de package.json.repository.url en vez de
+// hardcodeada: docs/vault-guide.md declara que no se distribuye a repos consumidores
+// (es singleton por organizacion), asi que el runbook solo existe aca. Apuntar a una
+// ruta local (`docs/vault-setup.md`) desde el mensaje de un repo consumidor apunta a
+// un archivo que nunca llega.
+export function harnessDocsUrl(rel) {
+  const { repository } = JSON.parse(fs.readFileSync(PACKAGE_JSON, 'utf8'))
+  const base = repository.url.replace(/^git\+/, '').replace(/\.git$/, '')
+  return `${base}/blob/main/${rel}`
+}
 
 // La config del Vault es de MAQUINA, no de proyecto: la ruta local difiere en
 // cada equipo. Por eso no va al lockfile (.claude/harness.json se commitea) ni
@@ -74,7 +88,7 @@ function manualHint(repo) {
       'El repo quedo sin Vault conectado. Para conectarlo despues:',
       `    git clone ${repo} <ruta>`,
       '    npx souclaude upgrade --vault-path <ruta>',
-      'Detalle en docs/vault-setup.md.',
+      `Detalle en ${harnessDocsUrl('docs/vault-setup.md')}`,
     ].join('\n')
   )
 }
