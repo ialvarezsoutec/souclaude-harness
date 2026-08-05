@@ -2,7 +2,7 @@ import * as ui from '../ui.js'
 import { loadManifest } from '../core/manifest.js'
 import { resolveDetected } from '../core/detect.js'
 import { readLockfile } from '../core/lockfile.js'
-import { resolveVars, planAndApply } from './_shared.js'
+import { resolveVars, planAndApply, vaultStep } from './_shared.js'
 
 export async function init(flags, cwd) {
   const manifest = loadManifest()
@@ -18,5 +18,6 @@ export async function init(flags, cwd) {
   )
 
   const vars = await resolveVars({ flags, lock, detected, cwd, manifest })
-  return planAndApply({ manifest, cwd, lock, vars, detected, flags, title: 'init' })
+  const code = await planAndApply({ manifest, cwd, lock, vars, detected, flags, title: 'init' })
+  return vaultStep({ code, cwd, flags, manifest, lock })
 }

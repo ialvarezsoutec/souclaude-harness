@@ -2,6 +2,210 @@
 
 El harness y el CLI se versionan juntos.
 
+## [2.4.0] — no publicado
+
+`souclaude monitor`: panel de consumo de tokens de Claude Code en la terminal.
+
+### Agregado
+
+- **Comando `monitor`**: panel de límites de plan, agentes vivos, sesiones,
+  proyectos y desglose por tipo de token y por modelo, leído directamente de
+  `~/.claude/projects/**/*.jsonl`. Modos `--once`, `--compact`, `--agents`,
+  `--json` y panel en vivo con TTY (alternate buffer, resize, teclas). Sale
+  0/1/2 según el peor límite de plan — pensado para un hook. No suma ninguna
+  dependencia nueva.
+- **Refresco propio de los límites de plan**: `cachedUsageUtilization` de
+  `~/.claude.json` solo se reescribe cuando el humano corre `/usage` — medido
+  con un poller sobre `fetchedAtMs`: cero refrescos en 12 minutos de actividad
+  continua, y `claude auth status` tampoco lo toca. El monitor ahora consulta
+  el mismo endpoint que usa Claude Code, `GET
+  https://api.anthropic.com/api/oauth/usage`, con el token OAuth que Claude
+  Code ya guarda, TTL de 5 minutos y caché propio en
+  `~/.claude/souclaude/usage-cache.json`. Entre las dos fuentes gana la de
+  lectura más reciente, entera: los campos nunca se mezclan. El endpoint es
+  interno y no documentado — puede romperse con cualquier actualización de
+  Claude Code — así que ante 401, 404, cambio de forma o timeout el monitor
+  cae al caché y el panel muestra la edad real del dato, nunca inventa un
+  número.
+- **Flag `--no-refresh`**: desactiva la consulta a la API para CI, para
+  `--claude-home` apuntando a un fixture, o cuando el humano prefiere no
+  tocar la red. Ningún test sale a internet.
+- **Reglas `deny` nuevas en `.claude/settings.json`**: `~/.claude/.credentials.json`
+  (guarda, además del token de Claude, los OAuth de los conectores MCP de
+  terceros — es probablemente el archivo más sensible de la máquina),
+  `~/.ssh/**` y `~/.aws/credentials`, más las que `CLAUDE.md` ya daba por
+  existentes (`*.key`, `*.pfx`, `credentials.json`, `secrets.json`).
+- **18 tests nuevos** sobre el manejo del token con credenciales falsas
+  reconocibles (suite total: 284 pass).
+
+### Decisiones
+
+- **Deduplicación por `message.id`**: varias líneas `assistant` de un mismo
+  transcript comparten `message.id` y repiten el objeto `usage` completo. Sin
+  deduplicar, el consumo se infla 2-3x — el síntoma es un número mal, no una
+  excepción, así que la regla vive en el acumulador de dominio
+  (`domain/consumo.js`), no en un adapter donde se pueda saltear.
+- **Tokens medidos, costo estimado**: los tokens salen del `usage` de cada
+  respuesta (dato real); el costo en USD sale de una tabla de precios local,
+  porque la máquina no guarda lo que costó cada llamada (dato estimado). El
+  panel lo declara en su propio pie para que nunca se confundan.
+
+## [2.3.0] — no publicado
+
+El Vault deja de ser un paso manual: el instalador lo conecta (y lo clona si hace falta), y
+los agentes saben que trabajan contra **dos repos**.
+
+### Agregado
+
+- **Paso de Vault en el instalador** (`init` y `upgrade`): pregunta si tienes el Vault en
+  esta máquina; si no, ofrece clonar
+  `https://github.com/ialvarezsoutec/soubunker-vault.git` (URL declarada en el manifest,
+  clave `vault.repo`) y deja la ruta escrita. Nunca bloquea: si el clone falla o lo
+  cancelas, avisa con el comando manual y la instalación sigue devolviendo 0.
+- **`.claude/vault.local.json`** — nueva fuente canónica de la ruta local del Vault,
+  gitignorada (es config de máquina) y **legible por los agentes**. Reemplaza a `VAULT_PATH`
+  del `.env` para ese uso: `.claude/settings.json` deniega `Read(./.env)`, así que ningún
+  agente podía leerla de ahí. `VAULT_PATH` en `.env.example` queda solo para el runtime de
+  la app. La ruta **no** va al lockfile: `.claude/harness.json` se commitea y viajaría a
+  otra máquina. Al lockfile va solo `VAULT_REPO`, que es igual para toda la organización.
+- **Flags nuevos**: `--vault-path <ruta>` (conecta sin preguntar), `--vault-repo <url>`
+  (repo alternativo) y `--no-vault` (omite el paso). Con `--yes` o en CI **nunca se clona**:
+  git clone es red y disco, y en CI correría en cada corrida.
+- **Doctrina de los dos repos** (`progress/README.md`, replicada en `CLAUDE.md`, `AGENTS.md`
+  y los cuatro agentes): el Vault es un repo git con su propio remoto y regla **opuesta** a
+  la del repo de proyecto — **push directo a su `main`, sin PR**, porque el tablero refleja
+  el ahora. Convención de commits del Vault: `chore:` para movimientos de kanban, `docs:`
+  para espejos. Nunca `--force`, en ninguno de los dos.
+- **Anti-solapamiento entre máquinas**: antes de tomar un task, el agente hace
+  `git -C "<vault>" pull --rebase` y lee el kanban. Si la tarjeta ya está en "En curso" o
+  "En review" **con otro dueño**, **para y pregunta al humano** — no la toma ni salta a otra
+  por su cuenta. Los conflictos en `kanban.md` se resuelven conservando ambas tarjetas; dos
+  rebases fallidos seguidos se anotan como `vault_skip` y se reportan.
+
+### Corregido
+
+- **`--no-backup` nunca funcionó**: el help lo documentaba pero `parseArgs` lo rechazaba como
+  opción desconocida. Ahora se parsea con `allowNegative: true`, que habilita también
+  `--no-vault`. Sube el requisito de Node de `>=20` a `>=22.4`.
+
+### Nota de actualización
+
+`CLAUDE.md` es `user-owned`: el `upgrade` **no** lo sobrescribe, deja `CLAUDE.md.new` al lado
+(garantía P8). **Hay que mergear ese `.new`**: sin la sección "Los dos repos", el agente lee
+"nunca push directo a `main`" sin matices y se niega a escribir en el Vault.
+
+## [2.2.0] — no publicado
+
+Progreso por disco formalizado, IDs de task amarrados al hito y costo por tarea en la
+telemetría del router.
+
+### Agregado
+
+- **Carpeta `progress/` formalizada y emitida por el harness**: `progress/README.md`
+  (managed — documenta la convención) y `progress/history.md` (user-owned — historial
+  compartido append-only, una línea por task/sesión cerrada, con regla de resolución de
+  merge en el encabezado). Subcarpeta `progress/<ID-hito>-<slug>/` por spec en marcha con
+  `summary.md` (spec-author), `impl_summary.md` (implementer) y `review.md` (reviewer) —
+  reemplaza la convención plana `spec_/impl_/review_<ID>.md`.
+- **IDs de task `<PREFIJO>-H<n>-T<nnn>`** (ej. `TNP-H1-T001`), emitidos por el spec-author
+  en la fase Tasks con **bloques de 100 por spec** según el orden de reserva en
+  `/rock-plan` (1.er spec desde T001, 2.º desde T101) — cero colisiones entre specs en
+  ramas paralelas. Footer `Refs: <ID-task>` obligatorio en el commit-por-task. La cadena
+  de `ccem-planner` se extiende: Roca → Hito → Spec → **Task** → commit.
+- **Costo por tarea en la telemetría del router**: `progress/model-router.jsonl` suma
+  `task`, `tokens_in`, `tokens_out`, `costo_usd` y `medicion` (`medido`|`estimado`, con
+  regla de honestidad: un estimado es orden de magnitud, nunca cifra contable), más la
+  tabla de precios referencial en `ccem-model-router` §7 (único lugar a actualizar).
+  `/rock-close` suma el bloque "Resumen de costo" (% medido primero, total después).
+- **Regla de arquitectura**: si un task cambia la arquitectura (puerto nuevo, contrato
+  público, dependencia entre capas), el cierre exige doc en `docs/` + ADR; el implementer
+  actualiza docs y declara el ADR pendiente (sigue siendo del spec-author), y el reviewer
+  rechaza sin ambas cosas.
+- **`docs/vault-guide.md`** (solo este repo, no distribuido): guía de creación del Vault
+  central multi-proyecto — estructura, archivos semilla (`id-registry.md`), quién escribe
+  qué, relación Vault↔repos↔Ninety, concurrencia multi-persona.
+- **Espejo al Vault y estado vivo (kanban)**: los artefactos SDD y los resúmenes de
+  progreso se copian al Vault (`Project-<PREFIJO>/specs/` y `progress/`), y cada task
+  tiene tarjeta en `Project-<PREFIJO>/kanban.md` (formato plugin Kanban de Obsidian) que
+  los agentes mueven **al empezar** a trabajar — el tablero refleja el ahora, no el push
+  final; por eso el Vault vive en un repo aparte. Ruta vía `VAULT_PATH` en `.env`
+  (emitida en `env.example`); sin ella el espejo se omite sin bloquear y queda anotado en
+  `history.md`. Doctrina en `progress/README.md`; `ccem-planner` distingue ahora qué
+  cruza a Ninety (solo hito) vs al Vault (espejos + kanban).
+
+### Cambiado
+
+- `AGENTS.md`, los 4 agentes SDD y el orchestrator usan las rutas nuevas de `progress/` y
+  agregan su línea a `history.md` al cerrar cada artefacto.
+- Templates `tasks-template.md` y `tasks-lite-template.md` con IDs completos y la regla de
+  numeración por bloques.
+
+## [2.1.0] — no publicado
+
+Soutec Model Router: cada subagente corre con el mejor modelo posible según el triángulo
+Calidad / Velocidad / Costo. El orchestrator es el router; la política es declarativa.
+
+### Agregado
+
+- **Skill `ccem-model-router`** (distribuida por el manifest, policy managed): única fuente
+  de verdad de la política de ruteo — clasificación de tarea (mecánica/estándar/compleja),
+  checklist de señales de dificultad, matriz agente × clase → (modelo, effort), escalamiento
+  excepcional (criterios objetivos + máximo 1 escalada por hito + fallback a `inherit`) y
+  telemetría en `progress/model-router.jsonl` con revisión trimestral en `/rock-close`.
+  El mapeo rol → alias (Decisiones→`fable`, Ejecución→`opus`, Volumen→`sonnet`) vive en
+  una sola tabla, el único lugar a actualizar cuando cambie la familia de modelos.
+
+### Cambiado
+
+- **`orchestrator`**: la sección "Selección de modelo" pasa de prosa orientativa a protocolo
+  de router obligatorio (clasificar → resolver overrides `model`/`effort` en la llamada
+  Agent → escalar solo con criterios y presupuesto → registrar cada lanzamiento en JSONL).
+- **`spec-author` y `reviewer`** suman `effort: high`, **`implementer`** suma
+  `effort: medium` en el frontmatter — red de seguridad para invocaciones sin orchestrator.
+  Se mantiene la decisión de **no** emitir `model:` en frontmatter: forzar un modelo rompe
+  a quien no lo tiene; el modelo se decide por invocación con fallback a `inherit`.
+- **`ccem-core`** enlaza su sección "Selección de modelo" con la política operable;
+  **`/rock-close`** suma el paso "Revisión de política de modelos" (umbral de escaladas
+  >10 %, rework por celda).
+
+## [2.0.0] — no publicado
+
+Capa de rocas: el **hito** reemplaza a Planner como emisor de IDs. Implementa la Fase 0 de la
+Metodología de Roca v2.1.0 en el repo de código.
+
+### BREAKING CHANGE
+
+- **El emisor de IDs pasa de la tarjeta de Planner al hito** (`<PREFIJO>-H<n>`, ej. `REA-H3`),
+  definido en el Paso 2 de la roca (`/rock-plan`). El hilo de trazabilidad es ahora
+  `Roca → Hito → specs/<ID-hito>-<slug>/ → rama → PR → tag`. Los repos consumidores reciben la
+  reescritura en el próximo `upgrade`. ADR: `docs/decisions/20260722-capa-rocas-hito-emisor-de-ids.md`
+  (supersede al de orquestación solo en cuanto al emisor).
+
+### Agregado
+
+- **Paquete de skills `ccem-rocas`** (4 comandos, distribuidos por el manifest): `/rock-plan`
+  (Paso 2, con las 7 reglas de construcción de hitos y el checklist de validación E1/E4),
+  `/rock-status` (snapshot semanal derivado de GitHub; falla ante campos derivados editados a
+  mano, E2/E3), `/rock-close` (cierre contra criterios congelados, exige evidencia por criterio,
+  E5) y `/export-ninety` (contrato por fases con Ninety; Fase 0 manual).
+
+### Cambiado
+
+- **`ccem-planner` reescrito**: el hito es el emisor, el estado del trabajo se **deriva** de
+  GitHub (rama/PR) en vez de un tablero, y el WIP pasa de "2-3 tarjetas por dev" a "**2 ramas
+  vivas por persona**" (`git branch -r`). Conserva su nombre para no romper manifest/lockfile.
+- **`spec-new`** suma el contrato de entrada hito → spec (criterios heredados, no-alcance,
+  entregable, rollback) y deja de hablar de Planner. Corrige una referencia P7 → P9.
+- **`soutec-github`**, los agentes `orchestrator`/`spec-author`/`implementer` y ambos `CLAUDE.md`
+  pasan de "tarjeta de Planner" al hito como origen del trabajo.
+
+### No incluido (tracks aparte)
+
+- El repo Vault (`00-System`, `id-registry.md`, `plantilla_apertura_roca.yaml`), los jobs
+  semanales (E2/E3 como cron), el cierre de hito con evidencia automatizado (E5) y la API de
+  Ninety (Fases 1-3). P7/P8 de la constitución se dejan como placeholder a propósito
+  (metodología §9).
+
 ## [1.1.0] — no publicado
 
 Orquestación multi-agente: cuatro roles que siguen el flujo SDD de CCEM con separación de

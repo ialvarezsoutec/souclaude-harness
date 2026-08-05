@@ -6,19 +6,21 @@
 
 > SDD Lite. Lista simple, sin la estructura extensa del template completo.
 > Objetivo de tiempo: **10 minutos**.
-> Regla que no cambia: cada task 15-30 min, y cada uno con su verificación.
+> Reglas que no cambian: cada task 15-30 min con su verificación, ID
+> `<ID-hito>-T<nnn>` (bloques de 100 por spec — ver tasks-template), y un commit
+> por task con footer `Refs: <ID-task>`.
 
 ---
 
 ## Tasks
 
-- [ ] **T1** — [qué se hace] · `[archivo]` · [XX min]
+- [ ] **<ID-hito>-T001** — [qué se hace] · `[archivo]` · [XX min]
       Verificación: [cómo sabes que quedó bien]
 
-- [ ] **T2** — [qué se hace] · `[archivo]` · [XX min] · depende de T1
+- [ ] **<ID-hito>-T002** — [qué se hace] · `[archivo]` · [XX min] · depende de T001
       Verificación: [cómo sabes que quedó bien]
 
-- [ ] **T3** — [qué se hace] · `[archivo]` · [XX min]
+- [ ] **<ID-hito>-T003** — [qué se hace] · `[archivo]` · [XX min]
       Verificación: [cómo sabes que quedó bien]
 
 ---

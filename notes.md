@@ -12,14 +12,93 @@ requisitos de features (van en `specs/`), convenciones del proyecto (van en
 
 ## Gotchas
 
-- [Cosa que te mordió una vez y no quieres que te muerda de nuevo]
+- **`soutec-md-a-pdf` usa ReportLab, no WeasyPrint.** La skill de MD→PDF de marca es
+  Python puro (`reportlab` + `pillow` + `markdown`); no necesita Pango/Cairo. Un spec
+  viejo la daba por frágil/WeasyPrint y proponía una gemela nativa: quedó obsoleto (ver
+  `docs/decisions/20260722-render-pdf-evidencia-via-skill-soutec-md-a-pdf.md`).
+- **Las skills globales se montan en una ruta efímera que `python.exe` nativo no lee.**
+  En Windows/Git Bash, `ls`/`cat`/`cp` (MSYS) ven `…/local-agent-mode-sessions/…/skills/…`
+  pero `python.exe` da `No such file` aun con la ruta Windows correcta. Solución:
+  `cp -r "<skill-base>" "$(mktemp -d)"` y correr el script desde la copia.
+- **`.claude/harness.json` es el lockfile del CLI; no editarlo a mano.** Si borras o
+  cambias un archivo `managed`, el lockfile queda desincronizado hasta que el CLI lo
+  reconcilie (`/harness-upgrade`).
+- **El banner de sección de `soutec-md-a-pdf` tiene ancho fijo (~9.6 cm).** Un título `#`
+  de más de ~28 caracteres se sale del banner (texto blanco sobre blanco = ilegible).
+  Mantené cortos los títulos de sección.
+- **La skill no pinta badges de color** en las tablas: severidad/estado quedan como texto.
+  Cabecera azul + filas cebra, sí.
+- **CI corre en Node 20, pero `package.json.engines` exige `>=22.4` — y es real, no
+  decorativo.** `parseArgs({ allowNegative: true })` en `src/cli.js` necesita 22.4+ para
+  que `--no-vault`/`--no-backup`/cualquier flag negado no explote. Hoy ningún paso de CI
+  usa un flag negado, así que el desfase no se nota. El día que alguien agregue un test o
+  un paso de CI que sí lo use, va a fallar **solo en CI** y no en local (donde cada quien
+  corre Node más nuevo) — el síntoma no va a apuntar a la causa. Decisión del dueño
+  (SHS-H2, 2026-07-31): no se sube CI ni se baja `engines` todavía. Si tocás CI, revisa
+  esto primero.
+- **(2026-08-04, monitor de tokens) Varias líneas `assistant` comparten `message.id` y
+  repiten el objeto `usage` completo.** Una respuesta con un bloque `text` y uno
+  `tool_use` se escribe como dos líneas que comparten `message.id` y `requestId`, y el
+  `usage` de la respuesta entera va completo en cada una. Si sumas sin deduplicar,
+  el consumo se infla 2-3x. El síntoma es un número mal, no una excepción — nada revienta,
+  así que no se nota sin comparar contra el total real. Deduplica por `message.id` antes
+  de acumular.
+- **(2026-08-04, monitor de tokens) El slug de carpeta de `~/.claude/projects/` no es
+  reversible a ruta.** Espacios y acentos colapsan a `-` al generar el nombre de carpeta,
+  así que no hay forma de reconstruir la ruta real del proyecto a partir del slug. La ruta
+  real está en el campo `cwd` de dentro de cada línea del `.jsonl` — léela de ahí, nunca
+  del nombre de carpeta.
+- **(2026-08-04, monitor de tokens) Claude Code escribe el mismo proyecto a veces como
+  `C:\...` y a veces como `c:\...`.** Sin normalizar la clave (unidad en minúscula antes de
+  usarla como key de agrupación), el panel mostraba el mismo proyecto dos veces con el
+  consumo partido entre ambas entradas.
+- **(2026-08-04, monitor de tokens) Con `setRawMode(true)`, Ctrl+C deja de generar
+  `SIGINT`.** Llega como el byte `\u0003` dentro del stream de teclado. Si no lo
+  interceptas explícitamente, la terminal queda sin cursor y sin echo al salir — hay que
+  restaurar el modo de la TTY en un `finally`, no solo al final del flujo feliz.
+- **(2026-08-04, monitor de tokens) Truncar un string ya coloreado rompe el layout.**
+  `picocolors` inyecta códigos de escape ANSI que `String.length` cuenta como caracteres
+  pero la terminal no dibuja. Si truncas después de colorear, el ancho visual queda mal
+  aunque el conteo de `.length` parezca correcto. Trunca sobre el texto plano y colorea
+  después, nunca al revés.
+- **(2026-08-04, monitor de tokens) Junto a cada `agent-<id>.jsonl` hay un
+  `agent-<id>.meta.json` con `agentType` y una `description` legible.** Es mejor fuente
+  para mostrar el tipo de subagente que `attributionAgent`, que no siempre está presente
+  ni es legible para un humano.
+- **(2026-08-04, monitor de tokens) `cachedUsageUtilization` de `~/.claude.json` solo se
+  refresca cuando el humano corre `/usage`.** Medido con un poller sobre `fetchedAtMs`:
+  cero refrescos en 12 minutos de actividad continua. `claude auth status` tampoco lo
+  toca, y no existen `claude usage` ni `claude status`. El panel llegaba a mostrar un
+  dato de 20-50 minutos de antigüedad como si fuera el estado actual.
+- **(2026-08-04, monitor de tokens) El endpoint real de límites de plan es `GET
+  https://api.anthropic.com/api/oauth/usage`**, con `Authorization: Bearer <token>` y la
+  cabecera `anthropic-beta: oauth-2025-04-20`. Es el mismo que usa Claude Code, pero es
+  interno y no documentado: puede romperse con cualquier actualización suya.
+- **(2026-08-04, monitor de tokens) Al manejar un token, no conservar el objeto de error
+  es una garantía más fuerte y más barata de auditar que sanear mensajes de excepción.**
+  Un mensaje de `fetch` fallido puede arrastrar la cabecera `Authorization` completa; en
+  vez de intentar limpiar ese mensaje, `usage-fetcher.js` directamente no lo guarda en
+  ningún lado — el `catch` devuelve `null` y listo.
+- **(2026-08-04, monitor de tokens) `~/.claude/.credentials.json` no es solo el token de
+  Claude: guarda los tokens OAuth de todos los conectores MCP de terceros** (GitHub,
+  Slack, Notion, Figma, Datadog...). Es probablemente el archivo más sensible de la
+  máquina — cualquier código que lo lea debe extraer un solo campo
+  (`claudeAiOauth.accessToken`) y dejar morir el resto del objeto parseado en el mismo
+  scope, sin que sobreviva al closure ni al valor de retorno.
 
 ## Comandos útiles
 
 ```bash
-# [comando que siempre buscas en el historial]
+# Render de un .md a PDF con identidad Soutec (deps: pip install reportlab pillow markdown)
+WORK="$(mktemp -d)"; cp -r "<skill-base>"/* "$WORK"/
+python3 "$WORK/scripts/md_to_pdf.py" informe.md informe.pdf
+rm -rf "$WORK"
 ```
 
 ## Descartado (y por qué)
 
-- [Cosa que probaste, no funcionó, y alguien va a querer volver a probar]
+- **Renderer embebido `render_security_report.py`** — eliminado en PLN-002: duplicaba el
+  render de marca. Tenía badges de color y no dependía de nada, pero divergía del look
+  oficial (sin isotipo/contraportada). Si hace falta un fallback sin la skill, está en el
+  historial de git.
+- **Skill gemela `soutec-md-a-pdf-nativo`** — no se creó: `soutec-md-a-pdf` ya es nativa.

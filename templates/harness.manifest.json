@@ -1,9 +1,12 @@
 {
-  "harnessVersion": "1.1.0",
+  "harnessVersion": "2.3.0",
+  "vault": {
+    "repo": "https://github.com/ialvarezsoutec/soubunker-vault.git"
+  },
   "files": [
-    { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned" },
-    { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned" },
-    { "id": "notes", "src": "base/notes.md", "dest": "notes.md", "render": true, "policy": "user-owned" },
+    { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned", "critical": true },
+    { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned", "critical": true },
+    { "id": "notes", "src": "base/notes.md", "dest": "notes.md", "render": true, "policy": "user-owned", "critical": true },
     { "id": "agents-md", "src": "base/AGENTS.md", "dest": "AGENTS.md", "policy": "managed" },
 
     { "id": "readme", "src": "base/README.md", "dest": "README.md", "render": true, "policy": "user-owned", "when": "empty-repo" },
@@ -22,16 +25,28 @@
     { "id": "skill-ccem-stack", "src": "base/claude/skills/ccem-stack/SKILL.md", "dest": ".claude/skills/ccem-stack/SKILL.md", "policy": "managed" },
     { "id": "skill-ccem-prompting", "src": "base/claude/skills/ccem-prompting/SKILL.md", "dest": ".claude/skills/ccem-prompting/SKILL.md", "policy": "managed" },
     { "id": "skill-soutec-github", "src": "base/claude/skills/soutec-github/SKILL.md", "dest": ".claude/skills/soutec-github/SKILL.md", "policy": "managed" },
+    { "id": "skill-ccem-model-router", "src": "base/claude/skills/ccem-model-router/SKILL.md", "dest": ".claude/skills/ccem-model-router/SKILL.md", "policy": "managed" },
 
     { "id": "skill-spec-new", "src": "base/claude/skills/spec-new/SKILL.md", "dest": ".claude/skills/spec-new/SKILL.md", "policy": "managed" },
     { "id": "skill-adr-new", "src": "base/claude/skills/adr-new/SKILL.md", "dest": ".claude/skills/adr-new/SKILL.md", "policy": "managed" },
     { "id": "skill-constitution-check", "src": "base/claude/skills/constitution-check/SKILL.md", "dest": ".claude/skills/constitution-check/SKILL.md", "policy": "managed" },
     { "id": "skill-harness-upgrade", "src": "base/claude/skills/harness-upgrade/SKILL.md", "dest": ".claude/skills/harness-upgrade/SKILL.md", "policy": "managed" },
 
+    { "id": "skill-ccem-rocas", "src": "base/claude/skills/ccem-rocas/SKILL.md", "dest": ".claude/skills/ccem-rocas/SKILL.md", "policy": "managed" },
+    { "id": "skill-rock-plan", "src": "base/claude/skills/rock-plan/SKILL.md", "dest": ".claude/skills/rock-plan/SKILL.md", "policy": "managed" },
+    { "id": "skill-rock-status", "src": "base/claude/skills/rock-status/SKILL.md", "dest": ".claude/skills/rock-status/SKILL.md", "policy": "managed" },
+    { "id": "skill-rock-close", "src": "base/claude/skills/rock-close/SKILL.md", "dest": ".claude/skills/rock-close/SKILL.md", "policy": "managed" },
+    { "id": "skill-export-ninety", "src": "base/claude/skills/export-ninety/SKILL.md", "dest": ".claude/skills/export-ninety/SKILL.md", "policy": "managed" },
+
     { "id": "agent-orchestrator", "src": "base/claude/agents/orchestrator.md", "dest": ".claude/agents/orchestrator.md", "policy": "managed" },
     { "id": "agent-spec-author", "src": "base/claude/agents/spec-author.md", "dest": ".claude/agents/spec-author.md", "policy": "managed" },
     { "id": "agent-implementer", "src": "base/claude/agents/implementer.md", "dest": ".claude/agents/implementer.md", "policy": "managed" },
     { "id": "agent-reviewer", "src": "base/claude/agents/reviewer.md", "dest": ".claude/agents/reviewer.md", "policy": "managed" },
+    { "id": "agent-security-evidence-compiler", "src": "base/claude/agents/security-evidence-compiler.md", "dest": ".claude/agents/security-evidence-compiler.md", "policy": "managed" },
+
+    { "id": "skill-it-security-review", "src": "base/claude/skills/it-security-review/SKILL.md", "dest": ".claude/skills/it-security-review/SKILL.md", "policy": "managed" },
+    { "id": "skill-it-security-review-report-template", "src": "base/claude/skills/it-security-review/report-template.md", "dest": ".claude/skills/it-security-review/report-template.md", "policy": "managed" },
+    { "id": "skill-security-report-standard", "src": "base/claude/skills/security-report-standard/SKILL.md", "dest": ".claude/skills/security-report-standard/SKILL.md", "policy": "managed" },
 
     { "id": "specs-readme", "src": "base/specs/README.md", "dest": "specs/README.md", "policy": "managed" },
     { "id": "tmpl-spec", "src": "base/specs/_templates/spec-template.md", "dest": "specs/_templates/spec-template.md", "policy": "managed" },
@@ -42,7 +57,10 @@
     { "id": "tmpl-tasks-lite", "src": "base/specs/_templates/tasks-lite-template.md", "dest": "specs/_templates/tasks-lite-template.md", "policy": "managed" },
 
     { "id": "adr-readme", "src": "base/docs/decisions/README.md", "dest": "docs/decisions/README.md", "policy": "managed" },
-    { "id": "adr-template", "src": "base/docs/decisions/_template.md", "dest": "docs/decisions/_template.md", "policy": "managed" }
+    { "id": "adr-template", "src": "base/docs/decisions/_template.md", "dest": "docs/decisions/_template.md", "policy": "managed" },
+
+    { "id": "progress-readme", "src": "base/progress/README.md", "dest": "progress/README.md", "policy": "managed" },
+    { "id": "progress-history", "src": "base/progress/history.md", "dest": "progress/history.md", "policy": "user-owned" }
   ],
   "dirs": [
     { "dest": "src", "when": "empty-repo" },
@@ -53,6 +71,22 @@
     {
       "dest": ".claudeignore",
       "reason": "Claude Code nunca soporto .claudeignore: el archivo se ignora en silencio. La exclusion real se configura en permissions.deny de .claude/settings.json, que este harness ya emite."
+    },
+    {
+      "dest": ".claude/skills/ccem-rocas/rock-plan/SKILL.md",
+      "reason": "Claude Code descubre skills de proyecto a un solo nivel (.claude/skills/<nombre>/SKILL.md); una skill anidada a dos niveles nunca se carga. Se aplano a .claude/skills/rock-plan/SKILL.md (SHS-H2)."
+    },
+    {
+      "dest": ".claude/skills/ccem-rocas/rock-status/SKILL.md",
+      "reason": "Mismo motivo que rock-plan: aplanada a .claude/skills/rock-status/SKILL.md (SHS-H2)."
+    },
+    {
+      "dest": ".claude/skills/ccem-rocas/rock-close/SKILL.md",
+      "reason": "Mismo motivo que rock-plan: aplanada a .claude/skills/rock-close/SKILL.md (SHS-H2)."
+    },
+    {
+      "dest": ".claude/skills/ccem-rocas/export-ninety/SKILL.md",
+      "reason": "Mismo motivo que rock-plan: aplanada a .claude/skills/export-ninety/SKILL.md (SHS-H2)."
     }
   ]
 }

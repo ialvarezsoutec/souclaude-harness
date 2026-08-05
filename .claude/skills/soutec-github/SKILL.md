@@ -21,9 +21,9 @@ Estas no se negocian, ni siquiera en un hotfix.
   solo si se usó rebase. Con la política por defecto (merge) no hay force-push nunca.
 - **Nunca commitear secretos**: `.env`, `*.pem`, `*.key`, `*.pfx`, `credentials.json`,
   `secrets.json`, tokens, contraseñas, llaves privadas.
-- **Nunca crear una rama sin ID de tarea.** Toda rama nace de una tarea registrada en
-  Planner (`PLN-XXX`) o SharePoint (`SP-XXX`). **Si no tienes el ID, pregunta. No lo
-  inventes.**
+- **Nunca crear una rama sin ID de hito.** Toda rama nace de un hito de una roca. El ID
+  (`<PREFIJO>-H<n>`, ej. `REA-H3`) lo emite el Paso 2 de la metodología de rocas
+  (`/rock-plan`), no Planner. **Si no tienes el ID, pregunta. No lo inventes.**
 - **Nunca crear repositorios, tags ni releases.** Eso es del coordinador.
 - **Un hotfix NO es un bypass.** Aun en máxima criticidad: rama + Pull Request.
 
@@ -35,7 +35,7 @@ git pull origin main          # siempre partir de main actualizado
 git checkout -b tipo/ID-tarea-descripcion-corta
 ```
 
-Chequeo previo: ¿hay tarea asignada en Planner/SharePoint? ¿leíste el README?
+Chequeo previo: ¿hay un hito con su ID (`<PREFIJO>-H<n>`)? ¿leíste el README?
 ¿tienes el `.env` local configurado?
 
 ## Nombre de rama
@@ -55,11 +55,11 @@ tipo/ID-tarea-descripcion-corta
 | `experiment/` | Pruebas, POC, IA o laboratorio |
 
 ```
-feature/PLN-023-login-usuarios
-fix/SP-118-error-integracion-odoo
-hotfix/PLN-052-correccion-produccion
-refactor/PLN-081-mejorar-estructura-api
-experiment/PLN-095-prueba-modelo-rag
+feature/REA-H3-captura-lead
+fix/PAC-H2-error-integracion-odoo
+hotfix/RAM-H5-correccion-produccion
+refactor/ALF-H1-mejorar-estructura-api
+experiment/PLN-H4-prueba-modelo-rag
 ```
 
 **Prohibidos**: `cambios`, `prueba`, `final`, `final-final`, `arreglo`, o el nombre de
@@ -114,7 +114,7 @@ Antes de pedir revisión:
 - El flujo afectado está probado.
 - No hay `.env` ni credenciales en el commit.
 - El README está actualizado si aplica.
-- El PR indica la tarea Planner/SharePoint.
+- El PR indica el hito (ID `<PREFIJO>-H<n>`).
 - El PR indica si requiere versión/release.
 
 **Completa `.github/pull_request_template.md` de verdad.** Checkboxes tildadas porque

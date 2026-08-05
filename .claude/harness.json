@@ -143,6 +143,38 @@
     "docs/decisions/_template.md": {
       "policy": "managed",
       "hash": "6e38a96a3255f3f4"
+    },
+    "AGENTS.md": {
+      "policy": "user-owned",
+      "hash": "1816b8ee069e71f0"
+    },
+    ".claude/agents/implementer.md": {
+      "policy": "managed",
+      "hash": "375bd6ea52dd23c1"
+    },
+    ".claude/agents/reviewer.md": {
+      "policy": "managed",
+      "hash": "6810fae4ebb09de7"
+    },
+    ".claude/agents/security-evidence-compiler.md": {
+      "policy": "managed",
+      "hash": "5de738323ab07e37"
+    },
+    ".claude/skills/it-security-review/SKILL.md": {
+      "policy": "managed",
+      "hash": "4152991d368439d8"
+    },
+    ".claude/skills/it-security-review/report-template.md": {
+      "policy": "managed",
+      "hash": "db63f29aacc79de3"
+    },
+    ".claude/skills/it-security-review/scripts/render_security_report.py": {
+      "policy": "managed",
+      "hash": "41340c8270b79cca"
+    },
+    ".claude/skills/security-report-standard/SKILL.md": {
+      "policy": "managed",
+      "hash": "cd8fd977a1d3c600"
     }
   },
   "blocks": {

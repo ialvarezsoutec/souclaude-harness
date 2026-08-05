@@ -11,11 +11,13 @@ Harness `1.1.0`. Las skills viven **en este repo**, en `.claude/skills/`, y
 se aplican solas cuando el contexto lo amerita:
 
 `ccem-core` (6 principios rectores + selección de modelo) · `ccem-sdd` (Spec-Driven
-Development) · `ccem-planner` (trazabilidad Planner ↔ CCEM ↔ Git) · `ccem-research`
+Development) · `ccem-planner` (trazabilidad Hito ↔ CCEM ↔ Git) · `ccem-research`
 (evaluar herramientas) · `ccem-stack` (convenciones) · `ccem-prompting` (Anti-Hack) ·
-`soutec-github` (flujo Git obligatorio).
+`soutec-github` (flujo Git obligatorio) · `ccem-rocas` (capa trimestral: la roca, el
+hito y el cierre — el hito emite los IDs).
 
-Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`.
+Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`; y de la
+capa de rocas: `/rock-plan`, `/rock-status`, `/rock-close`, `/export-ninety`.
 
 Agentes de orquestación (opt-in) en `.claude/agents/`: `orchestrator`, `spec-author`,
 `implementer`, `reviewer`. El flujo completo está en `AGENTS.md`.
@@ -36,16 +38,21 @@ Las dos reglas que más se violan sin querer:
 
 ## Git — reglas duras
 
+**Estas reglas son sobre ESTE repo.** El Vault es un repo distinto y tiene su propio
+protocolo — ver "Los dos repos" más abajo.
+
 **Nunca** hagas commit, push ni merge directo a `main`. Todo pasa por rama + PR. Los
 hotfixes también.
 
-- **Toda rama nace de una tarjeta de Planner.** Formato: `tipo/<ID>-<slug>`
-  (`feature/PLN-023-login-usuarios`). Tipos: `feature` `fix` `hotfix` `docs` `chore`
-  `refactor` `experiment`. IDs: `PLN-XXX`, `RAM001`, `SP-XXX`…
-  **Si no tienes el ID, PREGUNTA. No lo inventes.**
+- **Toda rama nace de un hito de una roca.** Formato: `tipo/<ID-hito>-<slug>`
+  (`feature/REA-H3-captura-lead`). Tipos: `feature` `fix` `hotfix` `docs` `chore`
+  `refactor` `experiment`. El ID del hito es `<PREFIJO>-H<n>` (`REA-H3`), emitido en el
+  Paso 2 de la roca (`/rock-plan`). **Planner no se usa. Si no tienes el ID, PREGUNTA. No
+  lo inventes.**
 - La carpeta de spec lleva **el mismo ID y el mismo slug** que la rama:
-  `specs/<ID>-<slug>/`. Ese ID es el hilo que amarra tarjeta, spec, rama, commits, PR y
-  release. Sin él, la cadena está rota.
+  `specs/<ID-hito>-<slug>/`. Ese ID es el hilo que amarra hito, spec, rama, commits, PR y
+  release. Sin él, la cadena está rota. Un hito puede producir varios specs (mismo ID,
+  distinto slug); cada carpeta = una rama = un PR.
 - Commits: `tipo: descripción breve` (español, sin scope). Tipos: `feat` `fix` `docs`
   `chore` `refactor` `test` `style` `build` `ci` `perf` `revert`. Un hotfix se commitea
   como `fix:`. Prohibidos: `update`, `cosas`, `ahora sí`.
@@ -55,6 +62,23 @@ hotfixes también.
   del coordinador.
 - Al abrir el PR: completar `.github/pull_request_template.md` de verdad. Si piden
   correcciones, push a la **misma** rama — nunca un PR nuevo.
+
+## Los dos repos
+
+Trabajas contra **dos repos a la vez**, con reglas opuestas a propósito:
+
+| | Este repo (proyecto) | El Vault |
+|---|---|---|
+| Qué va | Código, tests, specs, progreso | Kanban, espejos de specs/progreso, rocas |
+| Cómo se escribe | Rama + PR. **Nunca** directo a `main` | **Push directo a `main`**, sin PR |
+| Por qué | Todo cambio se revisa | El tablero refleja el ahora, no el último merge |
+
+La ruta local del Vault está en `.claude/vault.local.json` (la escribe `npx souclaude`).
+**Antes de tomar un task**: `git -C "<vault>" pull --rebase` y lee
+`Project-<PREFIJO>/kanban.md`. Si la tarjeta ya está **En curso** con otro dueño, la está
+trabajando otra máquina: **para y pregunta**. Al tomarla, muévela y pushea al Vault en ese
+momento. Protocolo completo, convención de commits y manejo de conflictos en
+`progress/README.md`. **Nunca `git push --force`, en ninguno de los dos.**
 
 ## Flujo de trabajo
 
@@ -66,10 +90,16 @@ de pasar al siguiente. PR draft tras 2-3 commits, no al final.
 
 ## Language
 
-Responder siempre en espanol.
-
-Conjugación en español: **tuteo (tú)**, no voseo (vos) ni tratamiento formal (usted).
+Responder siempre en **español neutro** (estándar panhispánico), **no** en español
+rioplatense/argentino. Aplica a **toda** salida: la sesión principal y **todos los
+subagentes** (`orchestrator`, `spec-author`, `implementer`, `reviewer` y cualquier otro).
 Es el estándar de la organización — aplica a toda respuesta, no solo al código.
+
+- **Conjugación: tuteo (tú)**, nunca voseo (vos) ni tratamiento formal (usted). Los
+  imperativos van en tuteo: `usa` (no "usá"), `ten` (no "tené"), `dilo` (no "decilo"),
+  `fíjate` (no "fijate"), `empieza` (no "empezá"), `haz` (no "hacé").
+- **Evita localismos rioplatenses** en la prosa ("che", "bárbaro", "recién ahí",
+  "acordate", "de una"). Prefiere vocabulario entendible en toda Hispanoamérica.
 
 **El dominio se nombra en el lenguaje del negocio (español)**: entidades, value objects,
 policies y métodos de puerto (`Ticket`, `ContextoDeNegocio`, `generar_respuesta`). Es
@@ -90,7 +120,7 @@ Reglas que causan errores si se omiten. Agregar/quitar según el proyecto.
 - No modificar archivos fuera del scope pedido.
 - No instalar dependencias sin confirmar.
 - Reportar honestamente si algo falla. **Sin workarounds silenciosos.**
-- No modificar un test para que pase. Si el test está mal, decilo y para.
+- No modificar un test para que pase. Si el test está mal, dilo y para.
 
 ## Memoria
 

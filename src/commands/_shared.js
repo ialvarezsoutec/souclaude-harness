@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process'
 import * as ui from '../ui.js'
 import { computePlan, writeActions, OBSOLETE, NOOP, LOCAL_EDIT } from '../core/plan.js'
 import { apply } from '../core/apply.js'
+import { ensureVault } from '../core/vault.js'
 
 // execFile con args en array: nunca pasa por el shell, asi que las rutas con
 // espacios (todo OneDrive) dejan de ser un problema.
@@ -56,6 +57,10 @@ export async function resolveVars({ flags, lock, detected, cwd, manifest }) {
     // stack detectado: sin nombrarla, P2 queda como buena intencion.
     ARCH_ENFORCER: flags.enforcer ?? prev.ARCH_ENFORCER ?? detected.enforcer,
     LANGUAGE: lang === 'en' ? 'ingles' : 'espanol',
+    // URL del Vault: es de organizacion, identica en toda maquina, asi que puede
+    // vivir en el lockfile commiteado. La RUTA local no: esa va a
+    // .claude/vault.local.json, que esta gitignorado (ver core/vault.js).
+    VAULT_REPO: flags['vault-repo'] ?? prev.VAULT_REPO ?? manifest.vault?.repo ?? null,
     OWNER: prev.OWNER ?? gitUserName(cwd) ?? 'por definir',
     // Sticky, como OWNER: es la fecha de instalacion de un archivo user-owned
     // (CLAUDE.md, constitution.md), sembrada una vez. Si se recalculara en cada
@@ -118,6 +123,20 @@ export async function planAndApply({ manifest, cwd, lock, vars, detected, flags,
   })
 
   report(result, plan, manifest)
+  return 0
+}
+
+// El paso del Vault corre DESPUES de planAndApply y fuera del motor de plan a
+// proposito: .claude/vault.local.json no es un archivo del harness sino config
+// de esta maquina, y apply() bloquea (write guard) toda escritura que no salga
+// del plan que el usuario confirmo. Si el plan se cancelo o fallo, no se toca
+// nada: no dejamos media configuracion.
+export async function vaultStep({ code, cwd, flags, manifest, lock }) {
+  if (code !== 0) return code
+  // --dry-run no escribe ni un byte, y eso incluye la config del Vault.
+  if (flags['dry-run']) return code
+  const yes = Boolean(flags.yes) || ui.isCI()
+  await ensureVault({ cwd, flags, manifest, lock, yes })
   return 0
 }
 

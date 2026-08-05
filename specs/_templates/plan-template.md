@@ -106,7 +106,7 @@ Verificación contra `docs/constitution.md`, principio por principio.
 
 Si una decisión técnica no está cubierta por ningún ADR existente, **crea el ADR antes
 de cerrar el plan** (`/adr-new`). Para evaluar una herramienta nueva antes de decidir,
-usá la skill `ccem-research`.
+usa la skill `ccem-research`.
 
 ---
 

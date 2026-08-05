@@ -1,7 +1,7 @@
 # ADR: Orquestación multi-agente de 4 roles bajo CCEM
 
 **Fecha**: 2026-07-21
-**Status**: accepted
+**Status**: superseded by [20260722-capa-rocas-hito-emisor-de-ids.md](20260722-capa-rocas-hito-emisor-de-ids.md) (solo el emisor de IDs: el hito reemplaza a Planner. El patrón de 4 roles D1-D4 sigue vigente.)
 **Deciders**: Ignacio A (lead), coordinador del harness
 **Tarjeta**: PLN-001 · Spec: `specs/PLN-001-orquestacion-agentes/`
 
