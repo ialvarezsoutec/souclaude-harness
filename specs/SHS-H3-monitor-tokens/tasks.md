@@ -25,27 +25,26 @@
 
 ---
 
-## Estado real verificado en disco (2026-08-04, T27)
+## Estado real verificado en disco (2026-08-05, cierre T23/T25/T26)
 
-Reverificado en disco para T27 (no se confía en lo reportado por otras tareas): se listó
-`src/monitor/`, `src/commands/`, `test/` y se corrió `npm test`.
+Reverificado en disco: `npm test` completo, 290/290 en verde.
 
-- **Implementadas, presentes en disco y con `npm test` en verde**: T01-T18, T20-T22,
-  T24, T26. Incluye el comando completo (`src/commands/monitor.js`, 272 líneas,
-  wireado en `src/cli.js`) y `node bin/cli.mjs monitor --once` corre sin excepción
-  sobre proyectos reales de esta máquina.
-- **T19 — `--emit-router`**: `src/monitor/adapters/router-log-writer.js` (249 líneas)
-  existe, está wireado en `src/cli.js` (flags `--emit-router`, `--hito`, `--task`,
-  `--agente`, `--resultado`, `--rework`, `--motivo`) y aparece en `node bin/cli.mjs
-  --help`. Se marca hecha.
-- **T25 — test e2e del comando**: `test/monitor-cmd.test.js` (326 líneas) existe, pero
-  al correrlo (`node --test test/monitor-cmd.test.js`) el archivo falla como suite
-  (`ERR_TEST_FAILURE`, exit code 1) aunque sus dos subtests visibles pasan — huele a un
-  handle sin cerrar o una excepción no capturada fuera de un `test()`. **No se marca
-  como hecha**: el archivo está en disco pero no verificado.
-- **T23 — árbol agregado sobre fixtures**: `test/monitor-view.test.js` no existe en
-  disco. Pendiente. (La cobertura del árbol agregado hoy vive dentro de
-  `test/monitor-domain.test.js`, pero eso no es lo que T23 pide como archivo propio.)
+- **Todas las tasks T01-T27 implementadas y verificadas en disco.**
+- **T23 — árbol agregado sobre fixtures**: `test/monitor-view.test.js` (457 líneas) ya
+  estaba en disco (commit `fe58bb0`, de una pasada anterior no reflejada en este
+  archivo). 23/23 en verde.
+- **T25 — test e2e del comando**: el `ERR_TEST_FAILURE` documentado no reprodujo en esta
+  pasada — dos corridas limpias de `node --test test/monitor-cmd.test.js`, 17/17, exit 0.
+  Era flaky (handle/timing) o ya se corrigió como efecto colateral de trabajo posterior;
+  no se encontró código que arreglar. Se marca hecha sobre la base de la evidencia actual.
+- **T26 — bug real encontrado y corregido**: el enforcement de P2 (`sinComentariosDeLinea`
+  en `test/monitor-layers.test.js`) marcaba `arbol.js` y `precios.js` como violación por
+  usar `Date.now()` — pero el `Date.now()` detectado estaba **dentro de un comentario**
+  que documenta, precisamente, que el dominio no lo usa. Causa: `/\/\/.*$/` sin la flag
+  `s` nunca alcanza a matchear cuando la línea tiene un `\r` colgando al final (CRLF) —
+  `.` no consume `\r` y `$` exige fin de string real, así que el `replace()` no hacía nada
+  y el comentario completo sobrevivía. Corregido normalizando CRLF→LF antes de partir por
+  línea, con test de regresión. Commit `3832c41`.
 - **Fila nueva — presenter**: `src/monitor/adapters/panel-presenter.js` (403 líneas) no
   estaba en el plan original. Apareció al construir T16/T18: el dominio (`arbol.js`)
   produce un árbol anidado proyecto→sesión→agente→modelo, pero el panel (`panel-layout.js`,
@@ -217,28 +216,32 @@ lo que lo verifica pasa; sin marca si está en curso, sin verificar o pendiente.
       `test/monitor-tailer.test.js` · estandar · Sonnet · depende de: T20, T09
       Verificación: implementado en disco (302 líneas), en verde.
 
-- [ ] **SHS-H3-T23** — Test del árbol agregado sobre fixtures.
-      `test/monitor-view.test.js` · estandar · Sonnet · depende de: T20, T07, T13
-      Verificación: `test/monitor-view.test.js` no existe en disco. Pendiente. (Hoy la
-      cobertura del árbol agregado vive dentro de `test/monitor-domain.test.js`, pero eso
-      no sustituye el archivo propio que pide esta task.)
+- [x] **SHS-H3-T23** — Test del árbol agregado sobre fixtures.
+      `test/monitor-view.test.js` · estandar · Sonnet · depende de: T20, T07, T13 · commit
+      `fe58bb0`
+      Verificación: implementado en disco (457 líneas), 23/23 en verde.
 
 - [x] **SHS-H3-T24** — Tests de render (ancho exacto a 80/100, sin ANSI con
       `color:false`).
       `test/monitor-render.test.js` · estandar · Sonnet · depende de: T16, T17
       Verificación: implementado en disco (407 líneas), en verde.
 
-- [ ] **SHS-H3-T25** — Test e2e del comando (`--once --json`). **En curso**: el archivo
-      ya existe en disco (326 líneas) pero al correrlo solo (`node --test
-      test/monitor-cmd.test.js`) la suite falla (`ERR_TEST_FAILURE`, exit 1) aunque los
-      dos subtests visibles pasan — no se marca como hecho hasta que quede en verde.
+- [x] **SHS-H3-T25** — Test e2e del comando (`--once --json`).
       `test/monitor-cmd.test.js` · estandar · Sonnet · depende de: T18, T20
-      Verificación pendiente: aislar y corregir la causa del `ERR_TEST_FAILURE` (huele a
-      handle sin cerrar o excepción fuera de un `test()`).
+      Verificación: `node --test test/monitor-cmd.test.js` corrido dos veces seguidas,
+      17/17 en verde ambas, exit 0. El `ERR_TEST_FAILURE` que bloqueaba esta task no
+      reprodujo — no se encontró código que arreglar, se documenta como resuelto sobre
+      evidencia actual, no sobre suposición.
 
-- [x] **SHS-H3-T26** — Test de enforcement de capas P2.
-      `test/monitor-layers.test.js` · mecanica · Sonnet · depende de: T01-T07
-      Verificación: implementado en disco (130 líneas), en verde.
+- [x] **SHS-H3-T26** — Test de enforcement de capas P2. **Bug real encontrado y
+      corregido** (no en el enforcement en sí, sino en el propio test que lo audita):
+      `sinComentariosDeLinea` no limpiaba comentarios en archivos CRLF, así que un
+      comentario que citaba `Date.now()` para explicar que el dominio NO lo usa se leía
+      como una violación real. Corregido normalizando CRLF→LF antes de partir por línea,
+      con test de regresión agregado.
+      `test/monitor-layers.test.js` · mecanica · Sonnet · depende de: T01-T07 · commit
+      `3832c41`
+      Verificación: implementado en disco (140 líneas), 5/5 en verde.
 
 - [x] **SHS-H3-T27** — Docs: README, CHANGELOG, notes.md.
       `README.md`, `CHANGELOG.md`, `notes.md` · mecanica · Sonnet · depende de: T18
@@ -257,7 +260,7 @@ lo que lo verifica pasa; sin marca si está en curso, sin verificar o pendiente.
 | 3 | T07 (Opus) ‖ T16 (Opus) ‖ T21 ‖ T22 ‖ T26 | **Completada y en disco, en verde.** |
 | 4 | T12 → T13 (Opus) ‖ T15 (Opus) ‖ T17 ‖ T24 | **Completada y en disco, en verde.** |
 | 5 | **T18 sola** | Único archivo compartido con el código existente: `src/cli.js`. Commit propio. **Completada** — `node bin/cli.mjs monitor --once` corre sin excepción sobre proyectos reales. |
-| 6 | T18b ‖ T19 ‖ T23 ‖ T25 ‖ T27 | T18b (presenter, no planeada) y T19 (`--emit-router`) completadas y en disco. **T23 pendiente** (sin archivo). **T25 en curso** (archivo en disco, suite en rojo). T27 completada (este cambio). |
+| 6 | T18b ‖ T19 ‖ T23 ‖ T25 ‖ T27 | **Todas completadas.** T18b (presenter, no planeada) y T19 (`--emit-router`) ya estaban. T23 (archivo ya existía, sin reflejar en este doc), T25 (ERR_TEST_FAILURE no reprodujo) y T27 cerradas en esta pasada. |
 
 Único punto de contención real: **T18 toca `src/cli.js`**, compartido con los cinco
 comandos existentes y donde los flags nuevos podrían colisionar semánticamente con
@@ -271,25 +274,25 @@ comandos existentes y donde los flags nuevos podrían colisionar semánticamente
       los tres lectores de adapters en disco y verificados.
 - [x] **Después de T18**: confirmado en vivo — `node bin/cli.mjs monitor --once` corre
       sin excepción sobre los proyectos reales de esta máquina.
-- [ ] **Después de T26 (final)**: `npm test` corrido (225 tests): 224 en verde, **1 en
-      rojo** (`test/monitor-cmd.test.js`, T25 — ver nota arriba). No está en verde
-      todavía; falta antes de abrir PR draft.
+- [x] **Después de T26 (final)**: `npm test` → 290/290 en verde.
 
 ---
 
 ## Cierre
 
-- [ ] `npm test` → 224/225 en verde. Falla `test/monitor-cmd.test.js` (T25): la suite
-      completa termina en `ERR_TEST_FAILURE` aunque los subtests visibles pasan. Falta
-      diagnosticar y corregir antes de dar el cierre por bueno.
+- [x] `npm test` → 290/290 en verde.
 - [x] `node bin/cli.mjs monitor --once` sobre esta máquina → panel con datos reales.
-- [ ] `node bin/cli.mjs verify --strict` y `node bin/cli.mjs upgrade --dry-run --yes` —
-      no re-verificados en esta pasada (T27 solo tocó docs); pendiente de confirmar antes
-      del cierre.
+- [x] `node bin/cli.mjs verify --strict` limpio y `node bin/cli.mjs upgrade --dry-run
+      --yes` corre sin excepción (conflictos esperados en archivos editados a mano:
+      `CLAUDE.md`, `report-template.md` → `.new`).
 - [x] `notes.md` actualizado (T27).
 - [ ] ADR de la decisión "enforcement de P2 por test, no dependency-cruiser" (`/adr-new`,
-      ver `plan.md`) — sigue pendiente, no es parte del alcance de T27.
+      ver `plan.md`) — sigue pendiente, fuera del alcance de este cierre (T23/T25/T26).
 - [ ] PR draft abierto contra `main` con la plantilla completa (tras 2-3 commits, no al
-      final).
-- [ ] Status de `spec.md` cambiado a `implemented` — sigue pendiente: falta cerrar T23,
-      T25 y el ADR primero.
+      final). **Nota**: esta rama tiene 3 commits de `SHS-H2-vault-clonado-seguro`
+      mezclados en su historia por un checkout accidental durante la sesión — decisión
+      del dueño: dejarlos, se limpian después si hace falta. El PR de esta rama va a
+      mostrar ese diff extra (`vault.js`, `cli.js`, `specs/SHS-H2-vault-clonado-seguro/`)
+      hasta que alguien lo resuelva con un rebase.
+- [ ] Status de `spec.md` cambiado a `implemented` — falta el ADR y el PR antes de darlo
+      por cerrado del todo; T23/T25/T26 ya no son bloqueo.
