@@ -10,57 +10,55 @@
 
 ## Tasks
 
-- [ ] **SHS-H2-T101** — Agregar `isInsideCwd(cwd, target)` a `src/core/vault.js`:
+- [x] **SHS-H2-T101** — Agregar `isInsideCwd(cwd, target)` a `src/core/vault.js`:
       `path.relative(cwd, target)`, adentro si el resultado no empieza con `..` y no es
       absoluto (incluye el caso `target === cwd`, `rel === ''`). Función pura, sin efectos
       secundarios — no toca `ensureVault` todavía.
-      `src/core/vault.js` · 20 min · depende de: ninguna
+      `src/core/vault.js` · 20 min · depende de: ninguna · commit `806641b`
       Verificación: caso nuevo en `test/vault.test.js` — `isInsideCwd` exportada, casos
       positivo (`cwd/sub/dir`), negativo (`../sibling`), borde (`target === cwd`), y
       discos distintos en Windows (`C:\a` vs `D:\a`).
 
-- [ ] **SHS-H2-T102** — Reescribir el tramo interactivo de `ensureVault()`
-      ([vault.js:127-146](../../src/core/vault.js#L127-L146)):
-      1. Antes de preguntar nada, si `../soubunker-vault` existe y tiene `00-System/`,
-         conectar directo (`finish`) sin ninguna pregunta.
-      2. Si no, una sola pregunta: `Clonar <repo> en <destino>? [Y/n]` con el default ya
-         resuelto (`../soubunker-vault`) — se elimina la pregunta previa "¿tenés el Vault
-         clonado?". Quien ya lo tiene clonado en otro lado sigue usando `--vault-path`
-         (camino no interactivo, ya existe).
-      3. Antes de llamar a `clonar()`, aplicar `isInsideCwd`. Si el destino cae adentro,
-         `ui.log.warn` explicando por qué, y volver a preguntar la ruta (no abortar el
-         paso completo).
-      `src/core/vault.js` · 40 min · depende de: T101
-      Verificación: casos nuevos en `test/vault.test.js` — sibling presente conecta sin
-      ninguna llamada a `ui.confirm`/`ui.text` (mock que falla el test si se invocan);
-      camino sin sibling hace exactamente una pregunta antes de clonar; ruta dentro de
-      `cwd` tipeada en el prompt se rechaza y vuelve a preguntar en vez de clonar ahí.
+- [x] **SHS-H2-T102** — Reescribir el tramo interactivo de `ensureVault()`. **Corrección de
+      diseño encontrada al implementar** (documentada en `plan.md`): el destino sugerido
+      del camino feliz lo calcula el propio CLI (`../soubunker-vault`), nunca texto libre
+      del usuario, así que por construcción nunca puede caer dentro de `cwd` — poner
+      `isInsideCwd` ahí sería código muerto. El texto libre (y el riesgo real del goal 1)
+      solo reaparece si el usuario **rechaza** el destino sugerido: recién ahí se le
+      pregunta una ruta, y ahí vive el bucle de reintento. Además se inyectó `prompts`
+      (default: `ui`) en `ensureVault`/`clonarInteractivo` para poder testear el camino
+      interactivo sin TTY real ni mockear el módulo entero.
+      `src/core/vault.js` · 40 min · depende de: T101 · commit `f7ec4cd`
+      Verificación: sibling presente conecta sin ninguna llamada a `confirm`/`text`;
+      camino sin sibling hace exactamente una confirmación antes de clonar; quien la
+      rechaza y tipea una ruta dentro de `cwd` la ve rechazada y se le vuelve a preguntar.
 
-- [ ] **SHS-H2-T103** — Flag `--vault-clone` en `src/cli.js` (`OPTIONS` + `printHelp`).
-      En `ensureVault()`, camino `yes` ([vault.js:121-125](../../src/core/vault.js#L121-L125)):
-      si `flags['vault-clone']` y hay `repo`, calcular destino (`flags['vault-path']` si
-      vino, si no el sibling autodetectado o el default), aplicar `isInsideCwd` — si cae
-      adentro, abortar con warning explicando por qué (no hay a quién reprEguntarle en
-      modo no interactivo); si no, clonar sin confirmar (ya se confirmó vía el flag
-      explícito).
-      `src/cli.js` · `src/core/vault.js` · 30 min · depende de: T101
-      Verificación: caso nuevo en `test/vault.test.js` — `--vault-path <dentro-de-cwd>
-      --vault-clone --yes` no clona nada y devuelve `null`; `--vault-clone --yes` con
-      destino válido clona sin llamar ningún prompt.
+- [x] **SHS-H2-T103** — Flag `--vault-clone` en `src/cli.js` (`OPTIONS` + `printHelp`). En
+      `ensureVault()`, camino `yes`: si `flags['vault-clone']` y hay `repo`, calcular
+      destino (`flags['vault-path']` si vino, si no el sibling/default), aplicar
+      `isInsideCwd` — si cae adentro, abortar con warning (no hay a quién reprEguntarle en
+      modo no interactivo); si no, clonar sin confirmar (ya se confirmó vía el flag).
+      `src/cli.js` · `src/core/vault.js` · 30 min · depende de: T101 · commit `f7ec4cd`
+      Verificación: `--vault-path <dentro-de-cwd> --vault-clone --yes` no clona nada y
+      devuelve `null`; `--vault-clone --yes` con destino válido clona sin ningún prompt.
 
-- [ ] **SHS-H2-T104** — Cerrar cobertura de `test/vault.test.js` contra los 5 criterios de
-      éxito del spec en un solo barrido (algunos ya quedan cubiertos por T101-T103;
-      esta task es la pasada final que confirma que los 5 están, no que agrega lógica
-      nueva).
-      `test/vault.test.js` · 20 min · depende de: T101, T102, T103
+- [x] **SHS-H2-T104** — Cerrar cobertura de `test/vault.test.js` contra los 5 criterios de
+      éxito del spec. **Hallazgo durante la escritura de los tests**: `mkRepo()` crea el
+      repo directo bajo `os.tmpdir()`, así que `path.dirname(cwd)` es siempre el mismo
+      valor para todos los tests — el sibling `../soubunker-vault` que usa `ensureVault`
+      por default hubiera sido una ruta **compartida** entre tests, y uno que dejara ese
+      directorio clonado de verdad (como el de "una sola confirmación") habría contaminado
+      los siguientes. Se agregó `mkIsolatedRepo()` local al archivo de test — cada repo de
+      prueba nace en un padre único, así su "afuera" también lo es.
+      `test/vault.test.js` · 20 min · depende de: T101, T102, T103 · commit `6317d13`
       Verificación: los 5 criterios de éxito de `spec.md` tienen un test que los nombra
-      explícitamente (por `it()`/`test()` description), no solo cobertura incidental.
+      explícitamente. 21/21 en `vault.test.js`.
 
 ---
 
 ## Cierre
 
-- [ ] `npm test` → verde total (70 + los nuevos de esta spec)
-- [ ] `node bin/cli.mjs verify --strict` limpio
+- [x] `npm test` → 289/289 verde total
+- [x] `node bin/cli.mjs verify --strict` limpio
 - [ ] PR draft abierto contra `main` con la plantilla completa (encadenado sobre el PR de
       SHS-H2-cli-template-completo — este spec depende de sus cambios en `vault.js`)
