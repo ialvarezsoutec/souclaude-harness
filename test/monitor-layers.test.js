@@ -43,7 +43,13 @@ function extraerImports(codigo) {
 // para no marcar como violacion una mencion dentro de un comentario (varios archivos
 // del dominio documentan la regla citando el propio codigo prohibido).
 function sinComentariosDeLinea(codigo) {
+  // Normaliza CRLF->LF antes de partir por linea: con un \r colgando al final
+  // de cada linea, /\/\/.*$/ nunca alcanza a matchear ($  exige fin de string
+  // real y "." no consume \r), asi que el replace no hace nada y el comentario
+  // completo sobrevive -- un falso positivo de "el dominio usa Date.now()"
+  // sobre un comentario que dice, literalmente, que no lo usa.
   return codigo
+    .replace(/\r\n/g, '\n')
     .split('\n')
     .map((linea) => linea.replace(/\/\/.*$/, ''))
     .join('\n')
@@ -102,6 +108,12 @@ test('layers: el dominio no usa el reloj ni el entorno (Date.now, new Date() sin
     `El dominio es determinista: el instante y las senales de entorno entran por ` +
       `parametro, nunca se leen del reloj o del proceso. Violaciones encontradas:\n${violaciones.join('\n')}`
   )
+})
+
+test('sinComentariosDeLinea: un comentario CRLF que cita el patron prohibido no sobrevive', () => {
+  const codigoCRLF = '// nunca Date.now().\r\nexport const x = 1\r\n'
+  const limpio = sinComentariosDeLinea(codigoCRLF)
+  assert.ok(!/Date\.now\(/.test(limpio), 'el comentario CRLF no se limpio: quedo "Date.now(" visible')
 })
 
 test('layers: la aplicacion (si existe) no importa adaptadores', () => {
