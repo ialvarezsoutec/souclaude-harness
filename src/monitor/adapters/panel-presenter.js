@@ -120,11 +120,15 @@ function filasDeLimites(limites) {
   }
 
   const extra = limites.gastoExtra
-  if (extra && Number.isFinite(extra.porcentaje)) {
+  // La API ya trae su propio porcentaje (`utilizacion`): se usa ese en vez del
+  // recalculo local (`porcentaje`), que puede diferir por redondeo de
+  // `decimal_places` (ej. 107% recalculado vs 100% real).
+  const porcentajeExtra = extra && Number.isFinite(extra.utilizacion) ? extra.utilizacion : extra?.porcentaje
+  if (extra && Number.isFinite(porcentajeExtra)) {
     filas.push({
       etiqueta: `Extra ${fmtDinero(extra.usadoUsd ?? 0)}/${fmtDinero(extra.limiteUsd ?? 0)}`,
       modelo: null,
-      porcentaje: extra.porcentaje,
+      porcentaje: porcentajeExtra,
       reseteaEn: null,
     })
   }

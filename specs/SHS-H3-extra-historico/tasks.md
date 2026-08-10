@@ -59,11 +59,11 @@
   `usadoUsd/limiteUsd*100`) hace que el test falle con `107` (o `106.8`), no con un mock
   que finja el resultado.
 - **Verificación**:
-  - [ ] El test nuevo falla contra el código sin el fix (verificado manualmente antes de
+  - [x] El test nuevo falla contra el código sin el fix (verificado manualmente antes de
         commitear el fix) y pasa después.
-  - [ ] `usadoUsd`/`limiteUsd` se siguen mostrando como `$21.36/$20.00` (no se pierde
+  - [x] `usadoUsd`/`limiteUsd` se siguen mostrando como `$21.36/$20.00` (no se pierde
         info existente).
-  - [ ] `npm test` en verde.
+  - [x] `npm test` en verde.
 
 ---
 

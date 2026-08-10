@@ -155,6 +155,11 @@ function toGastoExtra(extra) {
     usadoUsd,
     limiteUsd,
     porcentaje,
+    // La API ya calcula su propio porcentaje (puede diferir del recalculo local
+    // por redondeo de decimal_places, ej. 106.8 vs 100): lo exponemos aparte
+    // para que el panel deje de recalcular y use este.
+    utilizacion: typeof extra.utilization === 'number' ? extra.utilization : null,
+    motivoDeshabilitado: extra.disabled_reason ?? null,
     alcanzado: extra.spend_limit_reached ?? false,
   }
 }
