@@ -120,10 +120,10 @@
   `Date.now()` real — todos pasan `ahora` fijo, así que el test es determinista y no
   puede volverse flaky.
 - **Verificación**:
-  - [ ] `test/monitor-layers.test.js` (enforcement de capas ya existente) sigue en
+  - [x] `test/monitor-layers.test.js` (enforcement de capas ya existente) sigue en
         verde con el archivo nuevo — confirma que `gasto-extra.js` no importa nada fuera
         de dominio.
-  - [ ] `npm test` en verde.
+  - [x] `npm test` en verde.
 
 ---
 

@@ -22,6 +22,7 @@ import {
   fmtDuracion,
   severidad,
 } from '../src/monitor/domain/formato.js'
+import { estadoDelExtra, siguienteRegistro } from '../src/monitor/domain/gasto-extra.js'
 
 // Este archivo responde: "el dominio del monitor de tokens (precios, eventos,
 // consumo/dedup, ventanas, actividad, formato) hace las cuentas que dice
@@ -385,4 +386,91 @@ test('formato: severidad clasifica los umbrales con su marca no cromatica', () =
   assert.deepEqual(severidad(60), { nivel: 'aviso', marca: '!' })
   assert.deepEqual(severidad(85), { nivel: 'alto', marca: '!!' })
   assert.deepEqual(severidad(95), { nivel: 'critico', marca: '!!' })
+})
+
+// ---------------------------------------------------------------------------
+// gasto-extra.js
+// ---------------------------------------------------------------------------
+
+test('gasto-extra: estadoDelExtra a las 23h59m sigue vivo, a las 24h01m ya es historico', () => {
+  const ahora = Date.UTC(2026, 7, 10, 12, 0, 0)
+
+  const veintitresH59 = ahora - (24 * 60 - 1) * 60_000
+  assert.equal(estadoDelExtra({ alcanzado: true, detectadoEn: veintitresH59 }, ahora), 'vivo')
+
+  const veinticuatroH01 = ahora - (24 * 60 + 1) * 60_000
+  assert.equal(
+    estadoDelExtra({ alcanzado: true, detectadoEn: veinticuatroH01 }, ahora),
+    'historico'
+  )
+
+  // Borde exacto: 24h00m00s -> ">=" incluye el limite, ya es historico.
+  const veinticuatroHExacto = ahora - 24 * 60 * 60_000
+  assert.equal(
+    estadoDelExtra({ alcanzado: true, detectadoEn: veinticuatroHExacto }, ahora),
+    'historico'
+  )
+})
+
+test('gasto-extra: estadoDelExtra sin alcanzar o sin fecha de deteccion siempre es vivo', () => {
+  const ahora = Date.UTC(2026, 7, 10, 12, 0, 0)
+  const detectadoHaceMucho = ahora - 30 * 24 * 60 * 60_000 // 30 dias atras
+
+  assert.equal(
+    estadoDelExtra({ alcanzado: false, detectadoEn: detectadoHaceMucho }, ahora),
+    'vivo'
+  )
+  assert.equal(estadoDelExtra({ alcanzado: true, detectadoEn: null }, ahora), 'vivo')
+  assert.equal(estadoDelExtra({ alcanzado: true, detectadoEn: undefined }, ahora), 'vivo')
+})
+
+test('gasto-extra: siguienteRegistro abre un registro nuevo cuando no habia ninguno abierto', () => {
+  const ahora = Date.UTC(2026, 7, 10, 12, 0, 0)
+  const gastoExtra = { alcanzado: true, habilitado: false, usadoUsd: 21.36, limiteUsd: 20 }
+
+  const registro = siguienteRegistro(gastoExtra, null, ahora)
+  assert.deepEqual(registro, {
+    detectadoEn: ahora,
+    usado: 21.36,
+    limite: 20,
+    moneda: 'USD',
+    cerradoEn: null,
+  })
+})
+
+test('gasto-extra: siguienteRegistro mantiene el registro abierto igual mientras siga alcanzado', () => {
+  const ahora = Date.UTC(2026, 7, 10, 12, 0, 0)
+  const gastoExtra = { alcanzado: true, habilitado: false, usadoUsd: 21.36, limiteUsd: 20 }
+  const registroActual = {
+    detectadoEn: ahora - 60_000,
+    usado: 21.36,
+    limite: 20,
+    moneda: 'USD',
+    cerradoEn: null,
+  }
+
+  const registro = siguienteRegistro(gastoExtra, registroActual, ahora)
+  assert.equal(registro, registroActual) // misma referencia: nada que persistir de nuevo
+})
+
+test('gasto-extra: siguienteRegistro cierra el registro cuando el extra se resetea (habilitado)', () => {
+  const ahora = Date.UTC(2026, 7, 11, 12, 0, 0)
+  const gastoExtra = { alcanzado: false, habilitado: true, usadoUsd: 0, limiteUsd: 20 }
+  const registroActual = {
+    detectadoEn: ahora - 24 * 60 * 60_000,
+    usado: 21.36,
+    limite: 20,
+    moneda: 'USD',
+    cerradoEn: null,
+  }
+
+  const registro = siguienteRegistro(gastoExtra, registroActual, ahora)
+  assert.deepEqual(registro, { ...registroActual, cerradoEn: ahora })
+})
+
+test('gasto-extra: sin registro previo y sin alcanzar, siguienteRegistro no abre nada', () => {
+  const ahora = Date.UTC(2026, 7, 10, 12, 0, 0)
+  const gastoExtra = { alcanzado: false, habilitado: false, usadoUsd: 0, limiteUsd: 20 }
+
+  assert.equal(siguienteRegistro(gastoExtra, null, ahora), null)
 })
