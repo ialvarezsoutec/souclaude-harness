@@ -852,13 +852,17 @@ function renderAgents(ctx, vista) {
     lineaVacia(ctx, ctx.tinteMarco),
   ]
   const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), '', ctx.tinteMarco)
+  // Mismo tratamiento que renderFull: el historico se descuenta del presupuesto
+  // de altura para no desplazar el pie fuera del contrato de `rows` (ver
+  // spec.md:69, "sin desaparecer" -- tambien vale en modo agents).
+  const historico = lineasHistorico(ctx, vista.historico)
 
   const seccion = seccionAhora(ctx, vista)
-  const disponible = Math.max(0, ctx.rows - cabeza.length - 1)
+  const disponible = Math.max(0, ctx.rows - cabeza.length - 1 - historico.length)
   const n = Math.max(seccion.min, Math.min(seccion.max, disponible))
   const cuerpo = disponible >= seccion.min ? seccion.build(n).slice(0, disponible) : []
 
-  return [...cabeza, ...cuerpo, pie]
+  return [...cabeza, ...cuerpo, ...historico, pie]
 }
 
 function renderCompact(ctx, vista, avisos) {
@@ -903,9 +907,15 @@ function renderCompact(ctx, vista, avisos) {
 
   for (const a of avisos) lineas.push(lineaPlana(ctx, a, 'yellow'))
 
-  // Con poca altura se conservan la primera linea (limites) y las ultimas (totales y avisos).
+  // El extra historico no puede desaparecer solo porque el modo sea compact
+  // (spec.md:69): una linea condensada al pie, coherente con el resto de este
+  // modo (una linea por dato, sin caja).
+  const historico = Array.isArray(vista?.historico) ? vista.historico.filter((h) => typeof h === 'string' && h !== '') : []
+  for (const h of historico) lineas.push(lineaPlana(ctx, h, 'dim'))
+
+  // Con poca altura se conservan la primera linea (limites) y las ultimas (totales, historico y avisos).
   if (lineas.length > ctx.rows) {
-    const cola = 2 + avisos.length
+    const cola = 2 + avisos.length + historico.length
     const cabeza = Math.max(1, ctx.rows - cola)
     return [...lineas.slice(0, cabeza), ...lineas.slice(lineas.length - Math.min(cola, ctx.rows - cabeza))]
   }
@@ -929,6 +939,12 @@ function renderAngosto(ctx, vista) {
   lineas.push(
     lineaPlana(ctx, `total ${fmtTokens(num(c.totalTokens))} ${sep} ${fmtDinero(num(c.costoUsd))}`, 'dim')
   )
+
+  // El extra historico tampoco desaparece aca (spec.md:69): una sola linea
+  // condensada, igual que el resto de este modo (una linea por dato).
+  const historico = Array.isArray(vista?.historico) ? vista.historico.filter((h) => typeof h === 'string' && h !== '') : []
+  if (historico.length > 0) lineas.push(lineaPlana(ctx, historico[0], 'dim'))
+
   lineas.push(lineaPlana(ctx, `terminal muy angosta (${COLS_MINIMAS} col minimo)`, 'yellow'))
 
   return lineas.slice(0, ctx.rows)

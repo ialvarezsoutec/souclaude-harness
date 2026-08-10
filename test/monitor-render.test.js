@@ -414,6 +414,57 @@ test('contenido: la seccion Historico se pinta al pie sin disparar el titulo LIM
   )
 })
 
+// SHS-H3-H3-extra-historico (rework de review): el hallazgo 4 del dictamen
+// (progress/SHS-H3-extra-historico/review.md) constato que `historico` solo se
+// pintaba en modo `full` -- en compact/agents/angosto el dato desaparecia por
+// completo, violando spec.md:69 ("bajando a una seccion de Historico al pie,
+// sin desaparecer"). Estos tres tests cubren cada modo con el mismo fixture.
+const HISTORICO_FIXTURE = ['Extra ago-2026  $21.36/$20.00  alcanzado 06-08']
+
+test('contenido: en modo agents el extra historico se pinta al pie, no desaparece', () => {
+  const vista = vistaEjemplo({
+    limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 42 })],
+    historico: HISTORICO_FIXTURE,
+  })
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  const lineas = renderPanel(vista, { cols: 120, rows: 40, modo: 'agents', caps, color: false })
+
+  verificarContrato(lineas, 120, 40, 'historico agents')
+  assert.ok(
+    lineas.some((l) => l.includes('Extra ago-2026')),
+    `modo agents deberia seguir mostrando el extra historico:\n${lineas.join('\n')}`
+  )
+})
+
+test('contenido: en modo compact el extra historico se pinta al pie, no desaparece', () => {
+  const vista = vistaEjemplo({
+    limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 42 })],
+    historico: HISTORICO_FIXTURE,
+  })
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  const lineas = renderPanel(vista, { cols: 120, rows: 40, modo: 'compact', caps, color: false })
+
+  assert.ok(
+    lineas.some((l) => l.includes('Extra ago-2026')),
+    `modo compact deberia seguir mostrando el extra historico:\n${lineas.join('\n')}`
+  )
+})
+
+test('contenido: en modo angosto (cols < 60) el extra historico se pinta, no desaparece', () => {
+  const vista = vistaEjemplo({
+    limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 42 })],
+    historico: HISTORICO_FIXTURE,
+  })
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  const lineas = renderPanel(vista, { cols: 40, rows: 12, modo: 'full', caps, color: false })
+
+  verificarContrato(lineas, 40, 12, 'historico angosto')
+  assert.ok(
+    lineas.some((l) => l.includes('Extra ago-2026')),
+    `modo angosto deberia seguir mostrando el extra historico:\n${lineas.join('\n')}`
+  )
+})
+
 // snapshot minimo de dominio para ejercitar la regla de 24h de gasto-extra.js
 // via el pipeline real (construirVista -> presentar), en vez de fixturear a
 // mano el array `historico` de presentacion: con un unico limite al 42% (como
