@@ -113,6 +113,26 @@ test('gastoExtra null (sin cachedUsageUtilization todavia): no abre nada y no la
   assert.ok(!fs.existsSync(rutaHistoria(home)), 'sin nada que registrar no debe escribir el archivo')
 })
 
+test('gastoExtra null CON un registro ya abierto: no lanza y deja el registro intacto', () => {
+  // Reproduccion exacta del review: `createUsageHistory({paths}).registrar(null, ahora)`
+  // con un registro ya abierto en disco lanzaba TypeError (gasto-extra.js:34,
+  // `gastoExtra.usadoUsd` sin `?.`). El caso de :106 arriba solo cubre "sin
+  // registro abierto", que nunca tocaba esa linea.
+  const home = mkClaudeHome({})
+  const history = createUsageHistory({ paths: { home } })
+
+  const detectadoEn = 1000
+  history.registrar(gastoExtra({ alcanzado: true }), detectadoEn)
+
+  assert.doesNotThrow(() => history.registrar(null, 2000))
+
+  const estado = history.registrar(null, 3000)
+  assert.ok(estado.abierto, 'el registro abierto no debe sellarse por un tick sin gastoExtra')
+  assert.equal(estado.abierto.detectadoEn, detectadoEn)
+  assert.equal(estado.abierto.cerradoEn, null)
+  assert.deepEqual(estado.archivados, [])
+})
+
 test('sin paths: leer()/registrar() no lanzan y devuelven estado vacio', () => {
   const history = createUsageHistory({})
   assert.deepEqual(history.leer(), { abierto: null, archivados: [] })

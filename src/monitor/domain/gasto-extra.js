@@ -31,6 +31,10 @@ export function estadoDelExtra({ alcanzado, detectadoEn }, ahora) {
 //   senal de que el periodo se reseteo) -> se cierra: `cerradoEn = ahora`.
 // - Sin registro abierto y el extra no esta alcanzado -> sigue sin registro
 //   (null).
+// - Registro abierto y `gastoExtra` ausente/null (la API no informo el gasto
+//   extra en este tick, p. ej. `.claude.json` sin `cachedUsageUtilization`) ->
+//   NO es una senal de reset: el dato simplemente no llego. El registro se
+//   mantiene igual, sin sellar ni descartar nada (misma referencia).
 export function siguienteRegistro(gastoExtra, registroActual, ahora) {
   const alcanzado = gastoExtra?.alcanzado === true
 
@@ -45,7 +49,9 @@ export function siguienteRegistro(gastoExtra, registroActual, ahora) {
     }
   }
 
-  const seReseteo = gastoExtra?.habilitado === true || gastoExtra.usadoUsd < registroActual.usado
+  if (gastoExtra == null) return registroActual
+
+  const seReseteo = gastoExtra.habilitado === true || gastoExtra.usadoUsd < registroActual.usado
 
   if (!alcanzado || seReseteo) {
     return { ...registroActual, cerradoEn: ahora }

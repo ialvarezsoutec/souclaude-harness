@@ -474,3 +474,23 @@ test('gasto-extra: sin registro previo y sin alcanzar, siguienteRegistro no abre
 
   assert.equal(siguienteRegistro(gastoExtra, null, ahora), null)
 })
+
+test('gasto-extra: siguienteRegistro con gastoExtra null y un registro abierto no lanza y no lo sella', () => {
+  // Reproduccion del review: sin cachedUsageUtilization en el tick (o con
+  // limites: null), vista?.limites?.gastoExtra llega null. Con un registro ya
+  // abierto en disco, esto NO es una senal de reset -- el dato simplemente no
+  // llego este tick. Sin este caso, `gastoExtra.usadoUsd` (sin `?.`) lanzaba
+  // TypeError.
+  const ahora = Date.UTC(2026, 7, 10, 12, 0, 0)
+  const registroActual = {
+    detectadoEn: ahora - 60_000,
+    usado: 21.36,
+    limite: 20,
+    moneda: 'USD',
+    cerradoEn: null,
+  }
+
+  assert.doesNotThrow(() => siguienteRegistro(null, registroActual, ahora))
+  const registro = siguienteRegistro(null, registroActual, ahora)
+  assert.equal(registro, registroActual, 'misma referencia: no se sella ni se pierde')
+})

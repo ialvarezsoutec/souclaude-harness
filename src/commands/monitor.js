@@ -58,12 +58,14 @@ function crearUsageHistory(flags) {
 
 // Registra el gasto extra recien leido en el historico persistido. Nunca lanza:
 // un fallo de disco no puede tumbar un tick del panel (ver usage-history.js).
+// El error (de disco o de logica) no se traga en silencio: se empuja al mismo
+// canal de avisos que usa snapshot-source.js (ver snapshot-source.js:137),
+// para que un fallo real siga siendo visible en el panel en vez de desaparecer.
 function registrarHistorico(usageHistory, vista, ahora) {
   try {
     usageHistory.registrar(vista?.limites?.gastoExtra ?? null, ahora)
-  } catch {
-    // El historico es una proyeccion adicional, no la fuente de verdad del
-    // panel: perder un registro puntual no es motivo para romper el tick.
+  } catch (err) {
+    vista?.avisos?.push({ file: 'usage-history', reason: err.code ?? err.message })
   }
 }
 
