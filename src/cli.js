@@ -44,6 +44,9 @@ const OPTIONS = {
   ascii: { type: 'boolean' },
   refresh: { type: 'boolean', default: true },
   'claude-home': { type: 'string' },
+  // monitor --publish: snapshots agregados de cuenta al Vault (ADR
+  // 20260810-monitor-snapshots-en-vault). Opt-in y solo en modo en vivo.
+  publish: { type: 'boolean' },
   // monitor --emit-router: el puente de telemetria estimada a medida.
   'emit-router': { type: 'boolean' },
   hito: { type: 'string' },
@@ -164,6 +167,10 @@ ${pc.bold('FLAGS DE MONITOR')}
                        ~/.claude.json solo se actualiza cuando corres /usage,
                        asi que sin refresco el dato puede tener 20-50 minutos.
   --claude-home <ruta> Usa otra carpeta ~/.claude (util para fixtures y tests).
+  --publish            Publica un snapshot agregado de esta cuenta (limites +
+                       totales, <1 KB) en 00-System/monitor/ del Vault, cada
+                       ~5 min y solo si cambio. Opt-in, solo panel en vivo;
+                       sin Vault configurado degrada a un aviso y sigue local.
 
 ${pc.bold('MONITOR --EMIT-ROUTER')}
   Escribe UNA linea "medida" en progress/model-router.jsonl a partir de la

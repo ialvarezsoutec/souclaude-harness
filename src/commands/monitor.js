@@ -12,6 +12,8 @@ import { renderPanel } from '../monitor/adapters/panel-layout.js'
 import { presentar } from '../monitor/adapters/panel-presenter.js'
 import { renderJson, renderPlain } from '../monitor/adapters/plain-renderer.js'
 import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writer.js'
+import { createVaultPublisher } from '../monitor/adapters/vault-monitor-publisher.js'
+import { readVaultConfig } from '../core/vault.js'
 
 // El caché de limites de ~/.claude.json solo se reescribe cuando el humano corre
 // /usage, asi que sin esto el panel muestra un dato de 20-50 minutos. El fetcher
@@ -97,12 +99,26 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     return codigoDeSalida(vista)
   }
 
-  return await enVivoLoop({ source, clock, opciones, caps, modo, flags })
+  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, publisher: crearPublisher(flags, cwd) })
+}
+
+// --publish (opt-in, solo en vivo): snapshots agregados de esta cuenta al
+// Vault, autorizados por el ADR 20260810-monitor-snapshots-en-vault. Sin
+// Vault configurado se degrada a un warning unico y el monitor sigue
+// local-only: el Vault jamas es dependencia dura de nada.
+function crearPublisher(flags, cwd) {
+  if (flags.publish !== true) return null
+  const config = readVaultConfig(cwd)
+  if (!config?.path) {
+    ui.log.warn('--publish sin Vault configurado (.claude/vault.local.json o VAULT_PATH): el monitor sigue local-only.')
+    return null
+  }
+  return createVaultPublisher({ vaultPath: config.path })
 }
 
 // --- panel en vivo ---
 
-async function enVivoLoop({ source, clock, opciones, caps, modo, flags }) {
+async function enVivoLoop({ source, clock, opciones, caps, modo, flags, publisher = null }) {
   const intervalo = Math.max(INTERVALO_MINIMO, enteroPositivo(flags.interval, INTERVALO_DEFAULT))
   const renderer = createTtyRenderer()
 
@@ -116,7 +132,8 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags }) {
     if (!vista && !errorDelTick) return
     const { cols, rows } = renderer.size()
     const modelo = conAvisoDeError(vista, errorDelTick)
-    const proyeccion = presentar(modelo, { ahora: modelo.generadoEn, top: opciones.top })
+    const conPublicacion = conAvisoDePublicacion(modelo, publisher, clock.now())
+    const proyeccion = presentar(conPublicacion, { ahora: modelo.generadoEn, top: opciones.top })
     renderer.paint(renderPanel(proyeccion, { cols, rows, caps, color: caps.color !== false, modo }))
   }
 
@@ -134,6 +151,11 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags }) {
       errorDelTick = err
     } finally {
       enTick = false
+    }
+    // Fire-and-forget: el publisher decide solo si le toca (intervalo, backoff,
+    // cambio material) y jamas puede demorar ni tumbar el render.
+    if (publisher && vista) {
+      publisher.publicar(vista, { ahora: clock.now() }).catch(() => {})
     }
     pintar()
   }
@@ -279,6 +301,27 @@ function codigoDeSalida(vista) {
   if (peor >= UMBRAL_CRITICO) return 2
   if (peor >= UMBRAL_AVISO) return 1
   return 0
+}
+
+// Traduce el estado del publisher a un aviso visible, sin mutar el modelo. Un
+// secreto detectado o una racha de fallos que dejo el snapshot viejo son cosas
+// que el humano tiene que ver; una publicacion al dia no necesita anunciarse.
+function conAvisoDePublicacion(vista, publisher, ahora) {
+  if (!publisher || !vista) return vista
+  const e = publisher.estado()
+
+  let aviso = null
+  if (e.secretoDetectado) {
+    aviso = 'publicacion al Vault ABORTADA: el snapshot contenia un posible secreto'
+  } else if (e.fallosSeguidos > 0 && e.ultimaPublicacionMs != null) {
+    const min = Math.round((ahora - e.ultimaPublicacionMs) / 60_000)
+    aviso = `Vault: sin publicar hace ${min}m (${e.fallosSeguidos} fallo${e.fallosSeguidos === 1 ? '' : 's'})`
+  } else if (e.fallosSeguidos >= 3) {
+    aviso = `Vault: todavia sin publicar (${e.fallosSeguidos} fallos)`
+  }
+
+  if (!aviso) return vista
+  return { ...vista, avisos: [...(vista.avisos ?? []), { file: 'vault', reason: aviso }] }
 }
 
 // Agrega el error del ultimo tick a los avisos de la vista, sin mutar el modelo de
