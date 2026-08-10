@@ -36,6 +36,13 @@ requisitos de features (van en `specs/`), convenciones del proyecto (van en
   corre Node más nuevo) — el síntoma no va a apuntar a la causa. Decisión del dueño
   (SHS-H2, 2026-07-31): no se sube CI ni se baja `engines` todavía. Si tocás CI, revisa
   esto primero.
+  **Corolario (SHS-H4, 2026-08-10): "en local todos corren Node nuevo" no es cierto.** En
+  al menos una máquina de trabajo el `node` del PATH es **v12.20.1**
+  (`C:\Program Files\nodejs`), muy por debajo de `engines`. Ahí no corre **nada** del CLI:
+  el top-level `await` de `bin/cli.mjs` tira `SyntaxError: Unexpected reserved word` y
+  hasta `node --check` marca falso positivo en cualquier `??`. El síntoma parece un error
+  de sintaxis del código que acabás de escribir, y no lo es. Antes de debuggear un
+  `SyntaxError` raro, corré `node --version`.
 - **(2026-08-04, monitor de tokens) Varias líneas `assistant` comparten `message.id` y
   repiten el objeto `usage` completo.** Una respuesta con un bloque `text` y uno
   `tool_use` se escribe como dos líneas que comparten `message.id` y `requestId`, y el
