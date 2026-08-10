@@ -97,7 +97,7 @@ escrita por el orchestrator (Bash, `>>`). Campos:
  "agente": "implementer", "clase": "estandar", "senales": ["mas_de_3_archivos"],
  "modelo": "opus", "effort": "medium", "resultado": "approved", "rework": 0,
  "motivo": null, "tokens_in": 42150, "tokens_out": 8300, "costo_usd": 0.94,
- "medicion": "estimado"}
+ "medicion": "estimado", "cuenta": "dev", "cuenta_uuid": "aaaa1111-…", "maquina": "bbbb2222-…"}
 ```
 
 - `task`: ID completo del task (`<PREFIJO>-H<n>-T<nnn>`) cuando el lanzamiento ejecuta
@@ -112,6 +112,11 @@ escrita por el orchestrator (Bash, `>>`). Campos:
   artefactos (prompt enviado + archivos leídos/escritos, ~4 caracteres por token) y marca
   `"estimado"`. **Regla de honestidad**: un `"estimado"` es orden de magnitud para
   comparar celdas de la matriz — jamás se presenta como cifra contable ni de facturación.
+- `cuenta` / `cuenta_uuid` / `maquina`: atribución multi-cuenta (SHS-H3-monitor-multicuenta).
+  `cuenta` es el alias legible (parte local del email), `cuenta_uuid` el `accountUuid` y
+  `maquina` el `machineID` de `~/.claude.json`. Los tres van en `null` si la máquina no
+  tiene identidad. Las líneas anteriores a este campo son válidas sin él; en `/rock-close`
+  se agrupa por `cuenta_uuid` cuando existe.
 
 **Aprendizaje = ritual humano, sin ML.** En `/rock-close` se resume el JSONL del
 trimestre y se ajusta la matriz si:

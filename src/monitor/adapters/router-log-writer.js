@@ -95,6 +95,12 @@ export function construirLinea(vista, opts = {}) {
     tokens_out: tokensOut,
     costo_usd: costoUsd,
     medicion: 'medido',
+    // Atribucion multi-cuenta (SKILL §5): con dos cuentas en el equipo, una
+    // linea sin dueno no se puede auditar en /rock-close. null si esta
+    // maquina no tiene identidad en .claude.json (compatibilidad hacia atras).
+    cuenta: vista?.cuenta?.alias ?? null,
+    cuenta_uuid: vista?.cuenta?.accountUuid ?? null,
+    maquina: vista?.cuenta?.machineID ?? null,
     fuente,
   }
 }
