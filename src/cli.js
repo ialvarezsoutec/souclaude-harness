@@ -10,6 +10,7 @@ import { status } from './commands/status.js'
 import { adopt } from './commands/adopt.js'
 import { verify } from './commands/verify.js'
 import { monitor } from './commands/monitor.js'
+import { mode } from './commands/mode.js'
 import * as ui from './ui.js'
 
 const OPTIONS = {
@@ -57,7 +58,7 @@ const OPTIONS = {
   version: { type: 'boolean' },
 }
 
-const COMMANDS = { init, upgrade, status, adopt, verify, monitor }
+const COMMANDS = { init, upgrade, status, adopt, verify, monitor, mode }
 
 export async function main(argv, cwd) {
   let parsed
@@ -92,7 +93,9 @@ export async function main(argv, cwd) {
   }
 
   try {
-    return await COMMANDS[command](flags, cwd)
+    // _positionals viaja dentro de flags para no cambiarle la firma a los seis
+    // comandos que no lo necesitan. Hoy solo `mode <valor>` lee un positional.
+    return await COMMANDS[command]({ ...flags, _positionals: positionals }, cwd)
   } catch (err) {
     ui.log.error(err.message)
     if (flags.verbose) console.error(err.stack)
@@ -129,6 +132,10 @@ ${pc.bold('COMANDOS')}
             rutas rotas, ids/dest duplicados, criticos faltantes. No mira ningun proyecto.
   ${pc.cyan('monitor')}   Panel de consumo de tokens de Claude Code: limites, agentes vivos,
             sesiones y proyectos. Sale 0/1/2 segun el peor limite (util en un hook).
+  ${pc.cyan('mode')}      Modo de trabajo de los agentes. Por defecto es 'auto': el flujo
+            encadena las fases sin pedir OK. 'manual' es el opt-in para revisar
+            fase por fase. Sin argumento, solo muestra el modo actual. El opt-in
+            se guarda en .claude/mode.local.json (local, gitignorado).
 
   Sin comando, se autodetecta: hay lockfile -> upgrade · hay estructura previa -> adopt · repo limpio -> init
 
