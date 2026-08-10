@@ -3,7 +3,7 @@
 **Spec**: [spec.md](./spec.md)
 **Plan**: [plan.md](./plan.md)
 **Estimated total**: ~8-11 horas (11 tareas)
-**Status**: pending (esperando aprobación de spec/plan y del ADR)
+**Status**: in progress (spec/plan y ADR aprobados el 2026-08-10)
 
 ---
 

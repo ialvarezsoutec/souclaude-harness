@@ -3,7 +3,7 @@
 **Spec**: [spec.md](./spec.md)
 **Hito**: SHS-H3
 **Creado**: 2026-08-10
-**Aprobado**: pending
+**Aprobado**: 2026-08-10 (Ignacio A)
 
 ---
 

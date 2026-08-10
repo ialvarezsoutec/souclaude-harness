@@ -1,7 +1,7 @@
 # ADR: Snapshots agregados del monitor en el Vault (excepción a la regla de telemetría)
 
 **Fecha**: 2026-08-10
-**Status**: proposed
+**Status**: accepted
 **Deciders**: Ignacio A
 
 ## Context

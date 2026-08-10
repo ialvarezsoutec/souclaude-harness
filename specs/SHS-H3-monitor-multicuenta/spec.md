@@ -1,11 +1,11 @@
 # Spec: Trazabilidad multi-cuenta en el monitor (vía Vault)
 
-**Status**: draft
+**Status**: approved
 **Owner**: Ignacio A
 **Stakeholders**: Ignacio A (único — dueño del harness)
 **Hito**: SHS-H3
 **Creado**: 2026-08-10
-**Aprobado**: pending
+**Aprobado**: 2026-08-10 (Ignacio A)
 
 ---
 
