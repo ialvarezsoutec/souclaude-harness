@@ -83,8 +83,21 @@ momento. Protocolo completo, convención de commits y manejo de conflictos en
 Hasta que `spec.md`, `plan.md` y `tasks.md` estén listos, la rama **solo admite commits
 `docs:`**. Nada de código todavía.
 
-Un commit por task, no en batch. Ejecutar de a un task y **esperar el OK humano** antes
-de pasar al siguiente. PR draft tras 2-3 commits, no al final.
+Un commit por task, **nunca en batch**: se ejecuta de a un task, con su test y su commit.
+PR draft tras 2-3 commits, no al final.
+
+Quién aprueba el paso de un task al siguiente depende del **modo de trabajo**:
+
+- **`auto` — el default.** El flujo encadena sin pedir OK: no hay que configurar nada. **Sigue
+  parando igual** ante un spec ambiguo, un `blocked`, tests rojos, un `CHANGES_REQUESTED` del
+  reviewer, o cualquier acción destructiva o sobre un sistema externo (P6: push, merge, tags,
+  releases, deploys).
+- **`manual` — opt-in** (`npx souclaude mode manual`): se **espera el OK humano** antes de
+  pasar al siguiente task y en cada checkpoint de spec/plan/tasks.
+
+El modo se lee de `.claude/mode.local.json` (local y gitignorado); si el archivo falta o es
+inválido, rige `auto`. Cambia quién aprueba el avance, no si hay control de calidad: el
+`reviewer` es obligatorio en ambos modos. Detalle completo en `AGENTS.md`.
 
 ## Language
 

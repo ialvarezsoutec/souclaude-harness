@@ -25,12 +25,80 @@ aprueba a sí mismo**.
 hito (ID <PREFIJO>-H<n>) ─► rama tipo/<ID-hito>-<slug>
         │
         ▼
-spec.md ─► ⏸ HUMANO ─► plan.md ─► ⏸ HUMANO ─► tasks.md ─► ⏸ HUMANO ─► implement ─► review ─► PR
+spec.md ─► ⏸ ─► plan.md ─► ⏸ ─► tasks.md ─► ⏸ ─► implement ─► review ─► PR
 ```
 
-Son **tres checkpoints humanos** antes de escribir código, no uno. Hasta que `spec.md`,
-`plan.md` y `tasks.md` estén aprobados, la rama **solo admite commits `docs:`**. Durante
-`implement`, el review es incremental (task por task), nunca en batch al final.
+Son **tres checkpoints** antes de escribir código, no uno. Hasta que `spec.md`, `plan.md` y
+`tasks.md` estén aprobados, la rama **solo admite commits `docs:`**. Durante `implement`, el
+review es incremental (task por task), nunca en batch al final.
+
+Quién levanta cada `⏸` depende del **modo de trabajo**.
+
+## Modo de trabajo: `manual` y `auto`
+
+**El default es `auto`: el flujo corre solo.** No hay que configurar nada para trabajar
+desatendido — es el comportamiento base del harness.
+
+Quien quiera revisar fase por fase lo pide explícito:
+
+```
+npx souclaude mode          # muestra el modo actual
+npx souclaude mode manual   # pide OK en cada checkpoint
+npx souclaude mode auto     # vuelve al default (borra el opt-in)
+```
+
+El opt-in vive en `.claude/mode.local.json` — **archivo local, gitignorado**, como
+`.claude/vault.local.json`: es de tu máquina, no del proyecto. Si falta, está corrupto o trae
+un valor inválido, **el modo es `auto`**.
+
+Por qué el default es autónomo: el modo de trabajo lo eliges con el **permission mode de
+Claude Code** (shift+tab), y ese modo **no se expone en runtime** — un agente no puede
+consultarlo. Si el flujo desatendido dependiera de escribir un archivo, ciclar a automático no
+cambiaría nada. Por eso el harness corre solo por defecto y `manual` es el opt-in.
+
+| | `auto` (default) | `manual` |
+|---|---|---|
+| Checkpoints spec/plan/tasks | El `orchestrator` verifica y encadena | Esperan tu OK |
+| Entre task y task | Encadena | Espera tu OK |
+| `reviewer` | **Obligatorio** | Obligatorio |
+| Ambigüedad, `blocked`, tests rojos | **Para** | Para |
+| Acciones destructivas o externas (P6) | **Para** | Para |
+
+Lo que `auto` elimina es **la espera por una aprobación humana**, no el control de calidad. El
+`reviewer` independiente sigue corriendo y su `CHANGES_REQUESTED` sigue bloqueando; el
+Anti-Hack de `ccem-prompting` sigue vigente; y P6 —"no existe autonomía total sobre sistemas
+externos"— sigue mandando: en `auto`, `git push`, merge a `main`, tags, releases y deploys
+**siguen pidiendo tu confirmación**. Relajar eso no es cuestión de un flag: exige un ADR y
+cambiar la constitución.
+
+En `auto`, el `orchestrator` toma el checkpoint en tu lugar: lee el artefacto recién escrito,
+verifica que esté completo y sea coherente, y recién ahí encadena, dejando `auto_ok` en
+`progress/history.md`. Un artefacto a medias no se aprueba solo por estar en `auto`.
+
+### Modo ≠ permisos: son dos perillas distintas
+
+| | Qué gobierna | Dónde se configura |
+|---|---|---|
+| **Modo** (`auto`/`manual`) | Los **checkpoints metodológicos** del flujo SDD: ¿hay que esperar tu OK entre fases y entre tasks? | `.claude/mode.local.json` |
+| **Permisos** | Si Claude pide confirmación para **ejecutar una herramienta** (correr un comando, editar un archivo) | `permissions` en `.claude/settings.json` + el permission mode de Claude Code (shift+tab) |
+
+Para que Claude ejecute comandos sin preguntarte, la perilla es **permisos**, no el modo. El
+harness deja `permissions.deny` sobre secretos (`.env`, claves, credenciales) y `permissions.ask`
+sobre el puñado de operaciones que P6 marca como irreversibles:
+
+```
+git push · git merge · git tag · git reset --hard · gh pr merge · gh release
+```
+
+Esa lista es corta a propósito: **todo lo demás corre sin preguntar**. Editar, leer, `npm test`,
+`git add`, `git commit`, `git fetch` — nada de eso pide permiso. Lo que queda en `ask` es lo que
+reescribe historia, publica hacia afuera o destruye trabajo, que es exactamente lo que P6
+protege ("no existe autonomía total sobre sistemas externos"). Un `git push` es la frontera
+donde el trabajo deja tu máquina y pasa a ser de todos.
+
+Si en tu contexto necesitas que esas seis también corran solas, sácalas de `ask` en tu
+`.claude/settings.local.json` (personal, gitignorado) — pero es una decisión consciente que
+va contra P6, no un default del harness.
 
 ## Cómo se invoca (opt-in)
 
