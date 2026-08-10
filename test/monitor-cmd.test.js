@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import fs from 'node:fs'
 
 import { monitor } from '../src/commands/monitor.js'
 import { mkClaudeHome, lineaAssistant, lineaTitulo } from './helpers-monitor.js'
@@ -367,4 +368,67 @@ test('codigos de limite via subproceso: exit 2 con 95%+', () => {
   const home = mkClaudeHome({ config: configConLimite(99) })
   const { status } = correrSubproceso(['--once', '--json', '--claude-home', home])
   assert.equal(status, 2)
+})
+
+// ---------------------------------------------------------------------------
+// SHS-H3-T104: --seed-extra-detectado-en tiene que llegar de verdad hasta
+// crearUsageHistory(). Rework: el flag se leia en commands/monitor.js pero
+// nunca se registro en el parser de cli.js (parseArgs strict lo rechazaba con
+// "Unknown option"), asi que la feature estaba muerta -- este test corre por
+// SUBPROCESO (bin/cli.mjs), la unica forma de probar de verdad parseArgs
+// strict (ver cabecera de este archivo).
+// ---------------------------------------------------------------------------
+
+// porcentaje bajo a proposito (20%, no 95%+): este test solo verifica que el
+// flag llega hasta el adaptador, no el codigo de salida por alarma (eso ya lo
+// cubren los tests de "codigos de limite" de mas arriba).
+function configConGastoExtraAlcanzado() {
+  return {
+    cachedUsageUtilization: {
+      fetchedAtMs: Date.now(),
+      utilization: {
+        five_hour: { utilization: 10, resets_at: null },
+        seven_day: { utilization: 10, resets_at: null },
+        extra_usage: {
+          is_enabled: false,
+          monthly_limit: 2000,
+          used_credits: 400,
+          utilization: 20,
+          disabled_reason: null,
+          spend_limit_reached: true,
+        },
+      },
+    },
+  }
+}
+
+test('monitor --seed-extra-detectado-en via subproceso: parseArgs lo acepta y llega hasta usage-history.json', () => {
+  const home = mkClaudeHome({ config: configConGastoExtraAlcanzado() })
+  const seed = '2026-08-06T18:00:00.000Z'
+
+  const { status, stderr } = correrSubproceso([
+    '--once',
+    '--json',
+    '--no-refresh',
+    '--claude-home',
+    home,
+    '--seed-extra-detectado-en',
+    seed,
+  ])
+
+  // Sin el flag registrado en OPTIONS de cli.js, parseArgs strict rechaza la
+  // invocacion entera con "Unknown option '--seed-extra-detectado-en'" y
+  // status 2 -- exactamente el bug de este rework.
+  assert.equal(status, 0, `no debe rechazar el flag (stderr: ${stderr})`)
+
+  const rutaHistoria = path.join(home, 'souclaude', 'usage-history.json')
+  assert.ok(fs.existsSync(rutaHistoria), 'usage-history.json deberia existir: crearUsageHistory() nunca corrio')
+
+  const historia = JSON.parse(fs.readFileSync(rutaHistoria, 'utf8'))
+  assert.ok(historia.abierto, 'deberia haber abierto un registro para el gasto extra alcanzado')
+  assert.equal(
+    historia.abierto.detectadoEn,
+    Date.parse(seed),
+    'el seed deberia fijar detectadoEn, no el "ahora" de la corrida',
+  )
 })
