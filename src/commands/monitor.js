@@ -13,6 +13,7 @@ import { presentar } from '../monitor/adapters/panel-presenter.js'
 import { renderJson, renderPlain } from '../monitor/adapters/plain-renderer.js'
 import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writer.js'
 import { createVaultPublisher } from '../monitor/adapters/vault-monitor-publisher.js'
+import { createVaultAccountsReader, gitAsync } from '../monitor/adapters/vault-accounts-reader.js'
 import { readVaultConfig } from '../core/vault.js'
 
 // El caché de limites de ~/.claude.json solo se reescribe cuando el humano corre
@@ -78,8 +79,16 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     filtros: filtrosDe(flags, cwd),
   }
 
+  const enVivo = !flags.json && !flags.once && process.stdout.isTTY === true && !ui.isCI()
+
+  // El publisher solo existe en vivo (--publish); el lector de cuentas del
+  // Vault sirve en todos los modos (--json lo expone gratis), pero su pull
+  // remoto solo corre en vivo y solo si el publisher no lo hace ya.
+  const publisher = enVivo ? crearPublisher(flags, cwd) : null
+  const accountsReader = crearAccountsReader(cwd, { conPull: enVivo && !publisher })
+
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
-  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags) })
+  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags), accountsReader })
   const clock = { now: () => Date.now() }
 
   const caps = detectCaps({ overrides: flags.ascii ? { unicode: false } : {} })
@@ -91,7 +100,6 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     return codigoDeSalida(vista)
   }
 
-  const enVivo = !flags.once && process.stdout.isTTY === true && !ui.isCI()
   if (!enVivo) {
     const vista = await buildView({ source, clock, opciones })
     const cols = process.stdout.isTTY === true ? caps.cols : COLS_SNAPSHOT
@@ -99,7 +107,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     return codigoDeSalida(vista)
   }
 
-  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, publisher: crearPublisher(flags, cwd) })
+  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, publisher })
 }
 
 // --publish (opt-in, solo en vivo): snapshots agregados de esta cuenta al
@@ -114,6 +122,14 @@ function crearPublisher(flags, cwd) {
     return null
   }
   return createVaultPublisher({ vaultPath: config.path })
+}
+
+// Lector de los snapshots que publico el resto del equipo. Sin Vault, null:
+// la seccion CUENTAS muestra solo la cuenta local.
+function crearAccountsReader(cwd, { conPull }) {
+  const config = readVaultConfig(cwd)
+  if (!config?.path) return null
+  return createVaultAccountsReader({ vaultPath: config.path, git: conPull ? gitAsync : null })
 }
 
 // --- panel en vivo ---

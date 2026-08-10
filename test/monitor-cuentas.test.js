@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import { aliasDeCuenta, normalizarCuenta, consolidarCuentas } from '../src/monitor/domain/cuentas.js'
 import { construirVista } from '../src/monitor/domain/arbol.js'
 import { presentar } from '../src/monitor/adapters/panel-presenter.js'
+import { renderPlain } from '../src/monitor/adapters/plain-renderer.js'
 
 // Este archivo responde: "la identidad de cuenta se normaliza como dice la
 // spec de SHS-H3-monitor-multicuenta (RF-01)?". Valores esperados
@@ -173,6 +174,38 @@ test('cuentas: presentar expone alias y email para el panel', () => {
 
   const sin = presentar(construirVista({ eventos: [] }, { ahora: 1 }), { ahora: 1 })
   assert.equal(sin.cuenta, null)
+})
+
+test('cuentas: la seccion CUENTAS llega al panel con local y remota', () => {
+  const vista = construirVista(
+    {
+      eventos: [],
+      cuenta: { accountUuid: 'uuid-a', email: 'dev@soutec-group.com' },
+      limites: { cincoHoras: { porcentaje: 88, reseteaEn: null }, sieteDias: null, porGrupo: [], gastoExtra: null, leidoEn: AHORA, edadMs: 0 },
+      cuentasRemotas: [snapshotRemoto('uuid-b', { generadoEn: new Date(AHORA - 20 * 60_000).toISOString() })],
+    },
+    { ahora: AHORA },
+  )
+
+  const panel = presentar(vista, { ahora: AHORA })
+  assert.equal(panel.cuentas.filas.length, 2)
+  assert.equal(panel.cuentas.filas[0].alias, 'dev')
+  assert.equal(panel.cuentas.filas[0].esLocal, true)
+  assert.equal(panel.cuentas.filas[1].alias, 'dev2')
+  // 20 minutos > 15: la remota se marca vieja.
+  assert.equal(panel.cuentas.filas[1].vieja, true)
+
+  const texto = renderPlain(vista, { cols: 100 })
+  assert.match(texto, /CUENTAS/)
+  assert.match(texto, /dev2/)
+  assert.match(texto, /dato viejo/)
+})
+
+test('cuentas: sin datos de cuentas el panel no dibuja la seccion', () => {
+  const vista = construirVista({ eventos: [] }, { ahora: AHORA })
+  assert.deepEqual(vista.cuentas, [])
+  const texto = renderPlain(vista, { cols: 100 })
+  assert.doesNotMatch(texto, /CUENTAS/)
 })
 
 test('cuentas: campos secundarios ausentes o invalidos quedan en null', () => {

@@ -7,7 +7,7 @@ import { vacio, sumar, fusionar } from './consumo.js'
 import { resolverAlias } from './precios.js'
 import { construirVentana, filtrarPorVentana, bucketsHorarios, ritmo } from './ventanas.js'
 import { clasificarAgente, clasificarSesion, esActivo } from './actividad.js'
-import { normalizarCuenta } from './cuentas.js'
+import { normalizarCuenta, consolidarCuentas } from './cuentas.js'
 
 // DEDUPLICACION: es responsabilidad EXCLUSIVA del tailer (adapters/jsonl-tailer.js,
 // via crearDeduplicador() de consumo.js), que mantiene un deduplicador por archivo.
@@ -65,18 +65,27 @@ export function construirVista(snapshot = {}, opciones = {}) {
 
   const { visibles, recortes } = recortarArbol(proyectos, { orden, top })
 
+  // Seccion CUENTAS: la cuenta local (con los limites y totales de ESTA vista)
+  // + los snapshots que el resto del equipo publico en el Vault.
+  const consolidado = consolidarCuentas({
+    local: { cuenta: snapshot.cuenta, limites: snapshot.limites ?? null, totales },
+    remotas: snapshot.cuentasRemotas ?? [],
+    ahora,
+  })
+
   return {
     generadoEn: ahora,
     ventana,
     limites: snapshot.limites ?? null,
     cuenta: normalizarCuenta(snapshot.cuenta),
+    cuentas: consolidado.cuentas,
     totales,
     ritmo: ritmo(universo, ahora, 5),
     serieHoraria: bucketsHorarios(universo, ventana),
     proyectos: visibles,
     agentesActivos,
     vivos,
-    avisos: snapshot.avisos ?? [],
+    avisos: [...(snapshot.avisos ?? []), ...consolidado.avisos],
     recortes,
   }
 }

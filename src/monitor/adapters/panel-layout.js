@@ -438,6 +438,59 @@ function seccionConsumo(ctx, vista) {
   }
 }
 
+// Seccion CUENTAS: una fila por cuenta del equipo (la local + las publicadas
+// en el Vault). Fuera del orden por severidad del header, del titulo LIMITE y
+// del exit code: informa para decidir con cual cuenta seguir, no alarma.
+function seccionCuentas(ctx, vista) {
+  const filas = Array.isArray(vista?.cuentas?.filas) ? vista.cuentas.filas : []
+  const remotas = filas.filter((f) => !f.esLocal).length
+
+  return {
+    id: 'cuentas',
+    min: Math.min(2, 1 + filas.length),
+    max: 1 + filas.length,
+    build(n) {
+      const extra = remotas > 0 ? `${remotas} remota${remotas === 1 ? '' : 's'}` : 'solo esta maquina'
+      const lineas = [regla(ctx, ctx.chars.frame.ml, ctx.chars.frame.mr, 'CUENTAS', extra, ctx.tinteMarco)]
+
+      for (const f of filas.slice(0, Math.max(0, n - 1))) {
+        // Una fila vieja se apaga entera: un 12% de hace una hora pintado de
+        // verde invita a confiar en un dato que ya no dice nada.
+        const apagado = f.vieja ? 'dim' : null
+        const origen = f.esLocal ? 'local' : texto(f.maquina, 'remota')
+        const frescura = f.esLocal
+          ? ''
+          : `${fmtRelativo(ctx.ahora - (f.frescuraMs ?? 0), ctx.ahora)}${f.vieja ? ' (dato viejo)' : ''}`
+
+        lineas.push(
+          lineaCaja(
+            ctx,
+            [
+              { texto: texto(f.alias, '?'), ancho: 12, tinte: apagado ?? (f.esLocal ? 'bold' : null) },
+              { texto: '5h', ancho: 2, tinte: 'dim' },
+              { texto: pctTexto(f.cincoHoras ?? NaN), ancho: 5, alinear: 'd', tinte: apagado ?? tinteDePct(f.cincoHoras) },
+              { texto: '7d', ancho: 2, tinte: 'dim' },
+              { texto: pctTexto(f.sieteDias ?? NaN), ancho: 5, alinear: 'd', tinte: apagado ?? tinteDePct(f.sieteDias) },
+              { texto: f.extra ? `extra ${f.extra}` : '', ancho: 22, tinte: apagado ?? 'dim' },
+              { texto: f.costoUsd != null ? fmtDinero(f.costoUsd) : '', ancho: 8, alinear: 'd', tinte: apagado },
+              { texto: origen, ancho: 10, tinte: apagado ?? 'cyan' },
+              { texto: frescura, ancho: RESTO, tinte: 'dim' },
+            ],
+            ctx.tinteMarco
+          )
+        )
+      }
+      return lineas
+    },
+  }
+}
+
+// Mismos umbrales que el header (85/95), pero sin marca: aca el color alcanza.
+function tinteDePct(p) {
+  if (!Number.isFinite(p)) return 'dim'
+  return tinteDeNivel(severidad(p).nivel)
+}
+
 function seccionDesglose(ctx, vista) {
   const d = vista?.desglose ?? {}
   const tokens = [
@@ -737,11 +790,11 @@ function seccionProyectos(ctx, vista) {
 
 /**
  * Reparte las filas disponibles ANTES de dibujar. Orden de corte, de abajo hacia
- * arriba: DESGLOSE cae primero, luego PROYECTOS, CONSUMO (indivisible), SESIONES
- * y por ultimo AHORA. El header de limites nunca entra en la negociacion.
+ * arriba: DESGLOSE cae primero, luego PROYECTOS, CONSUMO (indivisible), SESIONES,
+ * CUENTAS y por ultimo AHORA. El header de limites nunca entra en la negociacion.
  */
 function repartirAltura(secciones, disponible) {
-  const prioridad = ['ahora', 'sesiones', 'consumo', 'proyectos', 'desglose']
+  const prioridad = ['ahora', 'cuentas', 'sesiones', 'consumo', 'proyectos', 'desglose']
   const porId = new Map(secciones.map((s) => [s.id, s]))
   const asignado = new Map()
   let libre = disponible
@@ -758,7 +811,7 @@ function repartirAltura(secciones, disponible) {
 
   // El sobrante se reparte de a una linea por vuelta, para que ninguna seccion se
   // quede en el minimo mientras otra se queda con todo el aire.
-  const crecibles = ['ahora', 'sesiones', 'proyectos', 'desglose']
+  const crecibles = ['ahora', 'cuentas', 'sesiones', 'proyectos', 'desglose']
   let progreso = true
   while (libre > 0 && progreso) {
     progreso = false
@@ -801,7 +854,9 @@ function renderFull(ctx, vista) {
   const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), '', ctx.tinteMarco)
 
   const disponible = ctx.rows - cabeza.length - 1
+  const hayCuentas = (vista?.cuentas?.filas?.length ?? 0) > 0
   const secciones = [
+    ...(hayCuentas ? [seccionCuentas(ctx, vista)] : []),
     seccionAhora(ctx, vista),
     seccionConsumo(ctx, vista),
     seccionDesglose(ctx, vista),

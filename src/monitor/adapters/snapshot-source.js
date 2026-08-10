@@ -18,6 +18,7 @@ export function createSnapshotSource({
   ttlLimitsMs,
   tailer = createTailer(),
   limitsReader = createLimitsReader({ ttlMs: ttlLimitsMs }),
+  accountsReader = null,
 } = {}) {
   // ESTADO ENTRE TICKS. El tailer solo devuelve lo NUEVO de cada archivo, asi
   // que si `collect` devolviera solo eso el panel mostraria los ultimos 2
@@ -117,6 +118,19 @@ export function createSnapshotSource({
       tailer.purgeOlderThan(ventana.desde)
     }
 
+    // 5b. Snapshots de las otras cuentas del equipo (Vault), si hay lector.
+    // El adaptador entrega crudo; consolidarCuentas (dominio) decide que gana.
+    let cuentasRemotas = []
+    if (accountsReader) {
+      try {
+        const res = await accountsReader.leer({ ahora: instante })
+        cuentasRemotas = res.cuentas
+        avisos.push(...res.warnings)
+      } catch (err) {
+        avisos.push({ file: 'vault', reason: err.code ?? err.message })
+      }
+    }
+
     ticks += 1
 
     // 6. Snapshot con la forma exacta que espera construirVista.
@@ -131,6 +145,7 @@ export function createSnapshotSource({
       vivos,
       limites,
       cuenta,
+      cuentasRemotas,
       avisos,
     }
   }
