@@ -37,8 +37,8 @@
 
 ## Checklist
 
-- [ ] T201 · [ ] T202 · [ ] T203 · [ ] T204 (Fase 1 — sin dependencia del ADR)
-- [ ] ADR aprobado (checkpoint humano)
+- [x] T201 · [ ] T202 · [ ] T203 · [ ] T204 (Fase 1 — sin dependencia del ADR)
+- [x] ADR aprobado (checkpoint humano, 2026-08-10)
 - [ ] T205 · [ ] T206 (Fase 2)
 - [ ] T207 · [ ] T208 · [ ] T209 (Fase 3)
 - [ ] T210 · [ ] T211 (cierre)
