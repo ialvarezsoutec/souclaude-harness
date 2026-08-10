@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { aliasDeCuenta, normalizarCuenta } from '../src/monitor/domain/cuentas.js'
+import { aliasDeCuenta, normalizarCuenta, consolidarCuentas } from '../src/monitor/domain/cuentas.js'
 import { construirVista } from '../src/monitor/domain/arbol.js'
 import { presentar } from '../src/monitor/adapters/panel-presenter.js'
 
@@ -61,6 +61,89 @@ test('cuentas: sin accountUuid no hay identidad (todo-o-nada)', () => {
   assert.equal(normalizarCuenta({ accountUuid: '' }), null)
   assert.equal(normalizarCuenta({ accountUuid: 7 }), null)
   assert.equal(normalizarCuenta('texto'), null)
+})
+
+// ---------------------------------------------------------------------------
+// consolidarCuentas (RF-04)
+// ---------------------------------------------------------------------------
+
+const AHORA = Date.parse('2026-08-10T15:00:00.000Z')
+
+function snapshotRemoto(uuid, { alias = 'dev2', generadoEn = '2026-08-10T14:57:00.000Z', hostname = 'PC02' } = {}) {
+  return {
+    version: 1,
+    generadoEn,
+    cuenta: { accountUuid: uuid, alias, email: null, organizacion: null },
+    maquina: { machineID: 'm-2', hostname },
+    limites: { cincoHoras: { porcentaje: 12, reseteaEn: null }, sieteDias: null, gastoExtra: null, leidoEn: null },
+    totalesDia: { tokensIn: 10, tokensOut: 5, costoUsd: 0.1, llamadas: 1 },
+  }
+}
+
+test('consolidar: local primera con frescura 0, remota con frescura calculada', () => {
+  const { cuentas, avisos } = consolidarCuentas({
+    local: {
+      cuenta: { accountUuid: 'uuid-a', email: 'dev@soutec-group.com' },
+      limites: { cincoHoras: { porcentaje: 88 } },
+      totales: { entrada: 100, salida: 50, cacheCreacion: 10, cacheLectura: 40, llamadas: 3, costoUsd: 0.5 },
+    },
+    remotas: [snapshotRemoto('uuid-b')],
+    ahora: AHORA,
+  })
+
+  assert.equal(avisos.length, 0)
+  assert.equal(cuentas.length, 2)
+  assert.equal(cuentas[0].accountUuid, 'uuid-a')
+  assert.equal(cuentas[0].esLocal, true)
+  assert.equal(cuentas[0].frescuraMs, 0)
+  assert.equal(cuentas[0].totalesDia.tokensIn, 150)
+  assert.equal(cuentas[1].accountUuid, 'uuid-b')
+  assert.equal(cuentas[1].esLocal, false)
+  assert.equal(cuentas[1].maquina, 'PC02')
+  // 15:00 - 14:57 = 3 minutos
+  assert.equal(cuentas[1].frescuraMs, 3 * 60_000)
+})
+
+test('consolidar: la local gana sobre su propio snapshot publicado', () => {
+  const { cuentas } = consolidarCuentas({
+    local: { cuenta: { accountUuid: 'uuid-a', email: 'dev@soutec-group.com' }, limites: null, totales: null },
+    remotas: [snapshotRemoto('uuid-a', { alias: 'dev-viejo' })],
+    ahora: AHORA,
+  })
+  assert.equal(cuentas.length, 1)
+  assert.equal(cuentas[0].esLocal, true)
+  assert.equal(cuentas[0].alias, 'dev')
+})
+
+test('consolidar: entre snapshots de la misma cuenta gana el mas fresco', () => {
+  const { cuentas } = consolidarCuentas({
+    remotas: [
+      snapshotRemoto('uuid-b', { hostname: 'VIEJA', generadoEn: '2026-08-10T13:00:00.000Z' }),
+      snapshotRemoto('uuid-b', { hostname: 'FRESCA', generadoEn: '2026-08-10T14:59:00.000Z' }),
+    ],
+    ahora: AHORA,
+  })
+  assert.equal(cuentas.length, 1)
+  assert.equal(cuentas[0].maquina, 'FRESCA')
+})
+
+test('consolidar: un generadoEn futuro avisa reloj desincronizado y no rompe', () => {
+  const { cuentas, avisos } = consolidarCuentas({
+    remotas: [snapshotRemoto('uuid-b', { generadoEn: '2026-08-10T15:10:00.000Z' })],
+    ahora: AHORA,
+  })
+  assert.equal(cuentas.length, 1)
+  assert.ok(cuentas[0].frescuraMs < 0)
+  assert.equal(avisos.length, 1)
+  assert.match(avisos[0].reason, /reloj desincronizado/)
+})
+
+test('consolidar: snapshots invalidos se descartan en silencio (ya aviso el adaptador)', () => {
+  const { cuentas } = consolidarCuentas({
+    remotas: [{ cuenta: {} }, { cuenta: { accountUuid: 'uuid-x' }, generadoEn: 'no-es-fecha' }],
+    ahora: AHORA,
+  })
+  assert.equal(cuentas.length, 0)
 })
 
 // ---------------------------------------------------------------------------
