@@ -42,8 +42,9 @@
 
 ```
                  ┌───────────────────────────┐
-                 │ commands/monitor.js        │  (sin cambios de flujo; agrega
-                 │                            │   composición de usage-history.js)
+                 │ commands/monitor.js        │  crea usageHistory (T104) y lo pasa a
+                 │                            │  snapshot-source (T105, lectura) Y lo
+                 │                            │  llama tras buildView (T104, escritura)
                  └─────────────┬──────────────┘
                                 ▼
                  ┌───────────────────────────┐
@@ -61,8 +62,10 @@
                  ┌────────────────┴─────────────────┐
                  │ adapters/snapshot-source.js        │
                  │  - limitsReader.read()  (ya existía)│
-                 │  - usageHistory.registrar(extra,ahora) (NUEVO paso 6)
-                 │  - usageFetcher.estado() -> avisos  (NUEVO, dentro del paso 5)
+                 │  - usageHistory.leer() -> registroExtra (T105, SOLO lectura;
+                 │    el registrar()/decisión de abrir-cerrar vive en
+                 │    commands/monitor.js, después de buildView — T104)
+                 │  - usageFetcher.estado() -> avisos  (NUEVO, dentro del paso 5, T106)
                  └────────────────┬────────────────────┘
                                   │
               ┌───────────────────┼────────────────────┐
@@ -84,12 +87,17 @@
                  └───────────────────────────┘
 ```
 
-Descripción del flujo (una vuelta de reloj):
-1. `snapshot-source.js` lee `limites` como ya hacía (paso 5, sin tocar su forma) y,
-   apenas los tiene, le pasa `limites.gastoExtra` al nuevo adaptador `usage-history.js`
-   (paso 6) para que decida si abre, mantiene o cierra el registro persistido. El
-   resultado (`{abierto, archivadoRecien}`) entra al snapshot como
-   `snapshot.registroExtra`.
+Descripción del flujo (una vuelta de reloj) — **corregida tras el ajuste de T105** para
+reflejar cómo quedó realmente repartido entre T104 y T105 (ver "Nota de ajuste" arriba):
+1. `snapshot-source.js` lee `limites` como ya hacía (paso 5, sin tocar su forma) y, apenas
+   los tiene, agrega al snapshot devuelto `registroExtra: usageHistory.leer()` (**solo
+   lectura**, sin decidir nada) — el mismo objeto `{abierto, archivados}` que ya persiste
+   `usage-history.js` (T104). La **decisión** de abrir/mantener/cerrar el registro
+   (`usageHistory.registrar()`, que sí llama a `siguienteRegistro()` de dominio) sigue
+   ocurriendo donde T104 la dejó: en `commands/monitor.js`, **después** de `buildView`,
+   con el `gastoExtra` recién construido en `vista.limites.gastoExtra` — por eso el
+   registro que ve un tick es el que quedó escrito en el tick anterior, nunca el de sí
+   mismo (un desfase de un tick, aceptable: el gasto extra no cambia segundo a segundo).
 2. En el mismo paso 5, `usageFetcher.estado()` (ya existente, hoy sin consumidor real) se
    traduce a un aviso si hay fallos/backoff.
 3. `domain/arbol.js` (`construirVista`), que ya recibe `ahora` desde `build-view.js`
@@ -192,9 +200,9 @@ Descripción del flujo (una vuelta de reloj):
 | `src/monitor/domain/gasto-extra.js` (**nuevo**) | `estadoDelExtra()` + `siguienteRegistro()`, funciones puras, sin I/O ni `Date.now()` | T103 |
 | `src/monitor/adapters/usage-history.js` (**nuevo**) | Persistencia de `~/.claude/souclaude/usage-history.json`; usa `siguienteRegistro()` de dominio, escritura directa sin temp+rename | T104 |
 | `src/monitor/domain/arbol.js` | `construirVista`: agregar `vista.historico` y `vista.limites.gastoExtra.historico` a partir de `snapshot.registroExtra` | T105 |
-| `src/monitor/adapters/snapshot-source.js` | Paso 5 (líneas 95-103): consumir `usageFetcher.estado()` para avisos (RF-06); nuevo paso 6: componer `usage-history.js` y agregar `registroExtra` al snapshot devuelto (línea ~119-130) | T104, T106 |
+| `src/monitor/adapters/snapshot-source.js` | Paso 5 (líneas 95-103): consumir `usageFetcher.estado()` para avisos (RF-06, **T106**); recibir/componer `usageHistory` y agregar `registroExtra` (resultado de `usageHistory.leer()`) al snapshot devuelto (**T105**, no T104 — ver nota de ajuste abajo) | T105, T106 |
 | `src/monitor/adapters/panel-layout.js` | Nueva sección "Histórico" al pie, atenuada; excluida del orden por `UMBRAL_ALARMA` (línea 70) y del título `LIMITE N%` (líneas 273-281) | T105 |
-| `src/commands/monitor.js` | Wiring de `usage-history.js` en la composición de `snapshot-source.js` (junto a `crearLimitsReader`, líneas 26-32); flag opcional de seed inicial | T104 |
+| `src/commands/monitor.js` | T104: crea `usageHistory` (`crearUsageHistory`, flag de seed) y lo cablea solo para **escribir** (`registrarHistorico()` tras `buildView`). T105: le pasa además ese mismo `usageHistory` a `createSnapshotSource` para que pueda **leerlo** antes de `construirVista` — sin esto, `snapshot.registroExtra` nunca existe y `--json` no puede incluir `historico` | T104 (escritura), T105 (lectura) |
 | `README.md` | Documentar condiciones de "sin refresco de red" (hoy solo `--no-refresh`, línea 86 — falta CI/`--claude-home`, ver `src/commands/monitor.js:27`) y la sección Histórico + `usage-history.json` | T107 |
 | `test/monitor-presenter.test.js` (**nuevo**) | Cobertura de RF-01, RF-02 y la separación vivas/históricas de RF-05 — `panel-presenter.js` tiene hoy cero tests | T101, T102, T105 |
 | `test/monitor-domain.test.js` (o archivo dedicado) | Cobertura de la regla pura `estadoDelExtra` (RF-03) con bordes de 24h | T103 |
@@ -204,6 +212,11 @@ Descripción del flujo (una vuelta de reloj):
 
 **Nada más se toca.** `CHANGELOG.md` y `notes.md` quedan fuera salvo que T107 encuentre
 necesario anotar un gotcha puntual (decisión de implementación, no de alcance).
+
+**Nota de ajuste (post-T104)**: el cableado de *lectura* de `usage-history.js` hacia
+`snapshot-source.js`/`construirVista` se movió de T104 a T105 porque T104 implementó,
+por fidelidad a `tasks.md` en su versión original, solo el lado de **escritura**
+(`registrarHistorico()` tras `buildView`); ver la nota completa en `tasks.md` → T105.
 
 ---
 

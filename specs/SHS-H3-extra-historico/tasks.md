@@ -30,7 +30,7 @@
 | T102 | El dedup de filas distingue tipo y modelo | `adapters/panel-presenter.js`, `test/monitor-presenter.test.js` | T101 | `fix:` |
 | T103 | Regla de dominio: extra vencido pasa a histórico a las 24h | `domain/gasto-extra.js` (nuevo), `test/monitor-domain.test.js` | — | `feat:` |
 | T104 | Persistencia del histórico (`usage-history.js`) | `adapters/usage-history.js` (nuevo), `commands/monitor.js`, `test/monitor-history.test.js` | T103 | `feat:` |
-| T105 | Sección "Histórico" en el panel | `adapters/panel-presenter.js`, `domain/arbol.js`, `adapters/panel-layout.js`, `test/monitor-presenter.test.js`, `test/monitor-render.test.js` | T101, T102, T103, T104 | `feat:` |
+| T105 | Sección "Histórico" en el panel | `adapters/panel-presenter.js`, `domain/arbol.js`, `adapters/panel-layout.js`, `adapters/snapshot-source.js`, `commands/monitor.js`, `test/monitor-presenter.test.js`, `test/monitor-render.test.js` | T101, T102, T103, T104 | `feat:` |
 | T106 | Avisar cuando los datos de límites están viejos | `adapters/snapshot-source.js`, `test/monitor-view.test.js` | — | `feat:` |
 | T107 | Documentar la cadencia real y la sección Histórico | `README.md` | T105, T106 | `docs:` |
 
@@ -169,14 +169,36 @@
 
 ### SHS-H3-T105 — Sección "Histórico" en el panel
 
-- **Estimación**: 30 min
+- **Estimación**: 40 min (incluye el cableado de lectura de `usage-history.js` que
+  quedó pendiente de T104 — ver nota de ajuste más abajo)
 - **Dependencies**: T101, T102, T103, T104
 - **Files**: `src/monitor/domain/arbol.js` (agrega `vista.historico` y
   `vista.limites.gastoExtra.historico`), `src/monitor/adapters/panel-presenter.js`
   (separa filas vivas/históricas), `src/monitor/adapters/panel-layout.js` (sección al
   pie, exclusión de `UMBRAL_ALARMA` línea 70 y del título `LIMITE N%` líneas 273-281),
+  `src/monitor/adapters/snapshot-source.js` (recibe/compone `usageHistory` y agrega
+  `registroExtra` al snapshot de `collect()`), `src/commands/monitor.js` (le pasa a
+  `createSnapshotSource` el `usageHistory` que ya crea `crearUsageHistory()`),
   `test/monitor-presenter.test.js`, `test/monitor-render.test.js`
-- **Descripción**: `construirVista` recibe `snapshot.registroExtra` y usa
+- **Nota de ajuste (post-implementación de T101-T104)**: el implementer de T105 detectó
+  que `commands/monitor.js` (T104) cableó `usage-history.js` **solo para escritura**
+  (`registrarHistorico()` llama a `usageHistory.registrar()` después de `buildView`, para
+  el *próximo* tick) — fiel a lo que decía esta task en su versión original, que no
+  listaba `snapshot-source.js` ni `commands/monitor.js` entre sus archivos. Sin leer
+  `usageHistory.leer()` **antes** de `construirVista`, no hay forma de que
+  `snapshot.registroExtra` exista ni de que `--json` incluya `historico`. Se corrige acá:
+  estos dos archivos entran al alcance de T105, no de T104 (T104 se queda como estaba:
+  responsable de que el adaptador exista y persista bien, no de conectarlo a la lectura
+  del panel).
+- **Descripción**: `createSnapshotSource` recibe un `usageHistory` (mismo objeto que
+  devuelve `createUsageHistory()`) y, dentro de `collect()`, llama a
+  `usageHistory.leer()` para agregar `registroExtra: {abierto, archivados}` al snapshot
+  devuelto — mismo patrón que ya usa `limitsReader` (falla capturada hacia `avisos`, sin
+  tumbar el tick; sin `usageHistory` inyectado, `registroExtra` es `{abierto: null,
+  archivados: []}`). `commands/monitor.js` le pasa a `createSnapshotSource` el mismo
+  `usageHistory` que ya crea con `crearUsageHistory(flags)` (hoy solo se usa para
+  `registrarHistorico()` tras `buildView`; ahora también se compone hacia adentro, antes
+  de `buildView`). `construirVista` recibe `snapshot.registroExtra` y usa
   `estadoDelExtra` para decidir si el `gastoExtra` vigente es `historico`; si lo es, lo
   agrega a `vista.historico` (array) y lo marca en `vista.limites.gastoExtra.historico`.
   `panel-presenter.js` excluye de `filasDeLimites` cualquier fila cuyo `gastoExtra` esté
@@ -191,6 +213,9 @@
   `test/monitor-render.test.js`: snapshot del layout con el caso "histórico" → ninguna
   línea del marco es roja y el título no contiene `LIMITE`.
 - **Verificación**:
+  - [ ] `test/monitor-view.test.js` (o el archivo de integración de `snapshot-source.js`)
+        cubre que `collect()` devuelve `registroExtra` con lo que `usageHistory.leer()`
+        tenía persistido — este caso queda cumplible recién con el cableado agregado acá.
   - [ ] `node bin/cli.mjs monitor --json` (sobre `--claude-home` de fixture con el
         payload real y un registro ya abierto hace más de 24h) incluye `historico:
         [{usado: 21.36, limite: 20, ...}]` — `JSON.parse` no falla.
