@@ -7,6 +7,7 @@ import { vacio, sumar, fusionar } from './consumo.js'
 import { resolverAlias } from './precios.js'
 import { construirVentana, filtrarPorVentana, bucketsHorarios, ritmo } from './ventanas.js'
 import { clasificarAgente, clasificarSesion, esActivo } from './actividad.js'
+import { normalizarCuenta } from './cuentas.js'
 
 // DEDUPLICACION: es responsabilidad EXCLUSIVA del tailer (adapters/jsonl-tailer.js,
 // via crearDeduplicador() de consumo.js), que mantiene un deduplicador por archivo.
@@ -68,6 +69,7 @@ export function construirVista(snapshot = {}, opciones = {}) {
     generadoEn: ahora,
     ventana,
     limites: snapshot.limites ?? null,
+    cuenta: normalizarCuenta(snapshot.cuenta),
     totales,
     ritmo: ritmo(universo, ahora, 5),
     serieHoraria: bucketsHorarios(universo, ventana),

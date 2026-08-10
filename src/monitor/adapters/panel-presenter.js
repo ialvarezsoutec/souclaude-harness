@@ -60,6 +60,9 @@ export function presentar(vista, { ahora, top } = {}) {
   return {
     ahora: instante,
     actualizadoEn: actualizadoEn(v, instante),
+    // Identidad de la cuenta local, ya normalizada por el dominio. El layout
+    // solo necesita el alias; email queda para el modo --json.
+    cuenta: v.cuenta ? { alias: v.cuenta.alias, email: v.cuenta.email } : null,
     limites: filasDeLimites(v.limites),
     agentes: seccionAgentes(v.agentesActivos, proyectos),
     consumo: seccionConsumo(v, totales),

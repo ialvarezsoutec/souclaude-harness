@@ -274,11 +274,13 @@ function limiteEnAlarma(limites) {
   return peor
 }
 
-function tituloPanel(limites) {
+function tituloPanel(limites, cuenta) {
+  // El alias identifica la cuenta local cuando el equipo maneja mas de una.
+  const base = cuenta?.alias ? `souclaude monitor · ${cuenta.alias}` : 'souclaude monitor'
   const alarma = limiteEnAlarma(limites)
-  if (!alarma) return 'souclaude monitor'
+  if (!alarma) return base
   const quien = texto(alarma.modelo, texto(alarma.etiqueta, ''))
-  return `souclaude monitor  LIMITE ${pctTexto(alarma.porcentaje)}${quien ? ` ${quien}` : ''}`
+  return `${base}  LIMITE ${pctTexto(alarma.porcentaje)}${quien ? ` ${quien}` : ''}`
 }
 
 // --- secciones ---
@@ -791,7 +793,7 @@ function renderFull(ctx, vista) {
   ].join(` ${chars.separator} `)
 
   const cabeza = [
-    regla(ctx, chars.frame.tl, chars.frame.tr, tituloPanel(limites), derecha, ctx.tinteMarco),
+    regla(ctx, chars.frame.tl, chars.frame.tr, tituloPanel(limites, vista.cuenta), derecha, ctx.tinteMarco),
     lineaVacia(ctx, ctx.tinteMarco),
     ...lineasLimites(ctx, limites),
     lineaVacia(ctx, ctx.tinteMarco),
@@ -825,7 +827,7 @@ function renderAgents(ctx, vista) {
   ctx.tinteMarco = limiteEnAlarma(limites) ? 'red' : 'dim'
 
   const cabeza = [
-    regla(ctx, chars.frame.tl, chars.frame.tr, tituloPanel(limites), '[q] salir', ctx.tinteMarco),
+    regla(ctx, chars.frame.tl, chars.frame.tr, tituloPanel(limites, vista.cuenta), '[q] salir', ctx.tinteMarco),
     lineaVacia(ctx, ctx.tinteMarco),
     ...lineasLimites(ctx, limites),
     lineaVacia(ctx, ctx.tinteMarco),

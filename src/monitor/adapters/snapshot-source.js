@@ -93,10 +93,14 @@ export function createSnapshotSource({
     }
 
     // 5. Limites de uso (cacheados por mtime+ttl dentro del propio reader).
+    // El mismo read trae la identidad de cuenta: viene del mismo archivo y el
+    // dominio (normalizarCuenta) es quien la valida.
     let limites = null
+    let cuenta = null
     try {
       const res = await limitsReader.read(paths.configFile, { ahora: instante })
       limites = res.limits
+      cuenta = res.cuenta ?? null
       avisos.push(...res.warnings)
     } catch (err) {
       avisos.push({ file: paths.configFile, reason: err.code ?? err.message })
@@ -126,6 +130,7 @@ export function createSnapshotSource({
       archivos: files,
       vivos,
       limites,
+      cuenta,
       avisos,
     }
   }
