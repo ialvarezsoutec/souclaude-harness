@@ -210,6 +210,14 @@ versionado en cada repo, que es la fuente de verdad técnica. La distinción: al
 los **artefactos de conocimiento y estado** (specs, plans, tasks, resúmenes, kanban);
 en el repo queda la **materia prima técnica**. Y a Ninety, solo el nivel hito.
 
+**Única excepción de telemetría** (ADR `20260810-monitor-snapshots-en-vault` del repo
+del harness): `00-System/monitor/` guarda un snapshot **agregado** por (cuenta,
+máquina) — límites de plan, totales del día, <1 KB — que `souclaude monitor --publish`
+escribe cada ~5 min para que todo el equipo vea el estado de todas las cuentas de
+Claude. Nada por sesión ni por proyecto; `model-router.jsonl` crudo sigue prohibido.
+Estos archivos los escribe una máquina sola (nombre `<cuenta8>--<maquina8>.json`), así
+que nunca generan conflictos de merge y no se editan a mano.
+
 ## 9. Checklist de creación (primera vez)
 
 1. Crear el repo (o carpeta) `Vault/` con la estructura del §2.

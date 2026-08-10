@@ -41,7 +41,7 @@
 - [x] ADR aprobado (checkpoint humano, 2026-08-10)
 - [x] T205 · [x] T206 (Fase 2)
 - [x] T207 · [x] T208 · [x] T209 (Fase 3)
-- [ ] T210 · [ ] T211 (cierre)
+- [x] T210 · [ ] T211 (cierre)
 
 ## Coordinación externa (no es task de esta rama)
 

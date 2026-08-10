@@ -57,7 +57,9 @@ ensuciar este repo. Dos obligaciones para todo agente:
      `Project-<PREFIJO>/progress/`
    - No se copian: código, diffs, tests, telemetría cruda (`model-router.jsonl`) ni
      evidencia técnica pesada. El repo sigue siendo la fuente de verdad técnica; el
-     Vault es la vista.
+     Vault es la vista. Única excepción (ADR `20260810-monitor-snapshots-en-vault`):
+     los snapshots agregados de cuenta que `souclaude monitor --publish` escribe en
+     `00-System/monitor/` — los escribe el monitor, no un agente, y no se editan a mano.
 2. **Estado vivo**: cuando un agente **empieza** a trabajar un task o una fase, mueve su
    tarjeta en `Project-<PREFIJO>/kanban.md` del Vault **en ese momento** — no en un push
    final. El tablero debe reflejar el ahora, no el último cierre.
