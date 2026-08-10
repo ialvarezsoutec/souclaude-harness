@@ -24,12 +24,25 @@ import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writ
 //   --claude-home   apunta a un fixture: no hay credenciales que leer, y ademas
 //                   ningun test puede depender de la red
 // En esos casos se lee solo el cache de .claude.json, como antes.
-function crearLimitsReader(flags) {
-  const sinRed = flags['no-refresh'] === true || flags.refresh === false || ui.isCI() || Boolean(flags['claude-home'])
-  if (sinRed) return undefined
+function sinRefrescoDeRed(flags) {
+  return flags['no-refresh'] === true || flags.refresh === false || ui.isCI() || Boolean(flags['claude-home'])
+}
 
+// Una sola instancia por corrida (o `undefined` si no se toca la red): la
+// comparten `crearLimitsReader` (para refrescar los limites) y
+// `createSnapshotSource` (SHS-H3-T106, para reportar su propio `estado()` como
+// aviso). Antes cada uno tenia su propio fetcher (o directamente no lo tenia,
+// en el caso de snapshot-source), asi que el aviso de "limites sin refrescar"
+// nunca podia aparecer en el panel real, solo en el test con un fake.
+function crearUsageFetcher(flags) {
+  if (sinRefrescoDeRed(flags)) return undefined
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
-  return createLimitsReader({ fetcher: createUsageFetcher({ paths }) })
+  return createUsageFetcher({ paths })
+}
+
+function crearLimitsReader(usageFetcher) {
+  if (!usageFetcher) return undefined
+  return createLimitsReader({ fetcher: usageFetcher })
 }
 
 // Persistencia del historico del gasto extra (ver adapters/usage-history.js y
@@ -101,11 +114,19 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
   const usageHistory = crearUsageHistory(flags)
+  // SHS-H3-T106: mismo fetcher para refrescar limites y para reportar su
+  // propio estado() como aviso -- ver crearUsageFetcher.
+  const usageFetcher = crearUsageFetcher(flags)
   // SHS-H3-T105: el mismo usageHistory que registrarHistorico() usa para
   // ESCRIBIR (tras cada buildView) se compone aca tambien hacia adentro, para
   // que collect() pueda LEER lo persistido y domain/arbol.js sepa si el extra
   // vigente ya paso a historico.
-  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags), usageHistory })
+  const source = createSnapshotSource({
+    paths,
+    limitsReader: crearLimitsReader(usageFetcher),
+    usageHistory,
+    usageFetcher,
+  })
   const clock = { now: () => Date.now() }
 
   const caps = detectCaps({ overrides: flags.ascii ? { unicode: false } : {} })
@@ -226,7 +247,9 @@ async function emitRouter(flags, cwd) {
   }
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
-  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags) })
+  // --emit-router no dibuja panel ni consume `avisos`: solo necesita que los
+  // limites sigan refrescandose igual que antes, no reportar estado().
+  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(crearUsageFetcher(flags)) })
   const clock = { now: () => Date.now() }
 
   // top: null (sin recorte). Este modo busca UN agente o sesion puntual en

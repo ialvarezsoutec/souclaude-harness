@@ -273,10 +273,16 @@
   - [x] Ambos casos de `test/monitor-view.test.js` fallan si se quita la consulta a
         `estado()` (verificado con `git stash` sobre `snapshot-source.js`: el caso de
         backoff falla, el caso sano se mantiene en verde).
-  - [ ] El `usageFetcher` compartido entre `createLimitsReader` y `createSnapshotSource`
-        en `commands/monitor.js` — pendiente tras este ajuste, no estaba cubierto por el
-        `[x]` original (ese solo verificaba `snapshot-source.js` en aislamiento).
-  - [x] `npm test` en verde (315/315).
+  - [x] El `usageFetcher` compartido entre `createLimitsReader` y `createSnapshotSource`
+        en `commands/monitor.js`: `crearUsageFetcher(flags)` crea una sola instancia (o
+        `undefined` si `sinRefrescoDeRed`) y esa misma instancia se pasa a
+        `crearLimitsReader(usageFetcher)` y a `createSnapshotSource({ ..., usageFetcher })`
+        en el modo real de `monitor()`. Verificado con `node bin/cli.mjs monitor --once
+        --no-refresh` (y su variante `--json`): `avisos` queda vacio, sin fetcher creado
+        -- comportamiento esperado, declarado en el comentario de `crearUsageFetcher`.
+        Regresion cubierta ademas en `test/monitor-cmd.test.js` (con `--claude-home`,
+        que tambien desactiva el fetcher, `avisos` nunca menciona "sin refrescar").
+  - [x] `npm test` en verde (316/316).
 
 ---
 

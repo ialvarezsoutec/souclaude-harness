@@ -258,6 +258,27 @@ test('un flag inexistente (--noexiste): exit 2, lo rechaza parseArgs strict', ()
 // robustez
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// SHS-H3-T106: el usageFetcher compartido con createSnapshotSource
+// ---------------------------------------------------------------------------
+
+test('monitor --once --json --claude-home: sin refresco de red, nunca aparece el aviso de "sin refrescar"', async () => {
+  // --claude-home apunta a un fixture (sinRefrescoDeRed en commands/monitor.js):
+  // no se crea usageFetcher, asi que createSnapshotSource nunca puede reportar
+  // un estado() de fallos/backoff. Este es el comportamiento esperado -- ver
+  // tasks.md SHS-H3-T106 ("verificacion manual" para el caso con red real).
+  const home = mkClaudeHome({
+    proyectos: { p1: { 'sess-1.jsonl': [lineaAssistant({ entrada: 10, salida: 5 })] } },
+  })
+
+  const { code, salida } = await correrJsonEnProceso({ once: true, json: true, 'claude-home': home })
+
+  assert.equal(code, 0)
+  const vista = JSON.parse(salida)
+  const hayAvisoDeRefresco = (vista.avisos ?? []).some((a) => String(a?.reason ?? a).includes('sin refrescar'))
+  assert.equal(hayAvisoDeRefresco, false)
+})
+
 test('monitor --claude-home vacio (maquina recien instalada): exit 0, JSON valido con proyectos: []', async () => {
   const home = mkClaudeHome({}) // sin proyectos ni sesiones
 
