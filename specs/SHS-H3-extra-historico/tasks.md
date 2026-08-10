@@ -300,9 +300,9 @@
   (qué guarda, cuándo se abre y se cierra un registro).
 - **Verificación** (revisión editorial — único task sin test automatizado, es texto, no
   comportamiento; no sustituye ninguna verificación de T101-T106):
-  - [ ] Los tres casos de "sin refresco de red" (`--no-refresh`, CI, `--claude-home`)
+  - [x] Los tres casos de "sin refresco de red" (`--no-refresh`, CI, `--claude-home`)
         están documentados.
-  - [ ] La sección Histórico y `usage-history.json` están documentados con un ejemplo
+  - [x] La sección Histórico y `usage-history.json` están documentados con un ejemplo
         concreto.
 
 ---

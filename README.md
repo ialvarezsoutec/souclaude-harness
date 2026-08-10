@@ -84,7 +84,23 @@ Flags útiles:
 | `--sort <criterio>` | `tokens` (default), `costo` o `reciente`. |
 | `--ascii` | Fuerza glifos ASCII (equivale a `SOUCLAUDE_ASCII=1`). |
 | `--no-refresh` | No consulta los límites de plan a la API. Sin este flag, el monitor le pega a `GET /api/oauth/usage` (el mismo endpoint que usa Claude Code) porque el caché de `~/.claude.json` solo se reescribe cuando el humano corre `/usage` — medido: cero refrescos en 12 minutos de actividad continua. Con `--no-refresh` el panel muestra la edad real del último dato en caché en vez de fingir que está al día. |
-| `--claude-home <ruta>` | Usa otra carpeta `~/.claude` (útil para fixtures y tests). |
+| `--claude-home <ruta>` | Usa otra carpeta `~/.claude` (útil para fixtures y tests). También desactiva el refresco de red de los límites (ver abajo), porque un fixture no tiene credenciales reales que leer. |
+
+El refresco de red de los límites de plan (Ventana 5h/7d, Semanal por modelo, Extra) se
+desactiva en **tres** casos, no solo con `--no-refresh`: con `--no-refresh` explícito, en
+modo CI (`ui.isCI()`, un runner no debe salir a internet ni leer credenciales) y con
+`--claude-home <ruta>` (apunta a un fixture, no hay token que leer). En cualquiera de los
+tres, el monitor solo lee el caché de `~/.claude.json`, que únicamente cambia cuando
+alguien corre `/usage` en Claude Code.
+
+Cuando el refresco de red está activo, tiene su propia cadencia: los límites se
+refrescan contra la API cada **5 minutos** (el TTL de `usage-fetcher.js`), aunque el
+panel en vivo repinte cada 2 segundos — repintar no es lo mismo que volver a pedirle
+datos a la API. Si el refresco falla varias veces seguidas, el fetcher entra en backoff
+(15 minutos tras 3-5 fallos, 60 minutos tras 6 o más) y el panel deja de intentarlo hasta
+que el backoff expira; mientras tanto, un aviso en la lista de avisos dice explícitamente
+`límites sin refrescar desde hace Xm (reintento en Ym)`, para que el dato viejo nunca se
+muestre como si fuera fresco.
 
 ### Exit codes
 
@@ -141,6 +157,36 @@ aparte que no dibuja panel, sino que escribe una línea en
 
 El propio pie del panel lo declara: `tokens medidos · costo estimado · estado
 heurístico`.
+
+### Sección Histórico
+
+El gasto "Extra" (créditos pagos por fuera del plan) que llega a su tope mensual no se
+esconde, pero tampoco se queda para siempre como alarma activa: la API nunca deja de
+informarlo hasta el reset mensual de la organización, así que sin esta sección el panel
+mostraría un `LIMITE 100% Extra` en rojo, indefinidamente, aunque el gasto ya esté
+cerrado y no vaya a cambiar hasta el mes que viene.
+
+- Mientras el extra alcanzado tiene **menos de 24 horas** desde que se detectó, sigue
+  apareciendo como alarma activa en las filas de límites (es información nueva y
+  accionable).
+- Pasadas las 24 horas, la fila **deja de contar para la alarma del título y el marco
+  rojo** del header, y baja a una sección **Histórico** al pie del panel, atenuada, con
+  el formato `Extra ago-2026  $21.36/$20.00  alcanzado 06-08`. En `--json` aparece en el
+  campo `historico`.
+- El registro vive en `~/.claude/souclaude/usage-history.json`, con la forma
+  `{ "abierto": {...} | null, "archivados": [...] }`. Se abre un registro
+  (`{ detectadoEn, usado, limite, moneda }`) la primera vez que el extra llega a su
+  tope; se sella con `cerradoEn` y pasa a `archivados` cuando la organización resetea el
+  ciclo (`is_enabled` vuelve a `true` o `used_credits` cae por debajo de lo registrado).
+  Archivo ausente o corrupto se trata como vacío (`{ abierto: null, archivados: [] }`);
+  nunca rompe el panel.
+- `--seed-extra-detectado-en <ISO>` solo importa la primera vez que se crea el archivo
+  (para anotar una fecha de detección real conocida de antemano, no una estimada); en
+  cualquier corrida posterior, con el archivo ya existente, el flag se ignora.
+- Los tokens consumidos durante ese gasto extra no son recuperables ni se estiman: si se
+  gastaron en otra máquina sin el monitor corriendo, esa parte queda perdida de forma
+  permanente. Lo único que persiste es el snapshot en dólares que la propia API ya
+  entregó.
 
 ## La garantía
 
