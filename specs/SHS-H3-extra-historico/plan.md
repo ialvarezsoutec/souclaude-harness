@@ -1,10 +1,14 @@
 # Plan: Monitor de tokens — extra congelado, dedup de filas e histórico
 
 **Spec**: [spec.md](./spec.md)
-**Status**: draft
+**Status**: implemented — T101-T107 completadas, revisadas y con los 4 hallazgos
+bloqueantes del review corregidos (`npm test` 325/325). Ver `tasks.md` → `## Cierre` para
+lo que sigue pendiente (PR, firmoff en vivo del owner).
 **Owner**: Ignacio A
 **Creado**: 2026-08-10
-**Aprobado**: pending
+**Aprobado**: 2026-08-10 — aprobación humana registrada en la sesión del orquestador
+(este plan precisa el plan de investigación `plan-inicial.md`, ya aprobado por el owner
+antes de escribir spec/plan/tasks).
 
 ---
 
@@ -379,17 +383,19 @@ exista).
 
 ## Checklist antes de avanzar a Tasks
 
-- [x] ¿Plan alineado con constitución (verificado punto por punto)? Sí, con un ADR
-      pendiente identificado explícitamente (D: persistencia propia del monitor) antes de
-      cerrar T104.
+- [x] ¿Plan alineado con constitución (verificado punto por punto)? Sí. El ADR que este
+      plan pedía (D: persistencia propia del monitor) ya está creado — ver el punto de
+      ADRs abajo.
 - [x] ¿Data contracts completos y sin ambigüedad? Sí — `PeriodoDeGastoExtra`,
       `usage-history.json`, `snapshot.registroExtra` y los campos nuevos de
       `VistaMonitor` documentados.
 - [x] ¿Risks identificados con mitigación concreta? Sí, 5 riesgos con mitigación
       puntual.
 - [x] ¿Dependencies verificadas como existentes o planeadas? Sí.
-- [x] ¿Developer lead aprobó el plan? Pendiente — este plan precisa el plan de
-      investigación ya aprobado por el owner (`plan-inicial.md`).
-- [x] ¿ADRs creados para decisiones significativas? Pendiente crear
-      (`/adr-new`) antes de cerrar T104: "por qué el monitor persiste el gasto extra pese
-      al non-goal de la spec hermana".
+- [x] ¿Developer lead aprobó el plan? Sí — 2026-08-10, en la sesión del orquestador (ver
+      `Aprobado` en el encabezado).
+- [x] ¿ADRs creados para decisiones significativas? Sí —
+      `docs/decisions/20260810-monitor-persiste-historico-de-gasto-extra.md`, verificado
+      en disco y confirmado por el `reviewer`
+      (`progress/SHS-H3-extra-historico/review.md`, sección Constitución: "Arquitectura
+      documentada - OK").

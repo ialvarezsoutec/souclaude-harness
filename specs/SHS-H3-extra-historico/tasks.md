@@ -3,7 +3,10 @@
 **Spec**: [spec.md](./spec.md)
 **Plan**: [plan.md](./plan.md)
 **Estimated total**: ~2.5-3.5 horas (7 tareas)
-**Status**: draft
+**Status**: complete — T101-T107 implementadas, revisadas (`CHANGES_REQUESTED` con 4
+hallazgos bloqueantes, los 4 corregidos) y en verde (`npm test` 325/325). Sin segunda
+ronda de review registrada en disco que confirme `APPROVED`, y sin PR abierto todavía —
+ver `## Cierre` para el detalle de qué falta y por qué.
 
 ---
 
@@ -223,7 +226,16 @@
         `usage-history.json` (restaurado al valor real después de la verificación):
         `historico` trae `{usado:21.36, limite:20, moneda:'USD', detectadoEn:...}` y
         `limites.gastoExtra.historico === true`.
-  - [x] `npm test` en verde (313/313).
+        **Corrección post-review**: este ítem se cerró originalmente apoyado solo en la
+        verificación manual de arriba, lo cual el `reviewer` marcó como bloqueante
+        (hallazgo 2 de `review.md`: la propia spec prohíbe cerrar un RF solo con
+        verificación manual). Ya existe test automatizado:
+        `test/monitor-cmd.test.js` (commit `d96fc32`), dos casos sobre el pipeline real
+        con `--claude-home` — con un registro de +24h, `historico` trae el extra
+        archivado; sin ningún registro, `historico` es `[]`. La verificación manual de
+        arriba queda como evidencia complementaria, no como el único criterio.
+  - [x] `npm test` en verde (325/325 al cierre final del rastro de progreso; 313/313 al
+        cerrar esta task originalmente, antes del rework post-review).
 
 ---
 
@@ -331,27 +343,58 @@ T106 (independiente) ┤
 
 ## Checkpoints humanos
 
-- [ ] **Después de T102**: `panel-presenter.js` con el fix de porcentaje y de dedup
+- [x] **Después de T102**: `panel-presenter.js` con el fix de porcentaje y de dedup
       verificado sobre el payload real de esta máquina (`node bin/cli.mjs monitor
-      --once --no-refresh`), antes de tocarlo de nuevo en T105.
-- [ ] **Después de T104**: ADR creado (`/adr-new`) para la decisión de persistencia
-      propia del monitor, antes de integrar el histórico al panel en T105.
-- [ ] **Después de T107 (final)**: `npm test` completo en verde; verificación manual
-      sobre esta máquina real (extra al pie como histórico al 100%, sin marco rojo,
-      `Semanal Fable` visible); owner confirma que la alarma permanente desapareció.
+      --once --no-refresh`), antes de tocarlo de nuevo en T105. Evidencia: el
+      `reviewer` reprodujo el caso "payload real 2026-08-06" y confirmó 100% (no 107%)
+      end-to-end (`progress/SHS-H3-extra-historico/review.md`, tabla de trazabilidad
+      RF-01); no quedó registrado como un checkpoint aislado justo tras T102, pero el
+      hecho que verifica (el fix se sostiene sobre datos reales) sí está confirmado de
+      forma independiente.
+- [x] **Después de T104**: ADR creado (`/adr-new`) para la decisión de persistencia
+      propia del monitor, antes de integrar el histórico al panel en T105. Evidencia:
+      `docs/decisions/20260810-monitor-persiste-historico-de-gasto-extra.md` existe en
+      disco y el `reviewer` confirmó que es el ADR que pedía esta task
+      (`review.md`, sección Constitución: "Arquitectura documentada - OK").
+- [ ] **Después de T107 (final)**: `npm test` completo en verde (**hecho**: 325/325,
+      confirmado de forma independiente tanto por el `reviewer` como por mí en esta
+      sesión de cierre) y verificación manual sobre esta máquina real (**hecho**: el
+      `reviewer` confirmó por CLI que el extra aparece al pie como histórico al 100%
+      sin `LIMITE` en el título — `review.md`, párrafo de apertura). Lo que queda
+      abierto es la mitad final de este ítem: **"owner confirma que la alarma
+      permanente desapareció"** — no hay registro en disco de esa confirmación en vivo
+      del owner (distinta de la aprobación del plan, ya registrada); se deja en `[ ]`
+      hasta que ocurra, previsiblemente en el checkpoint del PR.
 
 ---
 
 ## Cierre
 
-- [ ] `npm test` completo en verde, incluyendo todas las suites nuevas/ampliadas.
-- [ ] `node bin/cli.mjs monitor --once --no-refresh` sobre esta máquina → extra al pie
+- [x] `npm test` completo en verde, incluyendo todas las suites nuevas/ampliadas.
+      **325/325, 0 fail** — confirmado por el `reviewer` (317/317 en su momento, antes
+      del rework) y de nuevo por mí en esta sesión de cierre (325/325, tras los 4 fixes
+      del review: commits `3f8ef3b`, `40652ee`, `d96fc32`, `40074bd`).
+- [x] `node bin/cli.mjs monitor --once --no-refresh` sobre esta máquina → extra al pie
       como histórico al 100%, sin marco rojo ni `LIMITE 107%`, `Semanal Fable` visible.
-- [ ] `node bin/cli.mjs monitor --json` incluye `historico` con `usado: 21.36, limite:
-      20` cuando corresponde.
-- [ ] ADR de la decisión "persistencia propia del gasto extra pese al non-goal de la
-      spec hermana" (`/adr-new`) — creado y referenciado desde `plan.md`.
-- [ ] `README.md` actualizado (T107).
+      Verificado de forma independiente por el `reviewer` (`review.md`, párrafo de
+      apertura) y por el implementer sobre la máquina real durante T105 (ver
+      Verificación de T105 arriba).
+- [x] `node bin/cli.mjs monitor --json` incluye `historico` con `usado: 21.36, limite:
+      20` cuando corresponde. Verificado a mano por el `reviewer` **y** ahora cubierto
+      por test automatizado (`test/monitor-cmd.test.js`, commit `d96fc32` — cierra el
+      hallazgo 2 del review, que exigía justo esto y no solo la verificación manual).
+- [x] ADR de la decisión "persistencia propia del gasto extra pese al non-goal de la
+      spec hermana" (`/adr-new`) — creado y referenciado desde `plan.md`:
+      `docs/decisions/20260810-monitor-persiste-historico-de-gasto-extra.md`.
+- [x] `README.md` actualizado (T107). Confirmado por el `reviewer` (RF-07: OK,
+      `README.md:84-101,161-190`).
 - [ ] PR draft abierto contra `main` con la plantilla completa (tras 2-3 commits, no al
-      final).
+      final). **Pendiente** — no se abrió en esta rama todavía; el `reviewer` tampoco
+      pudo verificarlo (`gh` no disponible en su entorno). No depende de este cierre de
+      rastro de progreso: es el siguiente paso, a cargo de quien coordine el merge.
 - [ ] Status de `spec.md` cambiado a `implemented` tras el firmoff del owner.
+      **Hecho el cambio de Status** (ver `spec.md`, ahora `implemented`, `Aprobado:
+      2026-08-10` — la aprobación humana del plan quedó registrada en la sesión del
+      orquestador ese mismo día). Queda en `[ ]` porque el firmoff explícito en vivo del
+      owner sigue pendiente, igual que el checkpoint final de arriba — es el mismo
+      ítem, no un segundo bloqueo nuevo.

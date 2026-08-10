@@ -1,11 +1,15 @@
 # Spec: Monitor de tokens — extra congelado, dedup de filas e histórico
 
-**Status**: draft
+**Status**: implemented — T101-T107 completadas y revisadas (`npm test` 325/325); el
+firmoff en vivo del owner (último bullet de Success criteria) y el PR siguen pendientes,
+ver `tasks.md` → `## Cierre`.
 **Owner**: Ignacio A
 **Stakeholders**: Ignacio A (único — dueño del harness)
 **Hito**: SHS-H3
 **Creado**: 2026-08-10
-**Aprobado**: pending
+**Aprobado**: 2026-08-10 — aprobación humana del plan registrada en la sesión del
+orquestador (spec, plan y tasks nacieron ya alineados con `plan-inicial.md`, previamente
+aprobado por el humano).
 
 ---
 
@@ -188,35 +192,46 @@ rompe el panel.
 
 ## Success criteria
 
-Métricas objetivamente medibles — **ninguna se cierra solo con "verificación manual"**:
+Métricas objetivamente medibles — **ninguna se cierra solo con "verificación manual"**.
+Estado real al 2026-08-10 (tras la implementación de T101-T107 y el rework post-review
+que corrigió los 4 hallazgos bloqueantes de `progress/SHS-H3-extra-historico/review.md`):
 
-- [ ] `npm test` pasa en verde incluyendo las suites nuevas/ampliadas
-      (`test/monitor-presenter.test.js`, `test/monitor-domain.test.js` o el archivo
-      dedicado a `gasto-extra.js`, `test/monitor-history.test.js`,
-      `test/monitor-view.test.js`, `test/monitor-render.test.js`,
-      `test/monitor-layers.test.js`) — cada bug corregido tiene un test que falla si el
-      fix se revierte.
-- [ ] Con un fixture del payload real del 2026-08-06
+- [x] `npm test` pasa en verde incluyendo las suites nuevas/ampliadas
+      (`test/monitor-presenter.test.js`, `test/monitor-domain.test.js`,
+      `test/monitor-history.test.js`, `test/monitor-view.test.js`,
+      `test/monitor-render.test.js`, `test/monitor-layers.test.js`,
+      `test/monitor-cmd.test.js`) — **325/325, 0 fail**, confirmado de forma
+      independiente por el `reviewer` y de nuevo en esta sesión de cierre.
+- [x] Con un fixture del payload real del 2026-08-06
       (`extra_usage: { is_enabled: false, monthly_limit: 2000, used_credits: 2136,
       utilization: 100, spend_limit_reached: true }`), la fila del extra reporta
-      **100%**, nunca 107% — cubierto por test, no por lectura visual del panel.
-- [ ] Con un fixture donde `seven_day` y `weekly_scoped` (modelo `Fable`) comparten
+      **100%**, nunca 107% — cubierto por test (`monitor-presenter.test.js`, ver
+      `review.md` RF-01: OK), no por lectura visual del panel.
+- [x] Con un fixture donde `seven_day` y `weekly_scoped` (modelo `Fable`) comparten
       porcentaje e instante de reset, ambas filas están presentes en la salida — cubierto
-      por test.
-- [ ] La función pura que decide `vivo | historico` tiene un test con los dos bordes del
-      umbral de 24 horas (23:59 → vivo, 24:01 → histórico) usando un `ahora` inyectado,
-      sin depender del reloj real.
-- [ ] `node bin/cli.mjs monitor --json` (sobre un fixture o `--claude-home` de prueba)
+      por test (`monitor-presenter.test.js`, `review.md` RF-02: OK).
+- [x] La función pura que decide `vivo | historico` tiene un test con los dos bordes del
+      umbral de 24 horas (23:59 → vivo, 24:01 → histórico, y el borde exacto de 24:00)
+      usando un `ahora` inyectado, sin depender del reloj real (`monitor-domain.test.js`,
+      `review.md` RF-03: OK).
+- [x] `node bin/cli.mjs monitor --json` (sobre un fixture o `--claude-home` de prueba)
       incluye `historico: [{ usado: 21.36, limite: 20, ... }]` cuando el extra archivado
       corresponde al payload real — `JSON.parse` de la salida no falla y el campo existe.
-- [ ] Un fetcher de límites en estado de backoff produce un aviso visible en
+      Cerrado en dos pasos: el `reviewer` lo verificó a mano primero (hallazgo 2 de
+      `review.md`: eso no bastaba, faltaba test), y el rework post-review agregó el test
+      automatizado (`test/monitor-cmd.test.js`, commit `d96fc32`).
+- [x] Un fetcher de límites en estado de backoff produce un aviso visible en
       `vista.avisos`; un fetcher sano no produce ninguno — cubierto por test de
-      integración de `snapshot-source.js`.
-- [ ] **Verificación manual final** (complementaria, posterior a que todo lo anterior
+      integración de `snapshot-source.js` (`review.md` RF-06: OK).
+- [x] **Verificación manual final** (complementaria, posterior a que todo lo anterior
       pase): sobre esta máquina real, `node bin/cli.mjs monitor --once --no-refresh`
       muestra el extra al pie como histórico al 100%, sin marco rojo ni `LIMITE 107%` en
-      el título, con "Semanal Fable" visible con su porcentaje vigente.
-- [ ] Owner confirma en vivo que el panel deja de mostrar la alarma permanente del extra.
+      el título, con "Semanal Fable" visible con su porcentaje vigente. Verificado de
+      forma independiente por el `reviewer` (`review.md`, párrafo de apertura).
+- [ ] Owner confirma en vivo que el panel deja de mostrar la alarma permanente del
+      extra. **Pendiente** — distinto de la aprobación del plan (ya registrada, ver
+      `Aprobado` arriba): esta es la confirmación de UAT sobre el resultado final,
+      todavía sin registro en disco. Previsiblemente ocurre en el checkpoint del PR.
 
 ---
 
