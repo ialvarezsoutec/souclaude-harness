@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 
 import { detectCaps } from '../src/monitor/adapters/caps.js'
 import { anchoVisual } from '../src/monitor/domain/formato.js'
+import { construirVista } from '../src/monitor/domain/arbol.js'
+import { presentar } from '../src/monitor/adapters/panel-presenter.js'
 
 // Este archivo responde: "renderPanel() cumple SIEMPRE su contrato duro de ancho
 // (cada linea mide exactamente `cols`, el array nunca supera `rows`) sin importar
@@ -412,11 +414,43 @@ test('contenido: la seccion Historico se pinta al pie sin disparar el titulo LIM
   )
 })
 
-test('color: un extra historico no pinta el marco de rojo (color real, no solo texto)', () => {
-  const vista = vistaEjemplo({
-    limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 42 })],
-    historico: ['Extra ago-2026  $21.36/$20.00  alcanzado 06-08'],
-  })
+// snapshot minimo de dominio para ejercitar la regla de 24h de gasto-extra.js
+// via el pipeline real (construirVista -> presentar), en vez de fixturear a
+// mano el array `historico` de presentacion: con un unico limite al 42% (como
+// hacia el test anterior) `limiteEnAlarma()` nunca dispara, y el test pasaba
+// igual con la feature entera revertida. Aca el extra mismo esta al 100%, asi
+// que es la unica fila que puede pintar el marco de rojo.
+const AHORA_HISTORICO_COLOR = Date.UTC(2026, 7, 10, 12, 0, 0)
+
+function snapshotConExtraAlcanzado(horasDesdeDeteccion) {
+  const detectadoEn = AHORA_HISTORICO_COLOR - horasDesdeDeteccion * 60 * 60_000
+  return {
+    limites: {
+      gastoExtra: {
+        habilitado: false,
+        usadoUsd: 21.36,
+        limiteUsd: 20,
+        porcentaje: 106.8,
+        utilizacion: 100,
+        motivoDeshabilitado: 'org_level_disabled_until',
+        alcanzado: true,
+      },
+    },
+    registroExtra: {
+      abierto: { detectadoEn, usado: 21.36, limite: 20, moneda: 'USD', cerradoEn: null },
+      archivados: [],
+    },
+  }
+}
+
+function proyeccionConExtra(horasDesdeDeteccion) {
+  const vista = construirVista(snapshotConExtraAlcanzado(horasDesdeDeteccion), { ahora: AHORA_HISTORICO_COLOR })
+  const proyeccion = presentar(vista, { ahora: AHORA_HISTORICO_COLOR })
+  return { ...vistaEjemplo({ limites: proyeccion.limites, historico: proyeccion.historico }) }
+}
+
+test('color: un extra detectado hace 25h (historico) no pinta el marco de rojo (color real, no solo texto)', () => {
+  const vista = proyeccionConExtra(25)
   const caps = detectCaps({ overrides: { unicode: true, color: true, tty: true } })
   const lineas = renderPanel(vista, { cols: 120, rows: 40, modo: 'full', caps, color: true })
 
@@ -425,6 +459,19 @@ test('color: un extra historico no pinta el marco de rojo (color real, no solo t
   assert.ok(
     !lineas.some((l) => l.includes('\x1b[31m')),
     'ninguna linea del marco deberia llevar el codigo ANSI de rojo cuando lo unico critico es un extra ya historico'
+  )
+})
+
+test('color: un extra detectado hace 1h (vivo, al 100%) SI pinta el marco de rojo', () => {
+  const vista = proyeccionConExtra(1)
+  const caps = detectCaps({ overrides: { unicode: true, color: true, tty: true } })
+  const lineas = renderPanel(vista, { cols: 120, rows: 40, modo: 'full', caps, color: true })
+
+  verificarContrato(lineas, 120, 40, 'extra vivo color')
+  assert.ok(lineas[0].includes('LIMITE'), `el titulo deberia mostrar LIMITE con el extra vivo al 100%: ${lineas[0]}`)
+  assert.ok(
+    lineas.some((l) => l.includes('\x1b[31m')),
+    'el marco deberia pintarse de rojo mientras el extra siga vivo (alarma activa)'
   )
 })
 
