@@ -45,7 +45,7 @@ export function createLimitsReader({ ttlMs = 30_000, maxBytes = 32 * 1024 * 1024
       stat = await fs.promises.stat(configFile)
     } catch (err) {
       // Sin .claude.json no hay nada que mostrar: no es un error del monitor.
-      return { limits: null, warnings: [{ file: configFile, reason: err.code ?? err.message }] }
+      return { limits: null, cuenta: null, warnings: [{ file: configFile, reason: err.code ?? err.message }] }
     }
 
     if (
@@ -59,6 +59,7 @@ export function createLimitsReader({ ttlMs = 30_000, maxBytes = 32 * 1024 * 1024
     if (stat.size > maxBytes) {
       const value = {
         limits: null,
+        cuenta: null,
         warnings: [{ file: configFile, reason: `archivo demasiado grande (${stat.size} bytes > ${maxBytes})` }],
       }
       cached = { mtimeMs: stat.mtimeMs, cachedAtMs: now, value }
@@ -70,7 +71,7 @@ export function createLimitsReader({ ttlMs = 30_000, maxBytes = 32 * 1024 * 1024
       const raw = await fs.promises.readFile(configFile, 'utf8')
       data = JSON.parse(raw)
     } catch (err) {
-      const value = { limits: null, warnings: [{ file: configFile, reason: err.code ?? err.message }] }
+      const value = { limits: null, cuenta: null, warnings: [{ file: configFile, reason: err.code ?? err.message }] }
       cached = { mtimeMs: stat.mtimeMs, cachedAtMs: now, value }
       return value
     }
@@ -87,24 +88,44 @@ export function createLimitsReader({ ttlMs = 30_000, maxBytes = 32 * 1024 * 1024
 // el valor viene del cache interno se quedo congelado en el `now` de entonces.
 // Para elegir ganador comparamos `leidoEn`, que si es absoluto.
 function elegirMasReciente(desdeConfig, desdeRed) {
+  // La identidad de cuenta solo existe en .claude.json (el endpoint de uso no
+  // la trae), asi que siempre viaja desde la fuente config, gane quien gane.
+  const cuenta = desdeConfig?.cuenta ?? null
+
   if (!desdeRed?.limits) return desdeConfig
-  if (!desdeConfig?.limits) return { limits: desdeRed.limits, warnings: desdeConfig?.warnings ?? [] }
+  if (!desdeConfig?.limits) return { limits: desdeRed.limits, cuenta, warnings: desdeConfig?.warnings ?? [] }
 
   const tConfig = typeof desdeConfig.limits.leidoEn === 'number' ? desdeConfig.limits.leidoEn : -Infinity
   const tRed = typeof desdeRed.limits.leidoEn === 'number' ? desdeRed.limits.leidoEn : -Infinity
 
   // Empate a favor de la red: es la fuente que realmente se refresca sola.
   const ganador = tRed >= tConfig ? desdeRed.limits : desdeConfig.limits
-  return { limits: ganador, warnings: desdeConfig.warnings }
+  return { limits: ganador, cuenta, warnings: desdeConfig.warnings }
 }
 
 function buildValue(data, now, configFile) {
+  const cuenta = toCuenta(data)
   const cu = data?.cachedUsageUtilization
   if (!cu || typeof cu !== 'object') {
-    return { limits: null, warnings: [{ file: configFile, reason: 'sin cachedUsageUtilization: cuenta sin limites o version distinta' }] }
+    // La identidad puede existir aunque no haya limites cacheados todavia.
+    return { limits: null, cuenta, warnings: [{ file: configFile, reason: 'sin cachedUsageUtilization: cuenta sin limites o version distinta' }] }
   }
 
-  return { limits: mapLimits(cu.utilization ?? {}, cu.fetchedAtMs ?? null, now), warnings: [] }
+  return { limits: mapLimits(cu.utilization ?? {}, cu.fetchedAtMs ?? null, now), cuenta, warnings: [] }
+}
+
+// Identidad cruda para el dominio (normalizarCuenta valida y deriva el
+// alias). Solo se extraen los campos que la spec permite publicar: nada de
+// tokens, roles ni tiers.
+function toCuenta(data) {
+  const oa = data?.oauthAccount
+  if (!oa || typeof oa !== 'object') return null
+  return {
+    accountUuid: oa.accountUuid ?? null,
+    email: oa.emailAddress ?? null,
+    organizacion: oa.organizationName ?? null,
+    machineID: data?.machineID ?? null,
+  }
 }
 
 // Unico mapeo a nombres de dominio. Lo comparten las dos fuentes porque el
