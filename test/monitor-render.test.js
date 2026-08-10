@@ -391,6 +391,43 @@ test('contenido: con caps.unicode false no aparece ningun caracter fuera de ASCI
 // Color -- se trunca sobre texto plano, se colorea despues
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Historico (SHS-H3-T105) -- un extra ya archivado no es alarma
+// ---------------------------------------------------------------------------
+
+test('contenido: la seccion Historico se pinta al pie sin disparar el titulo LIMITE', () => {
+  const vista = vistaEjemplo({
+    limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 42 })],
+    historico: ['Extra ago-2026  $21.36/$20.00  alcanzado 06-08'],
+  })
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  const lineas = renderPanel(vista, { cols: 120, rows: 40, modo: 'full', caps, color: false })
+
+  verificarContrato(lineas, 120, 40, 'historico')
+  assert.ok(!lineas[0].includes('LIMITE'), `el titulo no deberia incluir LIMITE: ${lineas[0]}`)
+  assert.ok(lineas.some((l) => l.includes('HISTORICO')), 'deberia aparecer la seccion HISTORICO')
+  assert.ok(
+    lineas.some((l) => l.includes('Extra ago-2026')),
+    'deberia mostrar la linea del extra historico al pie'
+  )
+})
+
+test('color: un extra historico no pinta el marco de rojo (color real, no solo texto)', () => {
+  const vista = vistaEjemplo({
+    limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 42 })],
+    historico: ['Extra ago-2026  $21.36/$20.00  alcanzado 06-08'],
+  })
+  const caps = detectCaps({ overrides: { unicode: true, color: true, tty: true } })
+  const lineas = renderPanel(vista, { cols: 120, rows: 40, modo: 'full', caps, color: true })
+
+  verificarContrato(lineas, 120, 40, 'historico color')
+  assert.ok(!lineas[0].includes('LIMITE'), `el titulo no deberia mutar a LIMITE: ${lineas[0]}`)
+  assert.ok(
+    !lineas.some((l) => l.includes('\x1b[31m')),
+    'ninguna linea del marco deberia llevar el codigo ANSI de rojo cuando lo unico critico es un extra ya historico'
+  )
+})
+
 test('color: con color:true y FORCE_COLOR=1 hay secuencias ANSI y los anchos siguen exactos', () => {
   const caps = detectCaps({ overrides: { unicode: true, color: true, tty: true } })
   const vista = vistaEjemplo({ limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 91 })] })

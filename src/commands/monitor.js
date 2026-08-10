@@ -100,8 +100,12 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
   }
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
-  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags) })
   const usageHistory = crearUsageHistory(flags)
+  // SHS-H3-T105: el mismo usageHistory que registrarHistorico() usa para
+  // ESCRIBIR (tras cada buildView) se compone aca tambien hacia adentro, para
+  // que collect() pueda LEER lo persistido y domain/arbol.js sepa si el extra
+  // vigente ya paso a historico.
+  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags), usageHistory })
   const clock = { now: () => Date.now() }
 
   const caps = detectCaps({ overrides: flags.ascii ? { unicode: false } : {} })

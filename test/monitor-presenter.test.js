@@ -4,6 +4,7 @@ import path from 'node:path'
 
 import { presentar } from '../src/monitor/adapters/panel-presenter.js'
 import { createLimitsReader } from '../src/monitor/adapters/usage-limits-reader.js'
+import { construirVista } from '../src/monitor/domain/arbol.js'
 import { mkClaudeHome } from './helpers-monitor.js'
 
 // Este archivo responde: "la fila del gasto Extra que arma panel-presenter.js
@@ -139,4 +140,57 @@ test('weekly_all duplica a seven_day (mismo tipo logico, mismo % y reset): sigue
 
   assert.equal(filasDelCincuenta.length, 1, 'weekly_all es el mismo limite que seven_day: una sola fila')
   assert.equal(filasDelCincuenta[0].etiqueta, 'Ventana 7d')
+})
+
+// SHS-H3-T105 (RF-05): el extra que ya paso a `historico` (24h+ desde que se
+// detecto alcanzado, domain/gasto-extra.js::estadoDelExtra) sale de las filas
+// vivas y aparece en la seccion Historico; el que sigue vivo (<24h) se comporta
+// exactamente igual que antes. La decision se toma en domain/arbol.js
+// (construirVista), no aca: estos tests pasan por `construirVista` real, no
+// fixturean el flag `historico` a mano.
+
+const AHORA_T105 = Date.UTC(2026, 7, 10, 12, 0, 0)
+
+function snapshotConExtra(horasDesdeDeteccion) {
+  const detectadoEn = AHORA_T105 - horasDesdeDeteccion * 60 * 60_000
+  return {
+    limites: {
+      gastoExtra: {
+        habilitado: false,
+        usadoUsd: 21.36,
+        limiteUsd: 20,
+        porcentaje: 106.8,
+        utilizacion: 100,
+        motivoDeshabilitado: 'org_level_disabled_until',
+        alcanzado: true,
+      },
+    },
+    registroExtra: {
+      abierto: { detectadoEn, usado: 21.36, limite: 20, moneda: 'USD', cerradoEn: null },
+      archivados: [],
+    },
+  }
+}
+
+test('SHS-H3-T105: un extra detectado hace 25h sale de las filas vivas y aparece en historico', () => {
+  const vista = construirVista(snapshotConExtra(25), { ahora: AHORA_T105 })
+  const proyeccion = presentar(vista, { ahora: AHORA_T105 })
+
+  assert.equal(
+    proyeccion.limites.some((f) => f.etiqueta.startsWith('Extra')),
+    false,
+    'el extra historico no deberia aparecer entre las filas vivas'
+  )
+  assert.equal(proyeccion.historico.length, 1)
+  assert.equal(proyeccion.historico[0], 'Extra ago-2026  $21.36/$20.00  alcanzado 09-08')
+})
+
+test('SHS-H3-T105: un extra detectado hace 1h sigue como alarma viva normal, historico vacio', () => {
+  const vista = construirVista(snapshotConExtra(1), { ahora: AHORA_T105 })
+  const proyeccion = presentar(vista, { ahora: AHORA_T105 })
+
+  const filaExtra = proyeccion.limites.find((f) => f.etiqueta.startsWith('Extra'))
+  assert.ok(filaExtra, 'el extra recien detectado debe seguir en las filas vivas')
+  assert.equal(filaExtra.porcentaje, 100)
+  assert.deepEqual(proyeccion.historico, [])
 })

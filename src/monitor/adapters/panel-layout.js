@@ -55,6 +55,11 @@ import { charsFor } from './caps.js'
  *           Lo que el dominio ya dejo fuera aguas arriba. El panel lo suma a lo que
  *           recorta por altura para decir la verdad en la linea "y N mas".
  * @property {string[]} [avisos]
+ * @property {string[]} [historico]
+ *           Filas ya formateadas de gasto extra archivado (SHS-H3-T105, panel-presenter.js
+ *           ya arma el texto exacto: "Extra ago-2026  $21.36/$20.00  alcanzado 06-08").
+ *           Se pintan al pie, atenuadas, fuera de `limites` -- por eso nunca disparan
+ *           UMBRAL_ALARMA ni el titulo `LIMITE N%`.
  */
 
 const PALETA = {
@@ -266,6 +271,21 @@ function lineasLimites(ctx, limites) {
     if (anchoResto > 0) celdas.push({ texto: textoReset(ctx, l), ancho: RESTO, tinte: 'dim' })
     return lineaCaja(ctx, celdas, ctx.tinteMarco)
   })
+}
+
+// --- historico (SHS-H3-T105) ---
+
+// Fuera de `limites`, ninguna fila entra al calculo de severidad (limiteEnAlarma)
+// ni al titulo (tituloPanel): un extra ya archivado no es informacion accionable.
+function lineasHistorico(ctx, historico) {
+  const lista = Array.isArray(historico) ? historico.filter((h) => typeof h === 'string' && h !== '') : []
+  if (lista.length === 0) return []
+
+  const lineas = [regla(ctx, ctx.chars.frame.ml, ctx.chars.frame.mr, 'HISTORICO', '', ctx.tinteMarco)]
+  for (const linea of lista) {
+    lineas.push(lineaCaja(ctx, [{ texto: linea, ancho: RESTO, tinte: 'dim' }], ctx.tinteMarco))
+  }
+  return lineas
 }
 
 function limiteEnAlarma(limites) {
@@ -797,8 +817,9 @@ function renderFull(ctx, vista) {
     lineaVacia(ctx, ctx.tinteMarco),
   ]
   const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), '', ctx.tinteMarco)
+  const historico = lineasHistorico(ctx, vista.historico)
 
-  const disponible = ctx.rows - cabeza.length - 1
+  const disponible = ctx.rows - cabeza.length - 1 - historico.length
   const secciones = [
     seccionAhora(ctx, vista),
     seccionConsumo(ctx, vista),
@@ -816,7 +837,7 @@ function renderFull(ctx, vista) {
     if (i < incluidas.length - 1) cuerpo.push(lineaVacia(ctx, ctx.tinteMarco))
   })
 
-  return [...cabeza, ...cuerpo, pie]
+  return [...cabeza, ...cuerpo, ...historico, pie]
 }
 
 function renderAgents(ctx, vista) {

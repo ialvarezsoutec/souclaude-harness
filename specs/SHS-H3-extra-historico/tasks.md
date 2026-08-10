@@ -213,13 +213,17 @@
   `test/monitor-render.test.js`: snapshot del layout con el caso "histórico" → ninguna
   línea del marco es roja y el título no contiene `LIMITE`.
 - **Verificación**:
-  - [ ] `test/monitor-view.test.js` (o el archivo de integración de `snapshot-source.js`)
+  - [x] `test/monitor-view.test.js` (o el archivo de integración de `snapshot-source.js`)
         cubre que `collect()` devuelve `registroExtra` con lo que `usageHistory.leer()`
         tenía persistido — este caso queda cumplible recién con el cableado agregado acá.
-  - [ ] `node bin/cli.mjs monitor --json` (sobre `--claude-home` de fixture con el
+  - [x] `node bin/cli.mjs monitor --json` (sobre `--claude-home` de fixture con el
         payload real y un registro ya abierto hace más de 24h) incluye `historico:
-        [{usado: 21.36, limite: 20, ...}]` — `JSON.parse` no falla.
-  - [ ] `npm test` en verde.
+        [{usado: 21.36, limite: 20, ...}]` — `JSON.parse` no falla. Verificado además
+        sobre la máquina real simulando `detectadoEn` 25h atrás en
+        `usage-history.json` (restaurado al valor real después de la verificación):
+        `historico` trae `{usado:21.36, limite:20, moneda:'USD', detectadoEn:...}` y
+        `limites.gastoExtra.historico === true`.
+  - [x] `npm test` en verde (313/313).
 
 ---
 

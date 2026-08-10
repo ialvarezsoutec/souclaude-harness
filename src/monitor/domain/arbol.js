@@ -7,6 +7,7 @@ import { vacio, sumar, fusionar } from './consumo.js'
 import { resolverAlias } from './precios.js'
 import { construirVentana, filtrarPorVentana, bucketsHorarios, ritmo } from './ventanas.js'
 import { clasificarAgente, clasificarSesion, esActivo } from './actividad.js'
+import { estadoDelExtra } from './gasto-extra.js'
 
 // DEDUPLICACION: es responsabilidad EXCLUSIVA del tailer (adapters/jsonl-tailer.js,
 // via crearDeduplicador() de consumo.js), que mantiene un deduplicador por archivo.
@@ -64,10 +65,12 @@ export function construirVista(snapshot = {}, opciones = {}) {
 
   const { visibles, recortes } = recortarArbol(proyectos, { orden, top })
 
+  const { limites, historico } = conHistoricoDeExtra(snapshot.limites ?? null, snapshot.registroExtra, ahora)
+
   return {
     generadoEn: ahora,
     ventana,
-    limites: snapshot.limites ?? null,
+    limites,
     totales,
     ritmo: ritmo(universo, ahora, 5),
     serieHoraria: bucketsHorarios(universo, ventana),
@@ -76,6 +79,37 @@ export function construirVista(snapshot = {}, opciones = {}) {
     vivos,
     avisos: snapshot.avisos ?? [],
     recortes,
+    historico,
+  }
+}
+
+// --- historico del gasto extra (SHS-H3-T105) -------------------------------
+
+// Decide si el gasto extra vigente ya paso a 'historico' (24h desde que se
+// detecto alcanzado, ver gasto-extra.js::estadoDelExtra) y arma vista.historico
+// a partir del registro persistido (snapshot.registroExtra, que agrega
+// adapters/snapshot-source.js leyendo adapters/usage-history.js). La decision
+// vive ACA, en el modelo canonico, para que --json (plain-renderer.js::renderJson,
+// que expone este modelo sin transformar) herede el campo gratis, sin que
+// panel-presenter.js tenga que reimplementar la regla ni abrir una segunda ruta
+// de datos que pueda divergir con el tiempo.
+function conHistoricoDeExtra(limites, registroExtra, ahora) {
+  if (!limites || typeof limites !== 'object' || !limites.gastoExtra) {
+    return { limites, historico: [] }
+  }
+
+  const abierto = registroExtra?.abierto ?? null
+  const esHistorico =
+    estadoDelExtra({ alcanzado: limites.gastoExtra.alcanzado, detectadoEn: abierto?.detectadoEn }, ahora) === 'historico'
+
+  const historico =
+    esHistorico && abierto
+      ? [{ usado: abierto.usado, limite: abierto.limite, moneda: abierto.moneda ?? 'USD', detectadoEn: abierto.detectadoEn }]
+      : []
+
+  return {
+    limites: { ...limites, gastoExtra: { ...limites.gastoExtra, historico: esHistorico } },
+    historico,
   }
 }
 

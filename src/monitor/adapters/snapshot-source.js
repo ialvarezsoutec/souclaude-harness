@@ -18,6 +18,7 @@ export function createSnapshotSource({
   ttlLimitsMs,
   tailer = createTailer(),
   limitsReader = createLimitsReader({ ttlMs: ttlLimitsMs }),
+  usageHistory,
 } = {}) {
   // ESTADO ENTRE TICKS. El tailer solo devuelve lo NUEVO de cada archivo, asi
   // que si `collect` devolviera solo eso el panel mostraria los ultimos 2
@@ -102,6 +103,24 @@ export function createSnapshotSource({
       avisos.push({ file: paths.configFile, reason: err.code ?? err.message })
     }
 
+    // 5b. Historico del gasto extra persistido (SHS-H3-T105). La ESCRITURA es
+    // responsabilidad de commands/monitor.js::registrarHistorico (T104, corre
+    // despues de construirVista, con el gasto extra ya leido en este mismo
+    // snapshot); aca solo se LEE lo que usage-history.js ya tenia guardado de
+    // ticks anteriores, para que domain/arbol.js pueda decidir vivo|historico
+    // sobre un dato real. Mismo patron que limitsReader: la falla se captura
+    // hacia avisos, nunca tumba el tick. Sin usageHistory inyectado (tests que
+    // no lo necesitan, --emit-router), registroExtra queda vacio -- nunca se
+    // inventa un registro.
+    let registroExtra = { abierto: null, archivados: [] }
+    if (usageHistory) {
+      try {
+        registroExtra = usageHistory.leer()
+      } catch (err) {
+        avisos.push({ file: 'usage-history', reason: err.code ?? err.message })
+      }
+    }
+
     // MEMORIA ACOTADA: los eventos acumulados se recortan a la ventana en cada
     // tick y el dedup del tailer se purga con el mismo corte. Sin esto, un
     // monitor abierto 8 horas crece sin limite. Un evento sin ts no se puede
@@ -126,6 +145,7 @@ export function createSnapshotSource({
       archivos: files,
       vivos,
       limites,
+      registroExtra,
       avisos,
     }
   }

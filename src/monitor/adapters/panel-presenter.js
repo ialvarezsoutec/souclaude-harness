@@ -61,6 +61,7 @@ export function presentar(vista, { ahora, top } = {}) {
     ahora: instante,
     actualizadoEn: actualizadoEn(v, instante),
     limites: filasDeLimites(v.limites),
+    historico: seccionHistorico(v.historico),
     agentes: seccionAgentes(v.agentesActivos, proyectos),
     consumo: seccionConsumo(v, totales),
     desglose: seccionDesglose(totales),
@@ -132,7 +133,10 @@ function filasDeLimites(limites) {
   // recalculo local (`porcentaje`), que puede diferir por redondeo de
   // `decimal_places` (ej. 107% recalculado vs 100% real).
   const porcentajeExtra = extra && Number.isFinite(extra.utilizacion) ? extra.utilizacion : extra?.porcentaje
-  if (extra && Number.isFinite(porcentajeExtra)) {
+  // SHS-H3-T105: un extra marcado `historico` (domain/arbol.js, 24h+ desde que
+  // se detecto alcanzado) sale de las filas vivas -- no participa del orden por
+  // severidad ni de la alarma del titulo. Se pinta aparte en seccionHistorico().
+  if (extra && extra.historico !== true && Number.isFinite(porcentajeExtra)) {
     filas.push({
       etiqueta: `Extra ${fmtDinero(extra.usadoUsd ?? 0)}/${fmtDinero(extra.limiteUsd ?? 0)}`,
       modelo: null,
@@ -174,6 +178,36 @@ function aEpoch(valor) {
     return Number.isFinite(t) ? t : null
   }
   return null
+}
+
+// --- historico (SHS-H3-T105) ---
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
+// UTC siempre: `detectadoEn` es un epoch ms sin zona horaria propia (lo fija
+// usage-history.js con el `ahora` de quien corre el monitor); calcular en UTC
+// evita que el texto cambie segun el huso horario de la maquina que lo lee.
+function etiquetaMesDe(ms) {
+  const d = new Date(ms)
+  return `${MESES[d.getUTCMonth()]}-${d.getUTCFullYear()}`
+}
+
+function etiquetaFechaDe(ms) {
+  const d = new Date(ms)
+  return `${String(d.getUTCDate()).padStart(2, '0')}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+// vista.historico ya viene armado por el dominio (domain/arbol.js::conHistoricoDeExtra):
+// este modulo solo lo formatea a texto para el pie del panel, nunca decide que
+// entra o sale de la seccion.
+function seccionHistorico(historico) {
+  const lista = Array.isArray(historico) ? historico : []
+  return lista
+    .filter((h) => h && Number.isFinite(h.usado) && Number.isFinite(h.limite) && Number.isFinite(h.detectadoEn))
+    .map(
+      (h) =>
+        `Extra ${etiquetaMesDe(h.detectadoEn)}  ${fmtDinero(h.usado)}/${fmtDinero(h.limite)}  alcanzado ${etiquetaFechaDe(h.detectadoEn)}`
+    )
 }
 
 // --- agentes ---
