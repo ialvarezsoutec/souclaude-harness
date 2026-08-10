@@ -6,6 +6,7 @@ import { resolveClaudeHome } from '../monitor/adapters/claude-home.js'
 import { createSnapshotSource } from '../monitor/adapters/snapshot-source.js'
 import { createLimitsReader } from '../monitor/adapters/usage-limits-reader.js'
 import { createUsageFetcher } from '../monitor/adapters/usage-fetcher.js'
+import { createUsageHistory } from '../monitor/adapters/usage-history.js'
 import { detectCaps } from '../monitor/adapters/caps.js'
 import { createTtyRenderer } from '../monitor/adapters/tty-renderer.js'
 import { renderPanel } from '../monitor/adapters/panel-layout.js'
@@ -29,6 +30,28 @@ function crearLimitsReader(flags) {
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
   return createLimitsReader({ fetcher: createUsageFetcher({ paths }) })
+}
+
+// Persistencia del historico del gasto extra (ver adapters/usage-history.js y
+// docs/decisions/20260810-monitor-persiste-historico-de-gasto-extra.md): la API
+// nunca informa cuando se detecto el limite alcanzado, asi que el monitor lleva
+// su propio registro. `--seed-extra-detectado-en <ISO>` solo importa la primera
+// vez (sin usage-history.json todavia); en cualquier corrida posterior el
+// adaptador lo ignora.
+function crearUsageHistory(flags) {
+  const paths = resolveClaudeHome({ override: flags['claude-home'] })
+  return createUsageHistory({ paths, seedDetectadoEn: flags['seed-extra-detectado-en'] })
+}
+
+// Registra el gasto extra recien leido en el historico persistido. Nunca lanza:
+// un fallo de disco no puede tumbar un tick del panel (ver usage-history.js).
+function registrarHistorico(usageHistory, vista, ahora) {
+  try {
+    usageHistory.registrar(vista?.limites?.gastoExtra ?? null, ahora)
+  } catch {
+    // El historico es una proyeccion adicional, no la fuente de verdad del
+    // panel: perder un registro puntual no es motivo para romper el tick.
+  }
 }
 
 // `souclaude monitor`: panel de consumo de tokens. Tres modos excluyentes:
@@ -78,6 +101,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
   const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags) })
+  const usageHistory = crearUsageHistory(flags)
   const clock = { now: () => Date.now() }
 
   const caps = detectCaps({ overrides: flags.ascii ? { unicode: false } : {} })
@@ -85,6 +109,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
 
   if (flags.json) {
     const vista = await buildView({ source, clock, opciones })
+    registrarHistorico(usageHistory, vista, clock.now())
     console.log(renderJson(vista))
     return codigoDeSalida(vista)
   }
@@ -92,17 +117,18 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
   const enVivo = !flags.once && process.stdout.isTTY === true && !ui.isCI()
   if (!enVivo) {
     const vista = await buildView({ source, clock, opciones })
+    registrarHistorico(usageHistory, vista, clock.now())
     const cols = process.stdout.isTTY === true ? caps.cols : COLS_SNAPSHOT
     process.stdout.write(renderPlain(vista, { cols, caps, modo, top: opciones.top }) + '\n')
     return codigoDeSalida(vista)
   }
 
-  return await enVivoLoop({ source, clock, opciones, caps, modo, flags })
+  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory })
 }
 
 // --- panel en vivo ---
 
-async function enVivoLoop({ source, clock, opciones, caps, modo, flags }) {
+async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory }) {
   const intervalo = Math.max(INTERVALO_MINIMO, enteroPositivo(flags.interval, INTERVALO_DEFAULT))
   const renderer = createTtyRenderer()
 
@@ -127,6 +153,7 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags }) {
     enTick = true
     try {
       vista = await buildView({ source, clock, opciones })
+      registrarHistorico(usageHistory, vista, clock.now())
       errorDelTick = null
     } catch (err) {
       // Un error en un tick no mata el bucle: se anota como aviso y se sigue con la

@@ -156,13 +156,14 @@
      `abierto.detectadoEn` es esa fecha, no `ahora`; en una segunda llamada (archivo ya
      existe) el mismo flag se ignora.
 - **Verificación**:
-  - [ ] Los 4 casos están cubiertos y cada uno falla si se quita la lógica
+  - [x] Los 4 casos están cubiertos y cada uno falla si se quita la lógica
         correspondiente (verificado comentando el fix localmente antes de commitear).
-  - [ ] **ADR pendiente** (ver `plan.md`, "Decisión que requiere ADR"): crear
+  - [x] **ADR pendiente** (ver `plan.md`, "Decisión que requiere ADR"): crear
         `docs/decisions/YYYYMMDD-persistencia-gasto-extra-monitor.md` con `/adr-new`
         antes de dar esta task por cerrada — documenta por qué el monitor persiste
-        estado propio pese al non-goal de `SHS-H3-monitor-tokens`.
-  - [ ] `npm test` en verde.
+        estado propio pese al non-goal de `SHS-H3-monitor-tokens`. Creado en
+        `docs/decisions/20260810-monitor-persiste-historico-de-gasto-extra.md`.
+  - [x] `npm test` en verde.
 
 ---
 
