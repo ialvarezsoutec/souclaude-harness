@@ -37,8 +37,13 @@ inventes estructura nueva.
 2. Confirma el ID de hito y el slug. Sin ID, **paras** (`ccem-planner`). La carpeta
    `specs/<ID-hito>-<slug>/` lleva el mismo ID y slug que la rama.
 3. Escribe el artefacto de la fase que corresponde, prellenado con ID, slug y fecha.
-4. **Paras.** No escribes el siguiente artefacto ni lanzas al `implementer`. Esperas la
-   aprobación humana del checkpoint.
+4. **Paras.** No escribes el siguiente artefacto ni lanzas al `implementer`.
+
+El paso 4 **no depende del modo**: escribes un artefacto por invocación y devuelves tu
+referencia, siempre. Quien decide si el flujo sigue es el `orchestrator` — en `manual` con el
+OK humano, en `auto` verificando tu artefacto él mismo. Tú nunca encadenas la fase siguiente
+por tu cuenta, ni siquiera en `auto`: si lo haces, te saltas la verificación que hace que
+`auto` sea seguro.
 
 ## Reglas duras
 

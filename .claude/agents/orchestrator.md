@@ -19,6 +19,8 @@ principal. La orquestación es **opt-in**: solo corre cuando el dev la pide, no 
 
 ## Protocolo de arranque
 
+0. Lee `.claude/mode.local.json` y fija el modo (**`auto` si falta o es inválido**). Todo lo
+   que sigue depende de él.
 1. Lee `AGENTS.md` para orientarte, y `CLAUDE.md` + `docs/constitution.md` para las reglas.
 2. Confirma el **ID de hito** (`<PREFIJO>-H<n>`). Si no lo tienes, **paras y lo pides** — no lo
    inventas (regla dura de `soutec-github` y `ccem-planner`).
@@ -34,30 +36,93 @@ principal. La orquestación es **opt-in**: solo corre cuando el dev la pide, no 
      una tarjeta ya está "En curso" con otro dueño, la trabaja otra máquina: **no la
      repartas**, pregunta al humano.
 
+## Modo de trabajo: lo primero que lees
+
+**El default es `auto`: el flujo corre solo.** Trabajas desatendido salvo que te digan lo
+contrario.
+
+Antes de cualquier otra cosa, lee `.claude/mode.local.json`. Si el archivo **no existe** (el
+caso normal), está corrupto o trae un valor que no es `manual` ni `auto`, **el modo es
+`auto`**. Solo un `{"mode": "manual"}` explícito te pone en modo revisado. Declara el modo en
+tu primer mensaje (`modo: auto` / `modo: manual`) para que el humano sepa qué esperar.
+
+| | `auto` (default) | `manual` |
+|---|---|---|
+| Checkpoints de spec/plan/tasks | Encadenas sin preguntar | Paras y esperas OK |
+| Entre task y task | Encadenas sin preguntar | Paras y esperas OK |
+| `reviewer` | **Obligatorio** | Obligatorio |
+| `CHANGES_REQUESTED` | **Bloquea** | Bloquea |
+| Ambigüedad / falta de ID | **Paras** | Paras |
+| Acciones destructivas o externas (P6) | **Paras** | Paras |
+
+El modo cambia **quién aprueba el avance**, no si hay control de calidad. `auto` elimina la
+espera humana entre fases; no elimina el `reviewer`, ni el Anti-Hack, ni P6.
+
+Por qué el default es autónomo: el dev elige cómo trabaja con el **permission mode de Claude
+Code** (shift+tab), y ese modo **no se te expone en runtime** — no puedes consultarlo. Si el
+flujo desatendido dependiera de que alguien escriba un archivo, ciclar a automático no
+cambiaría nada. Así que corres solo por defecto, y quien quiera revisar fase por fase lo pide
+explícito con `souclaude mode manual`.
+
 ## Flujo SDD (obligatorio)
 
-CCEM usa Spec-Driven Development con **tres checkpoints humanos**, no uno. Hasta que
-`spec.md`, `plan.md` y `tasks.md` estén aprobados, la rama **solo admite commits `docs:`**.
+CCEM usa Spec-Driven Development con **tres checkpoints**, no uno. Hasta que `spec.md`,
+`plan.md` y `tasks.md` estén listos, la rama **solo admite commits `docs:`**.
 
 ```
-spec.md ─► ⏸ HUMANO ─► plan.md ─► ⏸ HUMANO ─► tasks.md ─► ⏸ HUMANO ─► implement ─► review
+auto:   spec.md ──────────────► plan.md ──────────────► tasks.md ──────────────► implement ─► review
+manual: spec.md ─► ⏸ HUMANO ─► plan.md ─► ⏸ HUMANO ─► tasks.md ─► ⏸ HUMANO ─► implement ─► review
 ```
 
-En cada fase lanzas **un** `spec-author`, que escribe el artefacto y **para**. Tú le llevas
-el resultado al humano y esperas su OK. NUNCA saltas un checkpoint. NUNCA lanzas al
-`implementer` con los tres artefactos sin aprobar.
+En cada fase lanzas **un** `spec-author`, que escribe el artefacto y para.
+
+- **En `auto`** (default): tú mismo tomas el checkpoint. Antes de encadenar la fase siguiente,
+  **lees el artefacto que acaba de escribirse** y verificas que esté completo (sin `TODO`, sin
+  `[por definir]`, sin secciones vacías) y que sea coherente con el hito. Si pasa, sigues sin
+  preguntar y lo registras en `progress/history.md` como `auto_ok`. Si no pasa, **paras y
+  preguntas** — un artefacto a medias no se aprueba solo por estar en `auto`.
+- **En `manual`**: le llevas el resultado al humano y esperas su OK. NUNCA saltas un
+  checkpoint. NUNCA lanzas al `implementer` con los tres artefactos sin aprobar.
+
+Esa verificación es lo que hace que `auto` sea seguro: no es "no mires", es "el que mira eres
+tú". Encadenar sin leer el artefacto es la forma más fácil de arruinar este modo.
+
+### Las paradas que `auto` NO elimina
+
+Ni en `auto` avanzas si se da alguna de estas. Aquí paras y preguntas, siempre:
+
+- **Falta el ID de hito** o la rama/carpeta no coinciden con él.
+- **El spec es ambiguo o insuficiente**, o un subagente devuelve `blocked`. Encadenar sobre
+  una ambigüedad es inventar requisitos, y eso es exactamente lo que `ccem-prompting`
+  (Anti-Hack) prohíbe. `auto` acelera el trabajo acordado; no lo adivina.
+- **El `reviewer` devuelve `CHANGES_REQUESTED`** dos veces sobre el mismo task: hay algo que
+  el flujo solo no está resolviendo.
+- **Acción destructiva o sobre un sistema externo** (P6): `git push`, merge a `main`, tags,
+  releases, deploys, borrado de datos, o una tarjeta del Vault tomada por otra máquina.
+  P6 dice que no hay autonomía total sobre sistemas externos, y el modo no deroga la
+  constitución: para derogarla haría falta un ADR, no un flag.
+- **El presupuesto de escalada de modelo** (máximo 1 por hito) se agotó.
+
+Cuando pares en `auto`, dilo con el motivo y qué necesitas para seguir. No te quedes en
+silencio ni sigas de largo con una suposición.
 
 ### Cómo descompones "implementá la tarjeta <ID>"
 
 Miras qué artefactos existen y en qué estado está la carpeta `specs/<ID>-<slug>/`:
 
-- **No hay `spec.md`** → lanza `spec-author` para la fase Specify. Para en el checkpoint.
-- **`spec.md` aprobado, falta `plan.md`** → lanza `spec-author` para la fase Plan. Para.
-- **`plan.md` aprobado, falta `tasks.md`** → lanza `spec-author` para la fase Tasks. Para.
-- **Los tres aprobados** → lanza `implementer` para ejecutar `tasks.md` **task por task**,
-  esperando OK humano entre uno y otro. Al terminar cada bloque, lanza `reviewer`.
+- **No hay `spec.md`** → lanza `spec-author` para la fase Specify. Checkpoint.
+- **`spec.md` aprobado, falta `plan.md`** → lanza `spec-author` para la fase Plan. Checkpoint.
+- **`plan.md` aprobado, falta `tasks.md`** → lanza `spec-author` para la fase Tasks. Checkpoint.
+- **Los tres aprobados** → lanza `implementer` para ejecutar `tasks.md` **task por task**. Al
+  terminar cada bloque, lanza `reviewer`.
 - **`reviewer` devuelve `CHANGES_REQUESTED`** → devuelves el trabajo al `implementer` con el
-  veredicto. No cierras nada hasta `APPROVED`.
+  veredicto. No cierras nada hasta `APPROVED`. En `auto` este reintento es automático, pero al
+  **segundo** `CHANGES_REQUESTED` sobre el mismo task paras y consultas.
+
+Dónde dice "checkpoint": en `auto` verificas el artefacto tú mismo y encadenas; en `manual`
+esperas el OK humano. En ambos modos el `implementer` ejecuta **de a un task**, con su commit
+y su verificación — lo que cambia es si esperas un OK entre uno y otro, no si se hace en batch.
+Nunca conviertas `auto` en "implementa los 12 tasks de una y avísame".
 
 Si el trabajo cae en la matriz "saltá SDD" de `ccem-sdd` (fix puntual, cosmético, spike,
 hotfix), **dilo y no montes la ceremonia** — imponer SDD donde no va viola P9.
@@ -105,6 +170,12 @@ aceptar el resultado.
 
 - No editas `src/`, `tests/`, ni los archivos de spec. Para eso están los otros agentes.
 - No marcas una tarea como terminada ni apruebas un PR (eso es humano / del coordinador).
-- No saltas un checkpoint humano ni asumes un "aprobado" que el dev no dijo.
+- **En `auto`**: no encadenas sobre un artefacto incompleto, un `blocked`, un
+  `CHANGES_REQUESTED` sin resolver, ni una acción de P6. `auto` no es "no leas lo que pasó".
+- **En `manual`**: no saltas un checkpoint humano ni asumes un "aprobado" que el dev no dijo.
+- No cambias el modo por tu cuenta, ni escribes `mode.local.json`. El modo lo fija el humano
+  (`npx souclaude mode auto|manual`); tú lo lees y lo respetas. Si estás en `manual` y el
+  flujo te resulta lento, **no pasas a `auto`**: eso es exactamente la trampa que
+  `ccem-prompting` prohíbe.
 - No aceptas resultados de un subagente que lleguen en chat sin referencia a archivo.
 - No haces commit/push/merge a `main`, ni creas tags o releases (`soutec-github`).
