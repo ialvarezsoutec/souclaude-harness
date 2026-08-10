@@ -200,9 +200,9 @@ reflejar cómo quedó realmente repartido entre T104 y T105 (ver "Nota de ajuste
 | `src/monitor/domain/gasto-extra.js` (**nuevo**) | `estadoDelExtra()` + `siguienteRegistro()`, funciones puras, sin I/O ni `Date.now()` | T103 |
 | `src/monitor/adapters/usage-history.js` (**nuevo**) | Persistencia de `~/.claude/souclaude/usage-history.json`; usa `siguienteRegistro()` de dominio, escritura directa sin temp+rename | T104 |
 | `src/monitor/domain/arbol.js` | `construirVista`: agregar `vista.historico` y `vista.limites.gastoExtra.historico` a partir de `snapshot.registroExtra` | T105 |
-| `src/monitor/adapters/snapshot-source.js` | Paso 5 (líneas 95-103): consumir `usageFetcher.estado()` para avisos (RF-06, **T106**); recibir/componer `usageHistory` y agregar `registroExtra` (resultado de `usageHistory.leer()`) al snapshot devuelto (**T105**, no T104 — ver nota de ajuste abajo) | T105, T106 |
+| `src/monitor/adapters/snapshot-source.js` | Paso 5 (líneas 95-103): consumir `usageFetcher.estado()` para avisos (RF-06, **T106** — el parámetro `usageFetcher` en sí no alcanza; hace falta que `commands/monitor.js` lo inyecte de verdad, ver esa fila); recibir/componer `usageHistory` y agregar `registroExtra` (resultado de `usageHistory.leer()`) al snapshot devuelto (**T105**, no T104 — ver nota de ajuste abajo) | T105, T106 |
 | `src/monitor/adapters/panel-layout.js` | Nueva sección "Histórico" al pie, atenuada; excluida del orden por `UMBRAL_ALARMA` (línea 70) y del título `LIMITE N%` (líneas 273-281) | T105 |
-| `src/commands/monitor.js` | T104: crea `usageHistory` (`crearUsageHistory`, flag de seed) y lo cablea solo para **escribir** (`registrarHistorico()` tras `buildView`). T105: le pasa además ese mismo `usageHistory` a `createSnapshotSource` para que pueda **leerlo** antes de `construirVista` — sin esto, `snapshot.registroExtra` nunca existe y `--json` no puede incluir `historico` | T104 (escritura), T105 (lectura) |
+| `src/commands/monitor.js` | T104: crea `usageHistory` (`crearUsageHistory`, flag de seed) y lo cablea solo para **escribir** (`registrarHistorico()` tras `buildView`). T105: le pasa además ese mismo `usageHistory` a `createSnapshotSource` para que pueda **leerlo** antes de `construirVista` — sin esto, `snapshot.registroExtra` nunca existe y `--json` no puede incluir `historico`. T106: extrae `createUsageFetcher({paths})` de adentro de `crearLimitsReader` a una variable propia y la comparte con `createSnapshotSource` — sin esto, `createSnapshotSource` recibe el parámetro `usageFetcher` pero nadie se lo pasa en producción, y el aviso de RF-06 nunca aparece fuera de los tests (mismo tipo de hueco que T105, ver nota de ajuste en `tasks.md` → T106) | T104 (escritura), T105 (lectura), T106 (fetcher compartido) |
 | `README.md` | Documentar condiciones de "sin refresco de red" (hoy solo `--no-refresh`, línea 86 — falta CI/`--claude-home`, ver `src/commands/monitor.js:27`) y la sección Histórico + `usage-history.json` | T107 |
 | `test/monitor-presenter.test.js` (**nuevo**) | Cobertura de RF-01, RF-02 y la separación vivas/históricas de RF-05 — `panel-presenter.js` tiene hoy cero tests | T101, T102, T105 |
 | `test/monitor-domain.test.js` (o archivo dedicado) | Cobertura de la regla pura `estadoDelExtra` (RF-03) con bordes de 24h | T103 |
@@ -217,6 +217,13 @@ necesario anotar un gotcha puntual (decisión de implementación, no de alcance)
 `snapshot-source.js`/`construirVista` se movió de T104 a T105 porque T104 implementó,
 por fidelidad a `tasks.md` en su versión original, solo el lado de **escritura**
 (`registrarHistorico()` tras `buildView`); ver la nota completa en `tasks.md` → T105.
+
+**Nota de ajuste (post-T106)**: mismo tipo de hueco — `tasks.md` en su versión original
+solo listaba `snapshot-source.js` para T106, así que el parámetro `usageFetcher` quedó
+aceptado por `createSnapshotSource` pero sin nadie que lo inyecte en producción; se
+agrega `commands/monitor.js` al alcance de T106 (compartir el `usageFetcher` entre
+`createLimitsReader` y `createSnapshotSource`); ver la nota completa en `tasks.md` →
+T106.
 
 ---
 

@@ -31,7 +31,7 @@
 | T103 | Regla de dominio: extra vencido pasa a histórico a las 24h | `domain/gasto-extra.js` (nuevo), `test/monitor-domain.test.js` | — | `feat:` |
 | T104 | Persistencia del histórico (`usage-history.js`) | `adapters/usage-history.js` (nuevo), `commands/monitor.js`, `test/monitor-history.test.js` | T103 | `feat:` |
 | T105 | Sección "Histórico" en el panel | `adapters/panel-presenter.js`, `domain/arbol.js`, `adapters/panel-layout.js`, `adapters/snapshot-source.js`, `commands/monitor.js`, `test/monitor-presenter.test.js`, `test/monitor-render.test.js` | T101, T102, T103, T104 | `feat:` |
-| T106 | Avisar cuando los datos de límites están viejos | `adapters/snapshot-source.js`, `test/monitor-view.test.js` | — | `feat:` |
+| T106 | Avisar cuando los datos de límites están viejos | `adapters/snapshot-source.js`, `commands/monitor.js`, `test/monitor-view.test.js` | — | `feat:` |
 | T107 | Documentar la cadencia real y la sección Histórico | `README.md` | T105, T106 | `docs:` |
 
 ---
@@ -229,27 +229,53 @@
 
 ### SHS-H3-T106 — Avisar cuando los datos de límites están viejos
 
-- **Estimación**: 20 min
+- **Estimación**: 30 min (incluye el cableado de producción del `usageFetcher` que
+  quedó pendiente — ver nota de ajuste más abajo, mismo defecto que T105)
 - **Dependencies**: ninguna (paralelizable con T101-T105)
 - **Files**: `src/monitor/adapters/snapshot-source.js` (paso 5, líneas 95-103),
-  `test/monitor-view.test.js`
+  `src/commands/monitor.js` (extraer `createUsageFetcher({paths})` a una variable propia
+  y compartirla entre `createLimitsReader` y `createSnapshotSource`, en vez de crearla
+  únicamente dentro de `crearLimitsReader`), `test/monitor-view.test.js`
+- **Nota de ajuste (post-implementación)**: el implementer detectó que esta task, en su
+  versión original, solo listaba `snapshot-source.js` y su test. Con eso, se agregó el
+  parámetro `usageFetcher` a `createSnapshotSource` (correcto) pero **nadie lo inyecta en
+  producción**: `commands/monitor.js` crea el fetcher *dentro* de `crearLimitsReader`
+  (`createLimitsReader({ fetcher: createUsageFetcher({ paths }) })`) y nunca lo comparte
+  con `createSnapshotSource` — el aviso de "límites sin refrescar" nunca podía aparecer
+  en el panel real, solo en el test con un fetcher fake. Mismo tipo de hueco que en T105
+  (un cableado de producción que el `tasks.md` original no pedía explícitamente). Se
+  corrige acá: `commands/monitor.js` entra al alcance de T106, no de una task aparte —
+  es la misma pieza de trabajo, solo que su redacción original se quedó corta.
 - **Descripción**: dentro del paso que ya lee `limites`, se consulta también
   `usageFetcher.estado()` (ya existe en `usage-fetcher.js:63-65`, hoy sin consumidor real
   fuera de su propio test). Si `fallosSeguidos > 0` o `backoffHasta` está en el futuro
   (`backoffHasta > ahora`), se agrega un aviso al mismo array `avisos` que ya se
   construye en ese paso: `límites sin refrescar desde hace Xm (reintento en Ym)`.
-  Requiere que `createSnapshotSource` reciba el fetcher (o algo con `.estado()`) para
-  poder consultarlo — se compone igual que ya se compone `limitsReader`.
+  `createSnapshotSource` recibe el fetcher (o algo con `.estado()`) para poder
+  consultarlo — se compone igual que ya se compone `limitsReader`. En
+  `commands/monitor.js`, el `usageFetcher` deja de crearse solo dentro de
+  `crearLimitsReader(flags)`: se crea una vez (respetando las mismas condiciones de "sin
+  refresco de red" que ya evalúa esa función — `--no-refresh`, CI, `--claude-home`) y esa
+  misma instancia se pasa tanto a `createLimitsReader` como a `createSnapshotSource`,
+  para que el mismo fetcher que refresca los límites sea el que reporta su propio
+  estado.
 - **Test que debe fallar si se revierte**: `test/monitor-view.test.js`, dos casos sobre
   la integración ya existente de `createSnapshotSource`:
   1. Fetcher fake con `estado()` devolviendo `{fallosSeguidos: 4, backoffHasta: ahora +
      900_000}` → `snapshot.avisos` contiene una entrada que menciona "sin refrescar".
   2. Fetcher fake con `estado()` devolviendo `{fallosSeguidos: 0, backoffHasta: null}` →
      ningún aviso de ese tipo aparece.
+  Para el cableado de producción específicamente (sin test unitario de por medio, es
+  wiring de `commands/monitor.js`): verificación manual — forzar un fallo de red real
+  (token inválido o sin conexión) sobre esta máquina y confirmar que el aviso aparece en
+  `souclaude monitor --once`, no solo en el test con el fake.
 - **Verificación**:
-  - [x] Ambos casos fallan si se quita la consulta a `estado()` (verificado con `git
-        stash` sobre `snapshot-source.js`: el caso de backoff falla, el caso sano se
-        mantiene en verde).
+  - [x] Ambos casos de `test/monitor-view.test.js` fallan si se quita la consulta a
+        `estado()` (verificado con `git stash` sobre `snapshot-source.js`: el caso de
+        backoff falla, el caso sano se mantiene en verde).
+  - [ ] El `usageFetcher` compartido entre `createLimitsReader` y `createSnapshotSource`
+        en `commands/monitor.js` — pendiente tras este ajuste, no estaba cubierto por el
+        `[x]` original (ese solo verificaba `snapshot-source.js` en aislamiento).
   - [x] `npm test` en verde (315/315).
 
 ---
