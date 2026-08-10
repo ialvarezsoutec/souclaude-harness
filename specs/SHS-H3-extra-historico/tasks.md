@@ -88,9 +88,12 @@
      colapsando a una sola fila (el caso que la lógica actual ya cubre y no debe
      romperse).
 - **Verificación**:
-  - [ ] Los dos casos del test están en el mismo archivo y ambos fallan contra la
-        implementación vieja.
-  - [ ] `npm test` en verde.
+  - [x] Los dos casos del test están en el mismo archivo. El caso 1 (Fable vs seven_day)
+        falla contra la implementación vieja (colapsa a 1 fila en vez de 2, verificado con
+        `git stash` sobre `panel-presenter.js`); el caso 2 (weekly_all vs seven_day) ya
+        pasaba con la lógica vieja por diseño — es el regresivo que no debía romperse, tal
+        como aclara la descripción de esta task.
+  - [x] `npm test` en verde.
 
 ---
 

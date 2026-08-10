@@ -84,3 +84,59 @@ test('sin utilizacion numerica (payload viejo/incompleto), la fila cae al recalc
   // Division en punto flotante (2136/2000*100): tolerancia, no igualdad estricta.
   assert.ok(Math.abs(fila.porcentaje - 106.8) < 0.01)
 })
+
+// SHS-H3-T102 (RF-02): la clave de dedup de filasDeLimites pasa de
+// `${porcentaje}|${reseteaEn}` a `${tipo}|${modelo}|${porcentaje}|${reseteaEn}`.
+// Con la clave vieja, cualquier entrada de limits[] que por coincidencia
+// comparta % y reset con la ventana 7d desaparecia, aunque fuera un limite
+// distinto (ej. un weekly_scoped por modelo). Con la clave nueva solo se
+// descarta el duplicado REAL (weekly_all == seven_day, mismo tipo logico).
+
+const RESETEA_EN = Date.UTC(2026, 7, 13, 0, 0, 0)
+
+function configConLimiteSemanal(entradaDeLimits) {
+  return {
+    cachedUsageUtilization: {
+      fetchedAtMs: AHORA,
+      utilization: {
+        seven_day: { utilization: 50, resets_at: RESETEA_EN },
+        limits: [entradaDeLimits],
+      },
+    },
+  }
+}
+
+test('seven_day y weekly_scoped por modelo con igual % e igual reset: las dos filas quedan, no colapsan', async () => {
+  const limites = await leerLimites(
+    configConLimiteSemanal({
+      kind: 'weekly_scoped',
+      percent: 50,
+      resets_at: RESETEA_EN,
+      scope: { model: { display_name: 'Fable' } },
+    })
+  )
+
+  const vista = presentar({ limites }, { ahora: AHORA })
+  const filasDelCincuenta = vista.limites.filter((f) => f.porcentaje === 50)
+
+  assert.equal(filasDelCincuenta.length, 2, 'seven_day y el limite de Fable son limites distintos: dos filas')
+  assert.ok(filasDelCincuenta.some((f) => f.etiqueta.includes('Fable')))
+  assert.ok(filasDelCincuenta.some((f) => f.etiqueta === 'Ventana 7d'))
+})
+
+test('weekly_all duplica a seven_day (mismo tipo logico, mismo % y reset): sigue colapsando a una fila', async () => {
+  const limites = await leerLimites(
+    configConLimiteSemanal({
+      kind: 'weekly_all',
+      percent: 50,
+      resets_at: RESETEA_EN,
+      scope: null,
+    })
+  )
+
+  const vista = presentar({ limites }, { ahora: AHORA })
+  const filasDelCincuenta = vista.limites.filter((f) => f.porcentaje === 50)
+
+  assert.equal(filasDelCincuenta.length, 1, 'weekly_all es el mismo limite que seven_day: una sola fila')
+  assert.equal(filasDelCincuenta[0].etiqueta, 'Ventana 7d')
+})
