@@ -247,8 +247,10 @@
   2. Fetcher fake con `estado()` devolviendo `{fallosSeguidos: 0, backoffHasta: null}` →
      ningún aviso de ese tipo aparece.
 - **Verificación**:
-  - [ ] Ambos casos fallan si se quita la consulta a `estado()`.
-  - [ ] `npm test` en verde.
+  - [x] Ambos casos fallan si se quita la consulta a `estado()` (verificado con `git
+        stash` sobre `snapshot-source.js`: el caso de backoff falla, el caso sano se
+        mantiene en verde).
+  - [x] `npm test` en verde (315/315).
 
 ---
 

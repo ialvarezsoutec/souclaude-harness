@@ -19,6 +19,7 @@ export function createSnapshotSource({
   tailer = createTailer(),
   limitsReader = createLimitsReader({ ttlMs: ttlLimitsMs }),
   usageHistory,
+  usageFetcher,
 } = {}) {
   // ESTADO ENTRE TICKS. El tailer solo devuelve lo NUEVO de cada archivo, asi
   // que si `collect` devolviera solo eso el panel mostraria los ultimos 2
@@ -101,6 +102,22 @@ export function createSnapshotSource({
       avisos.push(...res.warnings)
     } catch (err) {
       avisos.push({ file: paths.configFile, reason: err.code ?? err.message })
+    }
+
+    // 5a. Aviso de limites viejos (SHS-H3-T106). `usageFetcher.estado()` ya
+    // existe (usage-fetcher.js) pero hasta esta task no tenia consumidor real
+    // fuera de su propio test: si viene con fallos seguidos o con un backoff
+    // vigente, se agrega al mismo canal de avisos que ya usa este paso -- no
+    // se crea un canal nuevo.
+    if (usageFetcher) {
+      const est = usageFetcher.estado()
+      const enBackoff = typeof est.backoffHasta === 'number' && est.backoffHasta > instante
+      if (est.fallosSeguidos > 0 || enBackoff) {
+        const desdeMs = instante - (est.ultimoOkMs ?? est.ultimoIntentoMs ?? instante)
+        const minutosDesde = Math.max(0, Math.round(desdeMs / 60_000))
+        const minutosReintento = enBackoff ? Math.max(0, Math.round((est.backoffHasta - instante) / 60_000)) : 0
+        avisos.push({ reason: `limites sin refrescar desde hace ${minutosDesde}m (reintento en ${minutosReintento}m)` })
+      }
     }
 
     // 5b. Historico del gasto extra persistido (SHS-H3-T105). La ESCRITURA es

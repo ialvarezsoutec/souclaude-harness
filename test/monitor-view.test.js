@@ -486,3 +486,33 @@ test('snapshot-source: sin usageHistory inyectado, registroExtra queda vacio (nu
 
   assert.deepEqual(snapshot.registroExtra, { abierto: null, archivados: [] })
 })
+
+// ---------------------------------------------------------------------------
+// Aviso de limites viejos a partir de usageFetcher.estado() (SHS-H3-T106).
+// `estado()` ya existia en usage-fetcher.js sin consumidor real fuera de su
+// propio test; esto lo conecta al canal de avisos que ya arma este paso.
+// ---------------------------------------------------------------------------
+
+test('snapshot-source: con el fetcher en backoff, avisos incluye una entrada que menciona "sin refrescar"', async () => {
+  const home = mkClaudeHome({})
+  const paths = resolveClaudeHome({ override: home })
+  const usageFetcher = { estado: () => ({ fallosSeguidos: 4, backoffHasta: AHORA + 900_000 }) }
+
+  const source = createSnapshotSource({ paths, usageFetcher })
+  const snapshot = await source.collect({ window: { desde: 0, hasta: AHORA }, ahora: AHORA })
+
+  const hayAviso = snapshot.avisos.some((a) => (a?.reason ?? '').includes('sin refrescar'))
+  assert.ok(hayAviso, 'debe existir un aviso que mencione "sin refrescar"')
+})
+
+test('snapshot-source: con el fetcher sano (sin fallos ni backoff), no aparece el aviso de datos viejos', async () => {
+  const home = mkClaudeHome({})
+  const paths = resolveClaudeHome({ override: home })
+  const usageFetcher = { estado: () => ({ fallosSeguidos: 0, backoffHasta: null }) }
+
+  const source = createSnapshotSource({ paths, usageFetcher })
+  const snapshot = await source.collect({ window: { desde: 0, hasta: AHORA }, ahora: AHORA })
+
+  const hayAviso = snapshot.avisos.some((a) => (a?.reason ?? '').includes('sin refrescar'))
+  assert.equal(hayAviso, false)
+})
