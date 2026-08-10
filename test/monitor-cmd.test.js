@@ -432,3 +432,75 @@ test('monitor --seed-extra-detectado-en via subproceso: parseArgs lo acepta y ll
     'el seed deberia fijar detectadoEn, no el "ahora" de la corrida',
   )
 })
+
+// ---------------------------------------------------------------------------
+// RF-05 (SHS-H3-T105) / criterio de exito de spec.md:209-211: `--json` incluye
+// `historico` -- este punto lo cerraba `tasks.md` con verificacion manual
+// unicamente, contra la regla que la propia spec fija (spec.md:24-27, "ningun
+// RF se cierra con verificacion manual como unico criterio"). Aca corre el
+// pipeline real con `--claude-home` y se afirma sobre el JSON.parse de la
+// salida, con el fixture del payload real del 2026-08-06 ($21.36/$20.00).
+// ---------------------------------------------------------------------------
+
+function configConExtraAlPayloadReal() {
+  return {
+    cachedUsageUtilization: {
+      fetchedAtMs: Date.now(),
+      utilization: {
+        five_hour: { utilization: 10, resets_at: null },
+        seven_day: { utilization: 10, resets_at: null },
+        extra_usage: {
+          is_enabled: false,
+          monthly_limit: 2000,
+          used_credits: 2136,
+          utilization: 100,
+          disabled_reason: 'org_level_disabled_until',
+          spend_limit_reached: true,
+        },
+      },
+    },
+  }
+}
+
+test('monitor --once --json: con un registro abierto de mas de 24h, historico trae el extra archivado', async () => {
+  const home = mkClaudeHome({ config: configConExtraAlPayloadReal() })
+
+  const detectadoEn = Date.now() - 25 * 60 * 60_000
+  fs.mkdirSync(path.join(home, 'souclaude'), { recursive: true })
+  fs.writeFileSync(
+    path.join(home, 'souclaude', 'usage-history.json'),
+    JSON.stringify({
+      abierto: { detectadoEn, usado: 21.36, limite: 20, moneda: 'USD', cerradoEn: null },
+      archivados: [],
+    }),
+    'utf8',
+  )
+
+  const { code, salida } = await correrJsonEnProceso({
+    once: true,
+    json: true,
+    'no-refresh': true,
+    'claude-home': home,
+  })
+
+  // El extra ya paso a historico: no participa de la alarma del header ni del
+  // codigo de salida (RF-05) -- por eso 0 y no 2, aunque spend_limit_reached
+  // siga en true en el payload crudo.
+  assert.equal(code, 0, 'un extra ya historico no debe disparar el codigo de alarma por limite')
+  const vista = JSON.parse(salida)
+
+  assert.deepEqual(vista.historico, [{ usado: 21.36, limite: 20, moneda: 'USD', detectadoEn }])
+  assert.equal(vista.limites.gastoExtra.historico, true)
+})
+
+test('monitor --once --json: sin ningun registro de gasto extra en disco, historico es []', async () => {
+  const home = mkClaudeHome({
+    proyectos: { p1: { 'sess-1.jsonl': [lineaAssistant({ entrada: 10, salida: 5 })] } },
+  })
+
+  const { code, salida } = await correrJsonEnProceso({ once: true, json: true, 'claude-home': home })
+
+  assert.equal(code, 0)
+  const vista = JSON.parse(salida)
+  assert.deepEqual(vista.historico, [])
+})
