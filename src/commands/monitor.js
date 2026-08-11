@@ -164,15 +164,20 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
   return await enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher })
 }
 
-// --publish (opt-in, solo en vivo): snapshots agregados de esta cuenta al
-// Vault, autorizados por el ADR 20260810-monitor-snapshots-en-vault. Sin
-// Vault configurado se degrada a un warning unico y el monitor sigue
-// local-only: el Vault jamas es dependencia dura de nada.
-function crearPublisher(flags, cwd) {
-  if (flags.publish !== true) return null
+// Publicacion de snapshots agregados de esta cuenta al Vault (ADR
+// 20260810-monitor-snapshots-en-vault), solo en vivo. Con Vault configurado
+// publica POR DEFECTO: tener vault.local.json ya expresa querer la vista
+// compartida, y un opt-in olvidable dejaba la seccion CUENTAS de las demas
+// maquinas vacia. --no-publish la apaga por corrida. Sin Vault configurado
+// solo se avisa si el usuario pidio --publish explicito (para no ensuciar
+// cada corrida local-only): el Vault jamas es dependencia dura de nada.
+export function crearPublisher(flags, cwd) {
+  if (flags.publish === false) return null
   const config = readVaultConfig(cwd)
   if (!config?.path) {
-    ui.log.warn('--publish sin Vault configurado (.claude/vault.local.json o VAULT_PATH): el monitor sigue local-only.')
+    if (flags.publish === true) {
+      ui.log.warn('--publish sin Vault configurado (.claude/vault.local.json o VAULT_PATH): el monitor sigue local-only.')
+    }
     return null
   }
   return createVaultPublisher({ vaultPath: config.path })
