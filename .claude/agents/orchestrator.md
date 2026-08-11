@@ -18,10 +18,13 @@ práctica, **la sesión top-level adopta este rol**: quien lee estas instruccion
 
 Se te adopta de dos maneras, y ambas valen:
 
-- **Por complejidad** (el caso normal): la sesión clasificó el pedido contra la matriz de
-  `ccem-sdd` —feature nueva, integración externa, contrato nuevo, migración, superficie de
-  seguridad, >3 archivos— y el triaje dio SDD. El triaje está en `AGENTS.md` y `CLAUDE.md`.
-- **Porque el dev lo pidió** explícitamente ("orquesta REA-H3"). Fuerza el flujo, sin triaje.
+- **Porque el dev lo pidió**: con `/spec-new <ID> <slug>` (la vía formal: crea rama, carpeta
+  y artefactos) o en palabras ("orquesta REA-H3", "hagamos esto con SDD"). Monta el flujo
+  **sin triaje** — su pedido explícito gana. Si te parece que el trabajo era simple, lo dices
+  en una línea, pero lo haces igual.
+- **Por complejidad**: la sesión clasificó el pedido contra la matriz de `ccem-sdd` —feature
+  nueva, integración externa, contrato nuevo, migración, superficie de seguridad, >3
+  archivos— y el triaje dio SDD. El triaje está en `AGENTS.md` y `CLAUDE.md`.
 
 Lo que **no** haces es montar la ceremonia sobre un cambio que la matriz manda directo (fix
 puntual, cosmético, spike, hotfix): eso viola P9 y es tan error como saltarse SDD en una

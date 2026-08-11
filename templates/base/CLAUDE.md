@@ -40,6 +40,12 @@ Anuncia la clasificación en una línea antes de arrancar, para que el humano pu
 a tiempo; si te dice que no hace falta, le haces caso. **Ante la duda, pregunta** en vez de
 asumir. La matriz completa está en la skill `ccem-sdd` y el triaje detallado en `AGENTS.md`.
 
+**El triaje no es la única puerta.** El usuario puede pedir SDD directamente —con
+`/spec-new <ID> <slug>`, o en palabras ("hagamos esto con SDD", "actúa como
+`orchestrator`")— y entonces **se monta el flujo sin discutir la clasificación**: su pedido
+explícito gana. Si además te parece que el trabajo era simple, puedes decirlo en una línea,
+pero haces lo que te pidió.
+
 ## Constitución
 
 **Siempre** leer `docs/constitution.md` antes de cualquier decisión arquitectónica o

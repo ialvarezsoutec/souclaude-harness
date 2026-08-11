@@ -292,12 +292,17 @@ producto**.
 
 ### 3.2 Cómo se activa
 
-Se activa **por complejidad**, no por invocación: ante todo pedido que implique escribir
-código, la sesión lo clasifica contra la matriz de `ccem-sdd` antes de tocar nada. Un cambio
-cosmético o un fix puntual se hace directo —montar el flujo ahí viola P9—; una feature nueva,
-una integración externa o un cambio de contrato entran al flujo completo. Pedirlo explícito
-("actúa como `orchestrator` para la tarjeta PLN-XXX") sigue funcionando y fuerza el flujo,
-pero es un atajo, no el disparador. El triaje está en `AGENTS.md` y `CLAUDE.md`.
+Hay **dos puertas**. La formal es que el usuario lo pida: `/spec-new <ID> <slug>` —que crea
+la rama, la carpeta y los tres artefactos— o el pedido en palabras ("actúa como
+`orchestrator` para la tarjeta PLN-XXX"). Ahí se monta el flujo sin discutir la
+clasificación.
+
+La segunda es el **triaje por complejidad**: ante todo pedido que implique escribir código, la
+sesión lo clasifica contra la matriz de `ccem-sdd` antes de tocar nada. Un cambio cosmético o
+un fix puntual se hace directo —montar el flujo ahí viola P9—; una feature nueva, una
+integración externa o un cambio de contrato entran al flujo completo. Cubre el caso que antes
+se caía: el pedido complejo que nadie marcó como tal. El triaje está en `AGENTS.md` y
+`CLAUDE.md`.
 
 Como un subagente de Claude Code no siempre puede lanzar otros subagentes, en la práctica
 **la sesión principal adopta el rol `orchestrator`** y desde ahí lanza a los demás.

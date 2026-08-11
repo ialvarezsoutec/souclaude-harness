@@ -102,11 +102,21 @@ va contra P6, no un default del harness.
 
 ## Cómo se activa (por complejidad, no por invocación)
 
-La orquestación **se activa sola cuando el trabajo la amerita**. No hay que pedirla por su
-nombre: ante **todo pedido que implique escribir código**, clasifícalo primero contra la
-matriz de `ccem-sdd` y actúa según el resultado. Pedirla explícitamente sigue funcionando
-("actúa como `orchestrator` para el hito REA-H3") y **fuerza** el flujo, pero es un atajo, no
-el disparador.
+Hay **dos puertas de entrada al flujo**, y ninguna reemplaza a la otra:
+
+| Puerta | Cómo se ve | Qué pasa |
+|---|---|---|
+| **El usuario lo pide** | `/spec-new <ID> <slug>` · "hagamos esto con SDD" · "actúa como `orchestrator` para REA-H3" | Se monta el flujo, **sin triaje**. Su pedido gana |
+| **El triaje lo determina** | Cualquier pedido que implique escribir código | Clasificas contra `ccem-sdd` y actúas según el resultado |
+
+La primera es la vía formal y existía desde siempre: **`/spec-new` es el comando canónico**
+—crea la rama, `specs/<ID-hito>-<slug>/` y los tres artefactos desde las plantillas, y
+entrevista para llenar la spec—. Si el usuario lo invoca, no le discutas la clasificación: si
+te parece que el trabajo era simple, dilo en una línea, pero lo haces.
+
+Lo que se agregó es la segunda: antes, un pedido complejo sin invocación explícita se
+implementaba a mano. Ahora **ante todo pedido que implique escribir código** clasificas
+primero contra la matriz de `ccem-sdd` y actúas según el resultado.
 
 ### El triaje, antes de tocar nada
 
