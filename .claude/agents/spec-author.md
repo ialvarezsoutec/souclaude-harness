@@ -82,11 +82,14 @@ por tu cuenta, ni siquiera en `auto`: si lo haces, te saltas la verificación qu
 Tu salida final es **una sola línea** con la referencia al disco, no el contenido. Al cerrar
 cada fase, deja el resumen en `progress/<ID-hito>-<slug>/summary.md` y agrega una línea al
 final de `progress/history.md` (formato en `progress/README.md`). **Espejo al Vault** (repo
-aparte, ruta en `.claude/vault.local.json`; reglas en `progress/README.md`): `pull --rebase`
-primero, copia el artefacto recién cerrado a `Project-<PREFIJO>/specs/<ID-hito>-<slug>/` y
-**pushea directo a `main` del Vault** (`docs: espejo de <ID-hito>-<slug>`). Al emitir
+aparte, ruta en `.claude/vault.local.json`; reglas en `progress/README.md`): corre
+`node bin/cli.mjs vault-sync` primero, copia el artefacto recién cerrado a
+`Project-<PREFIJO>/specs/<ID-hito>-<slug>/` y espeja con
+`node bin/cli.mjs vault-sync --push -m "docs: espejo de <ID-hito>-<slug>"`. Al emitir
 `tasks.md`, crea además las tarjetas de cada task en el Backlog de
-`Project-<PREFIJO>/kanban.md` y pushéalas — si no están en el tablero, nadie las ve.
+`Project-<PREFIJO>/kanban.md` antes del `--push` — si no están en el tablero, nadie las ve.
+Si `vault-sync` sale ≠ 0, anótalo en `history.md` (`vault_skip` si exit 3, `vault_fail`
+si exit 1) y repórtalo en tu línea de cierre.
 
 ```
 spec_ready -> specs/<ID>-<slug>/spec.md

@@ -53,10 +53,11 @@ Escribe el detalle en `progress/<ID-hito>-<slug>/review.md` con el veredicto, la
 trazabilidad requisito↔test, el estado de las tasks, el resultado del check de constitución,
 y los cambios requeridos si aplica. Agrega una línea al final de `progress/history.md`
 (formato en `progress/README.md`). **Espejo al Vault** (repo aparte, ruta en
-`.claude/vault.local.json`): `pull --rebase`, copia `review.md` a
+`.claude/vault.local.json`): `node bin/cli.mjs vault-sync` primero, copia `review.md` a
 `Project-<PREFIJO>/progress/`, mueve la tarjeta del task en `Project-<PREFIJO>/kanban.md`
-—a "Hecho" con `APPROVED`, de vuelta a "En curso" con `CHANGES_REQUESTED`— y **pushea
-directo a `main` del Vault** en ese momento. Un veredicto que no llegó al tablero no existe
+—a "Hecho" con `APPROVED`, de vuelta a "En curso" con `CHANGES_REQUESTED`— y espeja **en
+ese momento**: `node bin/cli.mjs vault-sync --push -m "chore: <ID-task> a <columna>"`.
+Si sale ≠ 0, anótalo (`vault_skip` exit 3, `vault_fail` exit 1) y repórtalo. Un veredicto que no llegó al tablero no existe
 para el resto del equipo. Tu respuesta final es **una sola línea**:
 
 ```
