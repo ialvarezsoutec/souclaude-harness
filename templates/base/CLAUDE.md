@@ -20,6 +20,26 @@ modelo y esfuerzo por subagente, escalamiento excepcional y telemetría).
 Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`; y de la
 capa de rocas: `/rock-plan`, `/rock-status`, `/rock-close`, `/export-ninety`.
 
+Agentes de orquestación en `.claude/agents/`: `orchestrator`, `spec-author`, `implementer`,
+`reviewer`. El flujo completo está en `AGENTS.md`.
+
+## Cuándo se activa el flujo SDD
+
+**Ante todo pedido que implique escribir código, clasifícalo antes de tocar nada.** El flujo
+SDD se activa **por complejidad**, no porque alguien lo pida por su nombre:
+
+- **Directo, sin ceremonia** — fix puntual, cosmético (color, copy, rename, formato), typo,
+  spike, hotfix, script one-off. *"Cambia el color de este botón"* se hace y ya. Montar SDD
+  aquí **viola P9**.
+- **SDD** — feature nueva, integración con un sistema externo, contrato o schema nuevo,
+  migración, superficie de seguridad (auth, datos sensibles), >3 archivos o >2 días. *"Agrega
+  un módulo de login con Entra ID y recuperación de cuenta"* entra por acá: adoptas
+  `orchestrator` y arrancas por `spec.md`.
+
+Anuncia la clasificación en una línea antes de arrancar, para que el humano pueda corregirte
+a tiempo; si te dice que no hace falta, le haces caso. **Ante la duda, pregunta** en vez de
+asumir. La matriz completa está en la skill `ccem-sdd` y el triaje detallado en `AGENTS.md`.
+
 ## Constitución
 
 **Siempre** leer `docs/constitution.md` antes de cualquier decisión arquitectónica o

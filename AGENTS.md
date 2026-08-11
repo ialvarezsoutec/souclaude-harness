@@ -100,16 +100,52 @@ Si en tu contexto necesitas que esas seis también corran solas, sácalas de `as
 `.claude/settings.local.json` (personal, gitignorado) — pero es una decisión consciente que
 va contra P6, no un default del harness.
 
-## Cómo se invoca (opt-in)
+## Cómo se activa (por complejidad, no por invocación)
 
-La orquestación **no** corre en cada sesión: la pides cuando la quieres.
+La orquestación **se activa sola cuando el trabajo la amerita**. No hay que pedirla por su
+nombre: ante **todo pedido que implique escribir código**, clasifícalo primero contra la
+matriz de `ccem-sdd` y actúa según el resultado. Pedirla explícitamente sigue funcionando
+("actúa como `orchestrator` para el hito REA-H3") y **fuerza** el flujo, pero es un atajo, no
+el disparador.
 
-> "Actuá como `orchestrator` para el hito REA-H3."
+### El triaje, antes de tocar nada
+
+Tres salidas posibles. La matriz completa vive en `ccem-sdd` (fuente de verdad); esto es cómo
+se aplica:
+
+| Señal en el pedido | Salida | Qué haces |
+|---|---|---|
+| Feature nueva · integración con sistema externo · contrato o schema nuevo · migración · superficie de seguridad (auth, datos sensibles) · >3 archivos · >2 días | **SDD completo** | Adoptas `orchestrator` y arrancas por `spec.md` |
+| Ajuste a componente existente · optimización con métrica base | **SDD lite** | Plantillas `-lite`, mismo flujo |
+| Fix puntual · cosmético (color, copy, rename, formato) · spike · hotfix · typo · script one-off | **Directo** | Lo haces y ya. **Montar SDD aquí viola P9** |
+
+Ejemplos, para calibrar:
+
+- *"Cambia el color de este botón"* · *"renombra esta variable"* · *"arregla este typo"* →
+  **directo**. Un solo archivo, sin decisión de diseño, reversible de un vistazo.
+- *"Agrega un módulo de login con Entra ID y recuperación de cuenta"* → **SDD completo**. Es
+  integración externa + superficie de seguridad + contrato nuevo: tres señales duras, y
+  cualquiera sola ya bastaba.
+
+**Ante la duda, pregunta en una línea** en vez de asumir. Montar ceremonia sobre un cambio de
+color desperdicia el día; hacer a mano un login con Entra ID se salta el diseño justo donde
+un error cuesta más caro.
+
+### Cuando el triaje da SDD
 
 Un subagente de Claude Code no siempre puede lanzar otros subagentes, así que en la práctica
 **la sesión principal adopta el rol `orchestrator`** y desde ahí lanza a `spec-author`,
-`implementer` y `reviewer` según la fase. Para un cambio que la matriz de `ccem-sdd` marca
-como "saltá SDD" (fix puntual, cosmético, spike, hotfix), no montes el flujo: hazlo directo.
+`implementer` y `reviewer` según la fase.
+
+Anuncia la clasificación en una línea antes de arrancar —*"Esto es SDD completo: integración
+externa + superficie de seguridad. Arranco por `spec.md`."*— para que el humano pueda
+corregirte antes de que escribas nada. Si te dice que no hace falta, **le haces caso**: es su
+decisión, no la tuyas.
+
+Si el pedido llega **sin rama ni hito** (el caso normal de un pedido complejo que aparece de
+la nada), no arranques a escribir en `main`: crea la rama según las reglas de `CLAUDE.md`
+—con ID de hito si hay, `tipo/<slug>` si no— y sigue. Eso es parte del flujo, no un permiso
+aparte.
 
 ## Agentes especialistas bajo demanda
 

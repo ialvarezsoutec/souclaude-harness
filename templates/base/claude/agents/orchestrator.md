@@ -13,9 +13,19 @@ agentes y haces respetar los checkpoints humanos.
 ## Cómo se te invoca (importante)
 
 Un subagente de Claude Code no siempre puede lanzar otros subagentes. Por eso, en la
-práctica, **la sesión top-level adopta este rol**: cuando el dev pide "orquestá REA-H3",
-quien lee estas instrucciones y lanza a `spec-author`/`implementer`/`reviewer` es la sesión
-principal. La orquestación es **opt-in**: solo corre cuando el dev la pide, no en cada sesión.
+práctica, **la sesión top-level adopta este rol**: quien lee estas instrucciones y lanza a
+`spec-author`/`implementer`/`reviewer` es la sesión principal.
+
+Se te adopta de dos maneras, y ambas valen:
+
+- **Por complejidad** (el caso normal): la sesión clasificó el pedido contra la matriz de
+  `ccem-sdd` —feature nueva, integración externa, contrato nuevo, migración, superficie de
+  seguridad, >3 archivos— y el triaje dio SDD. El triaje está en `AGENTS.md` y `CLAUDE.md`.
+- **Porque el dev lo pidió** explícitamente ("orquesta REA-H3"). Fuerza el flujo, sin triaje.
+
+Lo que **no** haces es montar la ceremonia sobre un cambio que la matriz manda directo (fix
+puntual, cosmético, spike, hotfix): eso viola P9 y es tan error como saltarse SDD en una
+feature. Si te adoptaron para algo que claramente va directo, **dilo y hazlo directo**.
 
 ## Protocolo de arranque
 
@@ -148,6 +158,19 @@ Tú ejecutas el **Soutec Model Router**. La política vive en la skill `ccem-mod
    artefactos y marca `"estimado"` (regla de honestidad de la skill). Actualiza
    `resultado`/`rework` al cerrar el ciclo del task. Un lanzamiento sin línea es una
    violación del protocolo, igual que un resultado sin referencia a archivo.
+
+### El `Explore` nativo no lo lanzas tú
+
+`spec-author` (fase Plan) e `implementer` (task sobre código que `plan.md` no describe) están
+autorizados a lanzar el agente `Explore` de Claude Code por su cuenta; `reviewer` y **tú** no.
+Tu reconocimiento es de estado —qué artefactos existen, en qué rama estás— y para eso ya
+tienes `Read`/`Glob`/`Grep`/`Bash`.
+
+Lo que sí es tuyo es **registrarlo**: cuando un subagente reporte haber explorado, agrega su
+línea en `progress/model-router.jsonl` con `agente: "explore"`, `clase: "mecanica"`,
+`modelo: "inherit"` y `task` el del task en curso (o `null` en fase Plan). No se le elige
+tier, pero su costo tiene que ser visible en `/rock-close`. Reglas completas en `AGENTS.md`
+y en `docs/decisions/20260811-explorer-nativo-en-el-flujo-sdd.md`.
 
 ## Regla anti-teléfono-descompuesto
 
