@@ -47,12 +47,16 @@ hotfixes también.
 - **Toda rama nace de un hito de una roca.** Formato: `tipo/<ID-hito>-<slug>`
   (`feature/REA-H3-captura-lead`). Tipos: `feature` `fix` `hotfix` `docs` `chore`
   `refactor` `experiment`. El ID del hito es `<PREFIJO>-H<n>` (`REA-H3`), emitido en el
-  Paso 2 de la roca (`/rock-plan`). **Planner no se usa. Si no tienes el ID, PREGUNTA. No
-  lo inventes.**
-- La carpeta de spec lleva **el mismo ID y el mismo slug** que la rama:
-  `specs/<ID-hito>-<slug>/`. Ese ID es el hilo que amarra hito, spec, rama, commits, PR y
-  release. Sin él, la cadena está rota. Un hito puede producir varios specs (mismo ID,
-  distinto slug); cada carpeta = una rama = un PR.
+  Paso 2 de la roca (`/rock-plan`).
+  **Excepción temporal (rocas/Planner desactivados por ahora):** mientras no se usen
+  rocas, no es obligatorio parar a pedir el ID de hito. Si no hay uno, usa el formato
+  `tipo/<slug>` (sin prefijo de ID) y seguí adelante. En cuanto se retome el uso de rocas,
+  esta excepción se revierte y vuelve a regir "si no tienes el ID, PREGUNTA. No lo
+  inventes."
+- La carpeta de spec lleva **el mismo ID (o el mismo slug, si no hay ID)** que la rama:
+  `specs/<ID-hito>-<slug>/` o, sin ID, `specs/<slug>/`. Ese identificador es el hilo que
+  amarra hito, spec, rama, commits, PR y release. Un hito puede producir varios specs
+  (mismo ID, distinto slug); cada carpeta = una rama = un PR.
 - Commits: `tipo: descripción breve` (español, sin scope). Tipos: `feat` `fix` `docs`
   `chore` `refactor` `test` `style` `build` `ci` `perf` `revert`. Un hotfix se commitea
   como `fix:`. Prohibidos: `update`, `cosas`, `ahora sí`.
