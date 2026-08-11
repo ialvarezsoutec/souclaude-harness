@@ -1,6 +1,6 @@
 # Constitución — souclaude-harness
 
-**Vigencia**: desde 2026-07-14. Última revisión: 2026-07-14.
+**Vigencia**: desde 2026-07-14. Última revisión: 2026-07-28.
 **Propietario**: Ignacio A
 **Stack**: Node.js
 
@@ -70,7 +70,9 @@ los adaptadores conocen al dominio.
 
 **Enforcement en CI — no es opcional.** El pipeline bloquea el merge si falla.
 Herramienta para este stack: **dependency-cruiser (o ESLint no-restricted-imports)**.
-[Completar: ruta del archivo de config en este repo.]
+**Pendiente en este repo**: aún no hay config de enforcement. Este CLI no tiene capa de
+dominio clásica; la regla de capas vigente es `src/commands → src/core` (el core no
+importa de `commands` ni de `ui.js`). Registrar aquí la ruta de la config cuando exista.
 
 **Prohibiciones duras** (un PR que las contenga se rechaza):
 - El dominio y la aplicación **no importan** frameworks externos, SDKs de proveedores,
@@ -114,17 +116,20 @@ No mover clases entre capas "para reorganizar" (ver P10).
 - Backup obligatorio antes de cualquier migración irreversible.
 - Rollback plan documentado antes de cada deploy significativo.
 
-## P7 — [Principio específico del proyecto]
+## P7 — Nunca pisar un archivo del usuario
 
-[Reemplazar por el principio propio de este proyecto. Ejemplos reales en SOUTEC:
-"Cuantización agresiva como línea base" (Edge AI), "Reproducibilidad y validación",
-"Idempotencia en toda operación de escritura", "API versionada desde el día uno".]
+**Es la garantía central del producto.** Un archivo editado por el usuario jamás se
+sobrescribe en silencio: la propuesta del harness queda al lado como `.new` y decide el
+dev. Todo lo que se va a sobrescribir se respalda antes en `.claude/backup-<timestamp>/`.
+El test `NUNCA SE PISA` es la red de seguridad de `plan.js` y `apply.js`: si un cambio lo
+rompe, el cambio está mal, no el test.
 
-## P8 — [Principio específico del proyecto]
+## P8 — Idempotencia y dry-run puro
 
-[Reemplazar. Ejemplos: "El hardware decide" (Edge AI), "Trazabilidad de decisiones:
-todo trade-off significativo se documenta como ADR", "Separación estricta entre
-ambientes".]
+Toda operación de escritura del CLI es **idempotente**: correr `init`/`upgrade` dos veces
+no cambia nada la segunda. `--dry-run` es **puro**: imprime el plan y deja el árbol
+byte-idéntico, cero bytes escritos. Los dos invariantes tienen test y bloquean el merge;
+son la razón de que instalar, adoptar y migrar puedan ser el mismo code path.
 
 ## P9 — Simplicity First (universal — no editar)
 

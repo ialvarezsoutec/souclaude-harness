@@ -108,6 +108,16 @@ Viven en `.claude/skills/`, versionadas con el repo. No hay que instalar nada.
 - `ccem-prompting` — cómo pedirle trabajo a un agente sin que "haga trampa".
 - `soutec-github` — el flujo Git/GitHub obligatorio.
 
+### Agentes de orquestación (opt-in)
+
+En `.claude/agents/` viven cuatro roles: `orchestrator` (coordina, no escribe código),
+`spec-author` (redacta spec/plan/tasks), `implementer` (task por task, cada cambio con su
+test) y `reviewer` (aprueba o rechaza de forma independiente). No corren solos: los pides
+con *"Actúa como `orchestrator` para la tarjeta PLN-XXX"*. Además hay un especialista,
+`security-evidence-compiler`, que compila la evidencia del security review para IT — solo
+se activa cuando la skill `it-security-review` completa su gate de seguridad. El mapa
+completo del flujo está en `AGENTS.md`, en la raíz del repo.
+
 ---
 
 ## Dónde va cada cosa

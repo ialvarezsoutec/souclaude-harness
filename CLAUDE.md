@@ -19,8 +19,9 @@ hito y el cierre — el hito emite los IDs).
 Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`; y de la
 capa de rocas: `/rock-plan`, `/rock-status`, `/rock-close`, `/export-ninety`.
 
-Agentes de orquestación en `.claude/agents/`: `orchestrator`, `spec-author`, `implementer`,
-`reviewer`. El flujo completo está en `AGENTS.md`.
+Agentes de orquestacion en `.claude/agents/`: `orchestrator`, `spec-author`, `implementer`,
+`reviewer`; y el especialista `security-evidence-compiler` (solo cuando `it-security-review`
+pasa el gate). El flujo completo esta en `AGENTS.md`.
 
 ## Cuándo se activa el flujo SDD
 
