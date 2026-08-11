@@ -5,6 +5,9 @@ Un commit por task, con su test. Commits `feat:`/`refactor:`/`docs:` según el t
 
 ---
 
+Estado: **T1-T5 completadas** — T1 `6755dc6` · T2 `a0aa951` · T3 `7bff5f2` · T4 `9eb940f` ·
+T5 evidencia en el Vault (`b77a2ef` espejo de prueba, `4dfafa9` retiro) + `npm test` 391/391.
+
 ## T1 — Helper `src/core/vault-sync.js` + tests del módulo
 
 - Crear `src/core/vault-sync.js` con `gitReal`, `pullRebaseSeguro`, `pushSeguro`

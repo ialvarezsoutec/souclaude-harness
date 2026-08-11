@@ -26,3 +26,5 @@ Formato: `- <fecha> · <ID> · <agente o persona> · <resultado> · <referencia>
 - 2026-08-10 · SHS-H3-extra-historico · spec-author · vault_skip · sin .claude/vault.local.json ni VAULT_PATH en esta maquina
 - 2026-08-11 · SHS-H3-extra-historico · reviewer · APPROVED · progress/SHS-H3-extra-historico/review.md (segundo dictamen: 4 hallazgos corregidos, npm test 325/325)
 - 2026-08-11 · SHS-H3-extra-historico · reviewer · vault_skip · sin .claude/vault.local.json en esta maquina
+- 2026-08-11 · vault-sync · implementer · impl_done · comando vault-sync + helper seguro (391/391 tests)
+- 2026-08-11 · vault-sync · reviewer · changes_requested · docs-only (B1 spec vs plan, B2 tasks sin marcar) -> corregido

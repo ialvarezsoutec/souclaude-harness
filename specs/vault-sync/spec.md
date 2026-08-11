@@ -1,6 +1,6 @@
 # Spec Lite: comando `souclaude vault-sync`
 
-**Status**: approved
+**Status**: implemented
 **Owner**: Ignacio A (plan aprobado en sesión del 2026-08-11)
 **Creado**: 2026-08-11
 
@@ -43,16 +43,17 @@ Además, `Bash(git push:*)` en `permissions.ask` frena cada push manual al Vault
 
 ## Success criteria
 
-- [ ] `souclaude vault-sync` con Vault configurado hace pull --rebase y sale 0.
-- [ ] `souclaude vault-sync --push -m "docs: espejo X"` hace add→commit→pull→push
-      (en ese orden) sobre `Project-<PREFIJO>/` por defecto y sale 0; con `--paths`
-      restringe el add a esas rutas relativas.
-- [ ] "nothing to commit" sale 0 (no es un error).
-- [ ] Pull que falla → `rebase --abort` defensivo + exit 1, sin tocar nada más.
-- [ ] Sin `.claude/vault.local.json` ni `VAULT_PATH` → exit 3 con mensaje accionable.
-- [ ] Ningún camino de código pasa `--force` a git (aserción explícita en tests).
-- [ ] `npm test` completo en verde; tests nuevos en `test/vault-sync.test.js`.
-- [ ] Los `.md` de agentes y `progress/README.md` referencian el comando.
+- [x] `souclaude vault-sync` con Vault configurado hace pull --rebase y sale 0.
+- [x] `souclaude vault-sync --push -m "docs: espejo X"` hace add→commit→pull→push
+      (en ese orden) y sale 0. Default del add: `-A` sobre el Vault completo (decisión
+      del plan: el Vault es chico y de push directo); con `--paths` se restringe a
+      rutas relativas concretas.
+- [x] "nothing to commit" sale 0 (no es un error).
+- [x] Pull que falla → `rebase --abort` defensivo + exit 1, sin tocar nada más.
+- [x] Sin `.claude/vault.local.json` ni `VAULT_PATH` → exit 3 con mensaje accionable.
+- [x] Ningún camino de código pasa `--force` a git (guard central en el git fake).
+- [x] `npm test` completo en verde (391/391); tests nuevos en `test/vault-sync.test.js`.
+- [x] Los `.md` de agentes y `progress/README.md` referencian el comando.
 
 ## Open questions
 
