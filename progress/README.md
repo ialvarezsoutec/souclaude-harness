@@ -115,32 +115,36 @@ propio remoto. Trabajas contra **dos repos a la vez** y no se parecen en nada:
 Nunca se cruzan: código, diffs y tests jamás van al Vault; los artefactos del Vault jamás se
 commitean en el repo del proyecto.
 
+La vía sancionada para sincronizar es el comando del CLI (hace por dentro el pull --rebase
+con abort defensivo y el add + commit + pull + push, jamás `--force`):
+
 **Antes de tomar un task** (obligatorio — es el anti-solapamiento entre máquinas):
 
 ```bash
-git -C "<vault>" pull --rebase
+node bin/cli.mjs vault-sync        # o: npx souclaude vault-sync
 ```
 
+Exit codes: `0` al día · `1` falló el pull (red, conflicto) · `3` Vault sin configurar.
 Luego lee `Project-<PREFIJO>/kanban.md`. Si la tarjeta ya está en **En curso** o **En review**
 con otro dueño, otro agente u otra persona la está trabajando: **paras y preguntas al humano**.
 No la tomas, no la mueves, no saltas a otra por tu cuenta.
 
-**Al tomarla**, la mueves y pusheas en ese momento — no al final:
+**Al tomarla**, la mueves y espejas en ese momento — no al final:
 
 ```bash
-git -C "<vault>" add Project-<PREFIJO>
-git -C "<vault>" commit -m "chore: <ID-task> a En curso (@<dueño>)"
-git -C "<vault>" pull --rebase && git -C "<vault>" push
+node bin/cli.mjs vault-sync --push -m "chore: <ID-task> a En curso (@<dueño>)"
 ```
 
-Convención de commits del Vault: `chore:` para movimientos de kanban, `docs:` para espejos de
-artefactos. **Nunca `git push --force`**, en ninguno de los dos repos.
+`--paths <rel,...>` restringe el add a rutas concretas del Vault; sin él se espeja todo el
+working tree. Convención de commits del Vault: `chore:` para movimientos de kanban, `docs:`
+para espejos de artefactos. **Nunca `git push --force`**, en ninguno de los dos repos —
+`vault-sync` no tiene forma de forzar.
 
 **Conflictos en `kanban.md`**: una tarjeta = una línea, así que dos personas nunca se
 contradicen — conserva **ambas** tarjetas y nunca borres la de otro (misma lógica que
-`history.md`). Si el `pull --rebase` falla dos veces seguidas, no insistas: anota
-`vault_skip · motivo` en `history.md` del repo y repórtalo. El trabajo local nunca se bloquea
-por el Vault.
+`history.md`). Si `vault-sync` falla dos veces seguidas (exit 1), no insistas: anota
+`vault_fail · motivo` en `history.md` del repo y repórtalo (`vault_skip` queda para exit 3,
+sin configurar). El trabajo local nunca se bloquea por el Vault.
 
 ## Regla de arquitectura
 

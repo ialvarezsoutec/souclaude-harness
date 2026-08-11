@@ -11,6 +11,7 @@ import { adopt } from './commands/adopt.js'
 import { verify } from './commands/verify.js'
 import { monitor } from './commands/monitor.js'
 import { mode } from './commands/mode.js'
+import { vaultSync } from './commands/vault-sync.js'
 import * as ui from './ui.js'
 
 const OPTIONS = {
@@ -53,6 +54,11 @@ const OPTIONS = {
   publish: { type: 'boolean' },
   // monitor --emit-router: el puente de telemetria estimada a medida.
   'emit-router': { type: 'boolean' },
+  // vault-sync: pull/push seguro al Vault desde el proceso del CLI.
+  push: { type: 'boolean' },
+  message: { type: 'string', short: 'm' },
+  paths: { type: 'string' },
+  status: { type: 'boolean' },
   hito: { type: 'string' },
   task: { type: 'string' },
   agente: { type: 'string' },
@@ -64,7 +70,7 @@ const OPTIONS = {
   version: { type: 'boolean' },
 }
 
-const COMMANDS = { init, upgrade, status, adopt, verify, monitor, mode }
+const COMMANDS = { init, upgrade, status, adopt, verify, monitor, mode, 'vault-sync': vaultSync }
 
 export async function main(argv, cwd) {
   let parsed
@@ -142,6 +148,9 @@ ${pc.bold('COMANDOS')}
             encadena las fases sin pedir OK. 'manual' es el opt-in para revisar
             fase por fase. Sin argumento, solo muestra el modo actual. El opt-in
             se guarda en .claude/mode.local.json (local, gitignorado).
+  ${pc.cyan('vault-sync')} Sincroniza con el Vault de forma segura. Sin flags: pull --rebase
+            (con abort defensivo). Con --push -m "<msg>": add + commit + pull +
+            push, jamas --force. Exit: 0 ok/sin cambios, 1 fallo, 3 sin Vault.
 
   Sin comando, se autodetecta: hay lockfile -> upgrade · hay estructura previa -> adopt · repo limpio -> init
 
@@ -160,6 +169,12 @@ ${pc.bold('FLAGS')}
   --no-vault           Omite el paso del Vault por completo.
   --assume-version     (adopt) Version del harness que se asume instalada.
   --strict             (verify) Los warnings (huerfanos) tambien hacen fallar el comando.
+
+${pc.bold('FLAGS DE VAULT-SYNC')}
+  --push               Espeja al Vault: add + commit + pull --rebase + push.
+  -m, --message <msg>  Mensaje de commit del espejo (docs: espejos, chore: kanban).
+  --paths <a,b>        Rutas relativas al Vault para el add. Sin esto, add -A.
+  --status             Muestra ruta configurada y estado del working tree del Vault.
 
 ${pc.bold('FLAGS DE MONITOR')}
   --interval <ms>      Refresco del panel en vivo. Default 2000, minimo 250.

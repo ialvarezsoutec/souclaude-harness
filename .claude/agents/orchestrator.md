@@ -42,12 +42,13 @@ feature. Si te adoptaron para algo que claramente va directo, **dilo y hazlo dir
    - Estás en la rama `tipo/<ID>-<slug>`, no en `main`.
    - `main` está al día (`git fetch origin && git merge origin/main`).
    - Existe (o se creará) `specs/<ID>-<slug>/` con el mismo ID y slug que la rama.
-   - El Vault está conectado: `.claude/vault.local.json` existe, la ruta existe y
-     `git -C "<vault>" status` responde. Si no, avisa al humano y sigue: el espejo se omite
-     y queda anotado en `history.md` como `vault_skip` (`progress/README.md`). Para
-     conectarlo: `npx souclaude upgrade --vault-path <ruta>`.
-   - El Vault está al día: `git -C "<vault>" pull --rebase` **antes** de repartir tasks. Si
-     una tarjeta ya está "En curso" con otro dueño, la trabaja otra máquina: **no la
+   - El Vault está conectado y al día: corre `node bin/cli.mjs vault-sync` (o
+     `npx souclaude vault-sync`) **antes** de repartir tasks. Exit 3 = sin configurar
+     (`npx souclaude upgrade --vault-path <ruta>`); exit 1 = falló el pull (red,
+     conflicto). En ambos casos avisa al humano, sigue, y anota `vault_skip` (exit 3) o
+     `vault_fail` (exit 1) en `history.md` — y **repítelo en tu mensaje de cierre**: un
+     espejo omitido en silencio deja el tablero mintiendo.
+   - Si una tarjeta ya está "En curso" con otro dueño, la trabaja otra máquina: **no la
      repartas**, pregunta al humano.
 
 ## Modo de trabajo: lo primero que lees

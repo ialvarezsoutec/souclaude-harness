@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { execFile } from 'node:child_process'
 import { contieneSecreto } from './usage-fetcher.js'
+import { gitReal, pullRebaseSeguro } from '../../core/vault-sync.js'
 
 // Publica en el Vault un snapshot AGREGADO del estado de esta cuenta (limites
 // de plan + totales de la ventana), para que los monitores de las otras
@@ -190,15 +190,9 @@ export function createVaultPublisher({
     }
 
     // pull --rebase ANTES de escribir: si falla, no se toca el working tree
-    // del Vault. abort defensivo por si quedo un rebase a medias.
-    try {
-      await git(['-C', vaultPath, 'pull', '--rebase'])
-    } catch {
-      try {
-        await git(['-C', vaultPath, 'rebase', '--abort'])
-      } catch {
-        // No habia rebase que abortar: el pull fallo antes (sin red).
-      }
+    // del Vault (abort defensivo incluido en el helper).
+    const pull = await pullRebaseSeguro({ vaultPath, git })
+    if (!pull.ok) {
       registrarFallo(now)
       return { publicado: false, motivo: 'pull_fallo' }
     }
@@ -235,15 +229,6 @@ export function createVaultPublisher({
 }
 
 // --- helpers ---------------------------------------------------------------
-
-function gitReal(args) {
-  return new Promise((resolve, reject) => {
-    execFile('git', args, { encoding: 'utf8', windowsHide: true }, (err, stdout) => {
-      if (err) reject(err)
-      else resolve(stdout)
-    })
-  })
-}
 
 function leerHostname() {
   try {

@@ -16,6 +16,10 @@
       "Read(~/.aws/credentials)",
       "Read(~/.ssh/**)"
     ],
+    "allow": [
+      "Bash(node bin/cli.mjs vault-sync:*)",
+      "Bash(npx souclaude vault-sync:*)"
+    ],
     "ask": [
       "Bash(git push:*)",
       "Bash(git merge:*)",
