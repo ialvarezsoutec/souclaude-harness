@@ -49,7 +49,10 @@ const OPTIONS = {
   // la primera vez, sin usage-history.json todavia. Ver SHS-H3-T104.
   'seed-extra-detectado-en': { type: 'string' },
   // monitor --publish: snapshots agregados de cuenta al Vault (ADR
-  // 20260810-monitor-snapshots-en-vault). Opt-in y solo en modo en vivo.
+  // 20260810-monitor-snapshots-en-vault). Solo en modo en vivo. Sin flag,
+  // publica por defecto cuando hay Vault configurado; --no-publish lo apaga.
+  // Sin default aqui a proposito: undefined = "auto", true = pedido explicito
+  // (avisa si falta el Vault), false = opt-out.
   publish: { type: 'boolean' },
   // monitor --emit-router: el puente de telemetria estimada a medida.
   'emit-router': { type: 'boolean' },
@@ -182,8 +185,10 @@ ${pc.bold('FLAGS DE MONITOR')}
                        En corridas posteriores (el archivo ya existe) se ignora.
   --publish            Publica un snapshot agregado de esta cuenta (limites +
                        totales, <1 KB) en 00-System/monitor/ del Vault, cada
-                       ~5 min y solo si cambio. Opt-in, solo panel en vivo;
-                       sin Vault configurado degrada a un aviso y sigue local.
+                       ~5 min y solo si cambio. Solo panel en vivo. Con Vault
+                       configurado es el DEFAULT (no hace falta el flag);
+                       --no-publish lo apaga por corrida. Sin Vault, el flag
+                       explicito avisa y el monitor sigue local-only.
 
 ${pc.bold('MONITOR --EMIT-ROUTER')}
   Escribe UNA linea "medida" en progress/model-router.jsonl a partir de la
