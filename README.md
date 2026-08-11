@@ -85,6 +85,7 @@ Flags útiles:
 | `--ascii` | Fuerza glifos ASCII (equivale a `SOUCLAUDE_ASCII=1`). |
 | `--no-refresh` | No consulta los límites de plan a la API. Sin este flag, el monitor le pega a `GET /api/oauth/usage` (el mismo endpoint que usa Claude Code) porque el caché de `~/.claude.json` solo se reescribe cuando el humano corre `/usage` — medido: cero refrescos en 12 minutos de actividad continua. Con `--no-refresh` el panel muestra la edad real del último dato en caché en vez de fingir que está al día. |
 | `--claude-home <ruta>` | Usa otra carpeta `~/.claude` (útil para fixtures y tests). También desactiva el refresco de red de los límites (ver abajo), porque un fixture no tiene credenciales reales que leer. |
+| `--publish` | Publica un snapshot agregado de esta cuenta en el Vault (ver "Multi-cuenta"). Opt-in, solo panel en vivo. |
 
 El refresco de red de los límites de plan (Ventana 5h/7d, Semanal por modelo, Extra) se
 desactiva en **tres** casos, no solo con `--no-refresh`: con `--no-refresh` explícito, en
@@ -101,6 +102,22 @@ datos a la API. Si el refresco falla varias veces seguidas, el fetcher entra en 
 que el backoff expira; mientras tanto, un aviso en la lista de avisos dice explícitamente
 `límites sin refrescar desde hace Xm (reintento en Ym)`, para que el dato viejo nunca se
 muestre como si fuera fresco.
+
+### Multi-cuenta (sección CUENTAS)
+
+Con más de una cuenta de Claude en el equipo, cada monitor puede publicar un snapshot
+agregado de su cuenta — límites de plan, totales del día, <1 KB — en
+`00-System/monitor/` del Vault (`--publish`, cada ~5 min y solo si algo cambió; con
+todo igual, un heartbeat cada 30 min). Todos los monitores con Vault configurado leen
+esa carpeta y muestran la sección **CUENTAS**: una fila por cuenta con `5h`, `7d`,
+gasto extra, costo del día y frescura del dato (`hace 3m`; pasados 15 min la fila se
+atenúa con "(dato viejo)"). Así se decide de un vistazo con cuál cuenta seguir
+trabajando. La identidad sale de `~/.claude.json` (`oauthAccount` + `machineID`);
+sin ella, el monitor sigue igual que siempre. El detalle del contrato está en el ADR
+`docs/decisions/20260810-monitor-snapshots-en-vault.md`.
+
+Las líneas de `--emit-router` también llevan `cuenta`, `cuenta_uuid` y `maquina`,
+así `/rock-close` puede reportar el gasto medido por cuenta.
 
 ### Exit codes
 

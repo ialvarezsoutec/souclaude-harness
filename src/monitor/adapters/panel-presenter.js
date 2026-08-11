@@ -60,6 +60,10 @@ export function presentar(vista, { ahora, top } = {}) {
   return {
     ahora: instante,
     actualizadoEn: actualizadoEn(v, instante),
+    // Identidad de la cuenta local, ya normalizada por el dominio. El layout
+    // solo necesita el alias; email queda para el modo --json.
+    cuenta: v.cuenta ? { alias: v.cuenta.alias, email: v.cuenta.email } : null,
+    cuentas: seccionCuentas(v.cuentas),
     limites: filasDeLimites(v.limites),
     historico: seccionHistorico(v.historico),
     agentes: seccionAgentes(v.agentesActivos, proyectos),
@@ -89,6 +93,39 @@ function actualizadoEn(v, instante) {
   const porLectura = leidoEn ?? (edadMs != null ? generado - edadMs : null)
   if (porLectura == null || !(porLectura < generado)) return generado
   return porLectura
+}
+
+// --- cuentas ---
+
+// Pasado este umbral, la fila remota se pinta atenuada con "(dato viejo)": el
+// snapshot deberia refrescarse cada ~5 min, asi que 15 min es tres refrescos
+// perdidos, no una demora normal.
+const FRESCURA_VIEJA_MS = 15 * 60_000
+
+function seccionCuentas(cuentas) {
+  if (!Array.isArray(cuentas) || cuentas.length === 0) return { filas: [] }
+  return {
+    filas: cuentas.map((c) => ({
+      alias: c.alias ?? (typeof c.accountUuid === 'string' ? c.accountUuid.slice(0, 8) : '?'),
+      esLocal: c.esLocal === true,
+      maquina: c.maquina ?? null,
+      cincoHoras: numeroONull(c.limites?.cincoHoras?.porcentaje),
+      sieteDias: numeroONull(c.limites?.sieteDias?.porcentaje),
+      extra: textoDeExtra(c.limites?.gastoExtra),
+      costoUsd: numeroONull(c.totalesDia?.costoUsd),
+      frescuraMs: numeroONull(c.frescuraMs),
+      vieja: !c.esLocal && Number.isFinite(c.frescuraMs) && c.frescuraMs > FRESCURA_VIEJA_MS,
+    })),
+  }
+}
+
+function textoDeExtra(extra) {
+  if (!extra || (extra.usadoUsd == null && extra.limiteUsd == null)) return null
+  return `${fmtDinero(extra.usadoUsd ?? 0)}/${fmtDinero(extra.limiteUsd ?? 0)}`
+}
+
+function numeroONull(n) {
+  return Number.isFinite(n) ? n : null
 }
 
 // --- limites ---

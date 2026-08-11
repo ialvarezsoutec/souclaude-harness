@@ -13,6 +13,9 @@ import { renderPanel } from '../monitor/adapters/panel-layout.js'
 import { presentar } from '../monitor/adapters/panel-presenter.js'
 import { renderJson, renderPlain } from '../monitor/adapters/plain-renderer.js'
 import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writer.js'
+import { createVaultPublisher } from '../monitor/adapters/vault-monitor-publisher.js'
+import { createVaultAccountsReader, gitAsync } from '../monitor/adapters/vault-accounts-reader.js'
+import { readVaultConfig } from '../core/vault.js'
 
 // El caché de limites de ~/.claude.json solo se reescribe cuando el humano corre
 // /usage, asi que sin esto el panel muestra un dato de 20-50 minutos. El fetcher
@@ -114,6 +117,14 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     filtros: filtrosDe(flags, cwd),
   }
 
+  const enVivo = !flags.json && !flags.once && process.stdout.isTTY === true && !ui.isCI()
+
+  // El publisher solo existe en vivo (--publish); el lector de cuentas del
+  // Vault sirve en todos los modos (--json lo expone gratis), pero su pull
+  // remoto solo corre en vivo y solo si el publisher no lo hace ya.
+  const publisher = enVivo ? crearPublisher(flags, cwd) : null
+  const accountsReader = crearAccountsReader(cwd, { conPull: enVivo && !publisher })
+
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
   const usageHistory = crearUsageHistory(flags)
   // SHS-H3-T106: mismo fetcher para refrescar limites y para reportar su
@@ -128,6 +139,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     limitsReader: crearLimitsReader(usageFetcher),
     usageHistory,
     usageFetcher,
+    accountsReader,
   })
   const clock = { now: () => Date.now() }
 
@@ -141,7 +153,6 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     return codigoDeSalida(vista)
   }
 
-  const enVivo = !flags.once && process.stdout.isTTY === true && !ui.isCI()
   if (!enVivo) {
     const vista = await buildView({ source, clock, opciones })
     registrarHistorico(usageHistory, vista, clock.now())
@@ -150,12 +161,34 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     return codigoDeSalida(vista)
   }
 
-  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory })
+  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher })
+}
+
+// --publish (opt-in, solo en vivo): snapshots agregados de esta cuenta al
+// Vault, autorizados por el ADR 20260810-monitor-snapshots-en-vault. Sin
+// Vault configurado se degrada a un warning unico y el monitor sigue
+// local-only: el Vault jamas es dependencia dura de nada.
+function crearPublisher(flags, cwd) {
+  if (flags.publish !== true) return null
+  const config = readVaultConfig(cwd)
+  if (!config?.path) {
+    ui.log.warn('--publish sin Vault configurado (.claude/vault.local.json o VAULT_PATH): el monitor sigue local-only.')
+    return null
+  }
+  return createVaultPublisher({ vaultPath: config.path })
+}
+
+// Lector de los snapshots que publico el resto del equipo. Sin Vault, null:
+// la seccion CUENTAS muestra solo la cuenta local.
+function crearAccountsReader(cwd, { conPull }) {
+  const config = readVaultConfig(cwd)
+  if (!config?.path) return null
+  return createVaultAccountsReader({ vaultPath: config.path, git: conPull ? gitAsync : null })
 }
 
 // --- panel en vivo ---
 
-async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory }) {
+async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher = null }) {
   const intervalo = Math.max(INTERVALO_MINIMO, enteroPositivo(flags.interval, INTERVALO_DEFAULT))
   const renderer = createTtyRenderer()
 
@@ -169,7 +202,8 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHis
     if (!vista && !errorDelTick) return
     const { cols, rows } = renderer.size()
     const modelo = conAvisoDeError(vista, errorDelTick)
-    const proyeccion = presentar(modelo, { ahora: modelo.generadoEn, top: opciones.top })
+    const conPublicacion = conAvisoDePublicacion(modelo, publisher, clock.now())
+    const proyeccion = presentar(conPublicacion, { ahora: modelo.generadoEn, top: opciones.top })
     renderer.paint(renderPanel(proyeccion, { cols, rows, caps, color: caps.color !== false, modo }))
   }
 
@@ -188,6 +222,11 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHis
       errorDelTick = err
     } finally {
       enTick = false
+    }
+    // Fire-and-forget: el publisher decide solo si le toca (intervalo, backoff,
+    // cambio material) y jamas puede demorar ni tumbar el render.
+    if (publisher && vista) {
+      publisher.publicar(vista, { ahora: clock.now() }).catch(() => {})
     }
     pintar()
   }
@@ -335,6 +374,27 @@ function codigoDeSalida(vista) {
   if (peor >= UMBRAL_CRITICO) return 2
   if (peor >= UMBRAL_AVISO) return 1
   return 0
+}
+
+// Traduce el estado del publisher a un aviso visible, sin mutar el modelo. Un
+// secreto detectado o una racha de fallos que dejo el snapshot viejo son cosas
+// que el humano tiene que ver; una publicacion al dia no necesita anunciarse.
+function conAvisoDePublicacion(vista, publisher, ahora) {
+  if (!publisher || !vista) return vista
+  const e = publisher.estado()
+
+  let aviso = null
+  if (e.secretoDetectado) {
+    aviso = 'publicacion al Vault ABORTADA: el snapshot contenia un posible secreto'
+  } else if (e.fallosSeguidos > 0 && e.ultimaPublicacionMs != null) {
+    const min = Math.round((ahora - e.ultimaPublicacionMs) / 60_000)
+    aviso = `Vault: sin publicar hace ${min}m (${e.fallosSeguidos} fallo${e.fallosSeguidos === 1 ? '' : 's'})`
+  } else if (e.fallosSeguidos >= 3) {
+    aviso = `Vault: todavia sin publicar (${e.fallosSeguidos} fallos)`
+  }
+
+  if (!aviso) return vista
+  return { ...vista, avisos: [...(vista.avisos ?? []), { file: 'vault', reason: aviso }] }
 }
 
 // Agrega el error del ultimo tick a los avisos de la vista, sin mutar el modelo de
