@@ -24,3 +24,5 @@ Formato: `- <fecha> · <ID> · <agente o persona> · <resultado> · <referencia>
 - 2026-08-10 · SHS-H3-T107 · implementer · done · commit 22d8884
 - 2026-08-10 · SHS-H3-extra-historico · implementer · rework_done · progress/SHS-H3-extra-historico/impl_summary.md (4 hallazgos bloqueantes de review.md corregidos en 3f8ef3b, 40652ee, d96fc32, 40074bd; npm test 325/325; sin segunda ronda de review registrada en disco)
 - 2026-08-10 · SHS-H3-extra-historico · spec-author · vault_skip · sin .claude/vault.local.json ni VAULT_PATH en esta maquina
+- 2026-08-11 · SHS-H3-extra-historico · reviewer · APPROVED · progress/SHS-H3-extra-historico/review.md (segundo dictamen: 4 hallazgos corregidos, npm test 325/325)
+- 2026-08-11 · SHS-H3-extra-historico · reviewer · vault_skip · sin .claude/vault.local.json en esta maquina

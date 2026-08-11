@@ -359,8 +359,9 @@ T106 (independiente) ┤
 - [ ] **Después de T107 (final)**: `npm test` completo en verde (**hecho**: 325/325,
       confirmado de forma independiente tanto por el `reviewer` como por mí en esta
       sesión de cierre) y verificación manual sobre esta máquina real (**hecho**: el
-      `reviewer` confirmó por CLI que el extra aparece al pie como histórico al 100%
-      sin `LIMITE` en el título — `review.md`, párrafo de apertura). Lo que queda
+      orquestador la corrió sobre el `~/.claude` real con el seed 2026-08-06 aplicado;
+      el `reviewer` la reprodujo con fixture vía `--claude-home`, no sobre el home
+      real — ver su segundo dictamen en `review.md`). Lo que queda
       abierto es la mitad final de este ítem: **"owner confirma que la alarma
       permanente desapareció"** — no hay registro en disco de esa confirmación en vivo
       del owner (distinta de la aprobación del plan, ya registrada); se deja en `[ ]`
@@ -376,9 +377,10 @@ T106 (independiente) ┤
       del review: commits `3f8ef3b`, `40652ee`, `d96fc32`, `40074bd`).
 - [x] `node bin/cli.mjs monitor --once --no-refresh` sobre esta máquina → extra al pie
       como histórico al 100%, sin marco rojo ni `LIMITE 107%`, `Semanal Fable` visible.
-      Verificado de forma independiente por el `reviewer` (`review.md`, párrafo de
-      apertura) y por el implementer sobre la máquina real durante T105 (ver
-      Verificación de T105 arriba).
+      Verificado por el orquestador sobre la máquina real (seed 2026-08-06 aplicado),
+      por el implementer durante T105 (simulación con backup/restauración), y por el
+      `reviewer` de forma independiente con fixture vía `--claude-home` (ver su
+      segundo dictamen en `review.md`).
 - [x] `node bin/cli.mjs monitor --json` incluye `historico` con `usado: 21.36, limite:
       20` cuando corresponde. Verificado a mano por el `reviewer` **y** ahora cubierto
       por test automatizado (`test/monitor-cmd.test.js`, commit `d96fc32` — cierra el

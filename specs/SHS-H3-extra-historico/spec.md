@@ -226,8 +226,11 @@ que corrigió los 4 hallazgos bloqueantes de `progress/SHS-H3-extra-historico/re
 - [x] **Verificación manual final** (complementaria, posterior a que todo lo anterior
       pase): sobre esta máquina real, `node bin/cli.mjs monitor --once --no-refresh`
       muestra el extra al pie como histórico al 100%, sin marco rojo ni `LIMITE 107%` en
-      el título, con "Semanal Fable" visible con su porcentaje vigente. Verificado de
-      forma independiente por el `reviewer` (`review.md`, párrafo de apertura).
+      el título, con "Semanal Fable" visible con su porcentaje vigente. Verificado por
+      el orquestador sobre esta máquina real (sesión 2026-08-10, con el seed
+      `detectadoEn: 2026-08-06T18:00Z` aplicado al `usage-history.json` real); el
+      `reviewer` verificó lo mismo de forma independiente pero con fixture en tmpdir
+      vía `--claude-home`, no sobre `~/.claude` (aclarado en su segundo dictamen).
 - [ ] Owner confirma en vivo que el panel deja de mostrar la alarma permanente del
       extra. **Pendiente** — distinto de la aprobación del plan (ya registrada, ver
       `Aprobado` arriba): esta es la confirmación de UAT sobre el resultado final,
