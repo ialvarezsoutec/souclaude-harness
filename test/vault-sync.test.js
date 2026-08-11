@@ -2,6 +2,9 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { pullRebaseSeguro, pushSeguro } from '../src/core/vault-sync.js'
+import { vaultSync } from '../src/commands/vault-sync.js'
+import { main } from '../src/cli.js'
+import { mkRepo, write } from './helpers.js'
 
 // Git fake inyectable, mismo criterio que test/monitor-vault-publisher.test.js:
 // registra cada invocacion y responde segun un guion por subcomando. El guard de
@@ -101,4 +104,66 @@ test('pushSeguro con push fallido: push_fallo (el commit local queda para el pro
 
   assert.deepEqual(r, { ok: false, motivo: 'push_fallo' })
   assert.deepEqual(git.subcomandos(), ['add', 'commit', 'pull', 'push'])
+})
+
+// --- comando vault-sync ----------------------------------------------------
+
+function repoConVault() {
+  const dir = mkRepo()
+  write(dir, '.claude/vault.local.json', JSON.stringify({ path: VAULT, repo: null }))
+  return dir
+}
+
+test('vault-sync sin Vault configurado: exit 3 y ni una llamada a git', async () => {
+  const git = gitFake()
+  const dir = mkRepo()
+  const code = await vaultSync({}, dir, { git })
+
+  assert.equal(code, 3)
+  assert.deepEqual(git.llamadas, [])
+})
+
+test('vault-sync default: pull --rebase y exit 0', async () => {
+  const git = gitFake()
+  const code = await vaultSync({}, repoConVault(), { git })
+
+  assert.equal(code, 0)
+  assert.deepEqual(git.llamadas, [['-C', VAULT, 'pull', '--rebase']])
+})
+
+test('vault-sync con pull fallido: exit 1', async () => {
+  const git = gitFake({ pull: new Error('sin red') })
+  const code = await vaultSync({}, repoConVault(), { git })
+
+  assert.equal(code, 1)
+})
+
+test('vault-sync --push sin -m: exit 2 (error de uso) sin tocar git', async () => {
+  const git = gitFake()
+  const code = await vaultSync({ push: true }, repoConVault(), { git })
+
+  assert.equal(code, 2)
+  assert.deepEqual(git.llamadas, [])
+})
+
+test('vault-sync --push -m: espejo completo y exit 0; --paths restringe el add', async () => {
+  const git = gitFake()
+  const code = await vaultSync({ push: true, message: 'docs: espejo X', paths: 'Project-SHS, otro/dir' }, repoConVault(), { git })
+
+  assert.equal(code, 0)
+  assert.deepEqual(git.subcomandos(), ['add', 'commit', 'pull', 'push'])
+  assert.deepEqual(git.llamadas[0], ['-C', VAULT, 'add', 'Project-SHS', 'otro/dir'])
+})
+
+test('vault-sync --status: exit 0 y consulta el working tree del Vault', async () => {
+  const git = gitFake({ status: ' M Project-SHS/kanban.md\n' })
+  const code = await vaultSync({ status: true }, repoConVault(), { git })
+
+  assert.equal(code, 0)
+  assert.deepEqual(git.llamadas, [['-C', VAULT, 'status', '--porcelain']])
+})
+
+test('cli: main reconoce vault-sync como comando (exit 3 en un repo sin Vault)', async () => {
+  const code = await main(['vault-sync'], mkRepo())
+  assert.equal(code, 3)
 })
