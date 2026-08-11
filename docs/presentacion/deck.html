@@ -1,0 +1,1706 @@
+<title>Harness SouClaude — guía visual</title>
+
+<style>
+  /* ───────────────────────── tokens ───────────────────────── */
+  :root {
+    color-scheme: light dark;
+
+    --ground: #E6E9ED;
+    --surface: #FFFFFF;
+    --surface-2: #F2F4F8;
+    --surface-3: #E7EAF0;
+    --ink: #13171E;
+    --ink-2: #39424F;
+    --muted: #5C6573;
+    --line: #D2D7DF;
+    --line-2: #BBC3CE;
+
+    --accent: #A8761C;
+    --accent-2: #8A6015;
+    --accent-wash: #F3E8D2;
+
+    --ok: #0F7A4A;
+    --ok-wash: #E2F0E9;
+    --info: #2F6BA8;
+    --info-wash: #E3ECF7;
+    --hold: #B23A26;
+    --hold-wash: #F7E4E0;
+
+    --term-bg: #14181F;
+    --term-line: #2B323D;
+    --term-ink: #DCE2EA;
+    --term-muted: #79838F;
+    --term-accent: #D9A441;
+    --term-ok: #3EA372;
+
+    --f-display: Constantia, Cambria, "Iowan Old Style", Charter, Georgia, "Times New Roman", serif;
+    --f-body: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --f-mono: "Cascadia Mono", "Cascadia Code", Consolas, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+
+    --shadow: 0 1px 2px rgba(19, 23, 30, .06), 0 8px 24px rgba(19, 23, 30, .07);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0D1015;
+      --surface: #171B22;
+      --surface-2: #1E232C;
+      --surface-3: #262C36;
+      --ink: #E2E6EC;
+      --ink-2: #B4BCC7;
+      --muted: #8C95A2;
+      --line: #2A303A;
+      --line-2: #3A424E;
+
+      --accent: #D9A441;
+      --accent-2: #E8BC69;
+      --accent-wash: #2C2618;
+
+      --ok: #3EA372;
+      --ok-wash: #16281F;
+      --info: #5A9AD6;
+      --info-wash: #16222E;
+      --hold: #DB6A50;
+      --hold-wash: #2C1B16;
+
+      --term-bg: #0A0D12;
+      --term-line: #232932;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0D1015;
+    --surface: #171B22;
+    --surface-2: #1E232C;
+    --surface-3: #262C36;
+    --ink: #E2E6EC;
+    --ink-2: #B4BCC7;
+    --muted: #8C95A2;
+    --line: #2A303A;
+    --line-2: #3A424E;
+    --accent: #D9A441;
+    --accent-2: #E8BC69;
+    --accent-wash: #2C2618;
+    --ok: #3EA372;
+    --ok-wash: #16281F;
+    --info: #5A9AD6;
+    --info-wash: #16222E;
+    --hold: #DB6A50;
+    --hold-wash: #2C1B16;
+    --term-bg: #0A0D12;
+    --term-line: #232932;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px rgba(0, 0, 0, .35);
+  }
+
+  :root[data-theme="light"] {
+    --ground: #E6E9ED;
+    --surface: #FFFFFF;
+    --surface-2: #F2F4F8;
+    --surface-3: #E7EAF0;
+    --ink: #13171E;
+    --ink-2: #39424F;
+    --muted: #5C6573;
+    --line: #D2D7DF;
+    --line-2: #BBC3CE;
+    --accent: #A8761C;
+    --accent-2: #8A6015;
+    --accent-wash: #F3E8D2;
+    --ok: #0F7A4A;
+    --ok-wash: #E2F0E9;
+    --info: #2F6BA8;
+    --info-wash: #E3ECF7;
+    --hold: #B23A26;
+    --hold-wash: #F7E4E0;
+    --term-bg: #14181F;
+    --term-line: #2B323D;
+    --shadow: 0 1px 2px rgba(19, 23, 30, .06), 0 8px 24px rgba(19, 23, 30, .07);
+  }
+
+  /* ───────────────────────── shell ───────────────────────── */
+  .deck {
+    min-height: 100vh;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--f-body);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px 20px 14px;
+    box-sizing: border-box;
+  }
+
+  .stage {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+  }
+
+  .frame {
+    container-type: inline-size;
+    width: min(100%, calc((100vh - 150px) * 16 / 9), 1500px);
+    aspect-ratio: 16 / 9;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ───────────────────────── slide ───────────────────────── */
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    grid-template-columns: 4.6cqi 1fr;
+  }
+
+  .slide.on {
+    display: grid;
+  }
+
+  .slide.on .pane {
+    animation: rise .34s cubic-bezier(.22, .68, .3, 1) both;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(0.9cqi); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slide.on .pane { animation: none; }
+  }
+
+  /* left gutter — the instrument margin */
+  .gutter {
+    border-right: 1px solid var(--line);
+    background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2.4cqi 0;
+  }
+
+  .gutter b {
+    font-family: var(--f-mono);
+    font-size: 1.05cqi;
+    font-weight: 600;
+    letter-spacing: .16em;
+    color: var(--accent);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  .gutter i {
+    display: block;
+    width: 1px;
+    flex: 1;
+    margin: 1.4cqi 0;
+    background: linear-gradient(var(--line-2), transparent);
+  }
+
+  .gutter s {
+    font-family: var(--f-mono);
+    font-size: .95cqi;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    text-decoration: none;
+    writing-mode: vertical-rl;
+  }
+
+  .pane {
+    padding: 3.1cqi 3.6cqi 2.6cqi;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5cqi;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 2cqi;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 1.1cqi;
+  }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: 1.02cqi;
+    font-weight: 600;
+    letter-spacing: .17em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .count {
+    font-family: var(--f-mono);
+    font-size: 1cqi;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+
+  h1.t {
+    font-family: var(--f-display);
+    font-size: 5.4cqi;
+    font-weight: 400;
+    line-height: 1.04;
+    letter-spacing: -.015em;
+    text-wrap: balance;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  h2.t {
+    font-family: var(--f-display);
+    font-size: 3.5cqi;
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: -.012em;
+    text-wrap: balance;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .lead {
+    font-size: 1.62cqi;
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  .body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4cqi;
+  }
+
+  .foot {
+    font-size: 1.24cqi;
+    line-height: 1.45;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: .95cqi;
+    margin: 0;
+  }
+
+  .foot em {
+    color: var(--ink-2);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* ───────────────────────── pieces ───────────────────────── */
+  .cols {
+    display: grid;
+    gap: 1.2cqi;
+    align-items: stretch;
+  }
+
+  .c2 { grid-template-columns: 1fr 1fr; }
+  .c3 { grid-template-columns: repeat(3, 1fr); }
+  .c4 { grid-template-columns: repeat(4, 1fr); }
+  .split { grid-template-columns: 1.05fr 1fr; }
+
+  .card {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 1.5cqi 1.6cqi;
+    display: flex;
+    flex-direction: column;
+    gap: .7cqi;
+    min-width: 0;
+  }
+
+  .card h3 {
+    font-family: var(--f-body);
+    font-size: 1.5cqi;
+    font-weight: 650;
+    line-height: 1.2;
+    margin: 0;
+    color: var(--ink);
+    letter-spacing: -.005em;
+  }
+
+  .card p {
+    font-size: 1.24cqi;
+    line-height: 1.45;
+    color: var(--ink-2);
+    margin: 0;
+  }
+
+  .card .tag {
+    font-family: var(--f-mono);
+    font-size: .98cqi;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .card code, .kv code, .foot code, .lead code, li code, td code, p code {
+    font-family: var(--f-mono);
+    font-size: .92em;
+    background: var(--surface-3);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: .08em .32em;
+    color: var(--ink);
+  }
+
+  /* terminal — deliberately single-world, dark in both themes */
+  .term {
+    background: var(--term-bg);
+    border: 1px solid var(--term-line);
+    border-radius: 3px;
+    padding: 1.4cqi 1.6cqi;
+    font-family: var(--f-mono);
+    font-size: 1.24cqi;
+    line-height: 1.65;
+    color: var(--term-ink);
+    overflow-x: auto;
+  }
+
+  .term .p { color: var(--term-accent); }
+  .term .c { color: var(--term-muted); }
+  .term .g { color: var(--term-ok); }
+  .term .l { display: block; white-space: pre; }
+  .term .big { font-size: 1.7cqi; line-height: 1.6; }
+
+  /* numbered steps — the deck numbers only real sequences */
+  ol.steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: .85cqi;
+    counter-reset: s;
+  }
+
+  ol.steps li {
+    counter-increment: s;
+    display: grid;
+    grid-template-columns: 2.6cqi 1fr;
+    gap: 1.1cqi;
+    align-items: baseline;
+    font-size: 1.34cqi;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+
+  ol.steps li::before {
+    content: counter(s, decimal-leading-zero);
+    font-family: var(--f-mono);
+    font-size: 1.08cqi;
+    font-weight: 600;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  ol.steps li b {
+    color: var(--ink);
+    font-weight: 650;
+  }
+
+  ul.plain {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: .7cqi;
+    font-size: 1.26cqi;
+    line-height: 1.42;
+    color: var(--ink-2);
+  }
+
+  ul.plain li {
+    display: grid;
+    grid-template-columns: 1.2cqi 1fr;
+    gap: .8cqi;
+    align-items: baseline;
+  }
+
+  ul.plain li::before {
+    content: "";
+    width: .5cqi;
+    height: .5cqi;
+    border-radius: 50%;
+    background: var(--accent);
+    transform: translateY(-.28cqi);
+  }
+
+  ul.plain li b { color: var(--ink); font-weight: 650; }
+
+  /* tables */
+  .tw { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.16cqi;
+  }
+
+  thead th {
+    font-family: var(--f-mono);
+    font-size: .92cqi;
+    font-weight: 600;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0 .9cqi .6cqi;
+    border-bottom: 1px solid var(--line-2);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: .62cqi .9cqi;
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-2);
+    vertical-align: top;
+    line-height: 1.35;
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody td:first-child, thead th:first-child { padding-left: 0; }
+  tbody td b { color: var(--ink); font-weight: 650; }
+
+  .verdict {
+    font-family: var(--f-mono);
+    font-size: 1.02cqi;
+    font-weight: 600;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: .5cqi;
+  }
+
+  .verdict::before {
+    content: "";
+    width: .62cqi;
+    height: .62cqi;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+  }
+
+  .v-ok { color: var(--ok); }
+  .v-info { color: var(--info); }
+  .v-hold { color: var(--hold); }
+  .v-none { color: var(--muted); }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .45cqi;
+    font-family: var(--f-mono);
+    font-size: .96cqi;
+    font-weight: 600;
+    letter-spacing: .04em;
+    padding: .22cqi .6cqi;
+    border-radius: 2px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+
+  .ch-ok { color: var(--ok); background: var(--ok-wash); border-color: var(--ok); }
+  .ch-info { color: var(--info); background: var(--info-wash); border-color: var(--info); }
+  .ch-hold { color: var(--hold); background: var(--hold-wash); border-color: var(--hold); }
+  .ch-acc { color: var(--accent-2); background: var(--accent-wash); border-color: var(--accent); }
+  .ch-mut { color: var(--muted); background: var(--surface-3); border-color: var(--line-2); }
+
+  /* chain — the ID thread */
+  .chain {
+    display: flex;
+    align-items: stretch;
+    gap: .55cqi;
+    flex-wrap: nowrap;
+  }
+
+  .link {
+    flex: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-top: 2px solid var(--accent);
+    border-radius: 2px;
+    padding: 1cqi .95cqi;
+    display: flex;
+    flex-direction: column;
+    gap: .45cqi;
+    min-width: 0;
+  }
+
+  .link .k {
+    font-family: var(--f-mono);
+    font-size: .9cqi;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .link .v {
+    font-family: var(--f-mono);
+    font-size: 1.14cqi;
+    font-weight: 600;
+    color: var(--ink);
+    word-break: break-word;
+    line-height: 1.3;
+  }
+
+  .arw {
+    align-self: center;
+    color: var(--accent);
+    font-size: 1.5cqi;
+    line-height: 1;
+    flex: none;
+  }
+
+  /* flow with checkpoints */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: .5cqi;
+    flex-wrap: wrap;
+  }
+
+  .node {
+    font-family: var(--f-mono);
+    font-size: 1.14cqi;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--line-2);
+    border-radius: 2px;
+    padding: .6cqi .9cqi;
+  }
+
+  .gate {
+    font-family: var(--f-mono);
+    font-size: 1.02cqi;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--hold);
+    background: var(--hold-wash);
+    border: 1px solid var(--hold);
+    border-radius: 2px;
+    padding: .6cqi .8cqi;
+  }
+
+  /* kanban */
+  .kan {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .9cqi;
+  }
+
+  .col {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: .9cqi;
+    display: flex;
+    flex-direction: column;
+    gap: .6cqi;
+  }
+
+  .col h4 {
+    font-family: var(--f-mono);
+    font-size: .96cqi;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+    padding-bottom: .5cqi;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .task {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--line-2);
+    border-radius: 2px;
+    padding: .6cqi .7cqi;
+    display: flex;
+    flex-direction: column;
+    gap: .28cqi;
+  }
+
+  .task .id {
+    font-family: var(--f-mono);
+    font-size: .96cqi;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .task .d { font-size: 1.02cqi; color: var(--ink-2); line-height: 1.3; }
+  .task .w { font-family: var(--f-mono); font-size: .92cqi; color: var(--muted); }
+  .task.now { border-left-color: var(--info); }
+  .task.rev { border-left-color: var(--accent); }
+  .task.done { border-left-color: var(--ok); }
+  .task.done .id { color: var(--muted); text-decoration: line-through; }
+  .task.mine { border-left-color: var(--hold); background: var(--hold-wash); }
+
+  /* stat tiles + bars */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9cqi; }
+
+  .tile {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 1cqi 1.1cqi;
+    display: flex;
+    flex-direction: column;
+    gap: .3cqi;
+  }
+
+  .tile .k {
+    font-family: var(--f-mono);
+    font-size: .92cqi;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .tile .n {
+    font-family: var(--f-display);
+    font-size: 2.9cqi;
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tile .n small { font-size: .42em; color: var(--muted); font-family: var(--f-mono); }
+  .tile .s { font-size: 1.02cqi; color: var(--muted); line-height: 1.3; }
+
+  .bars { display: grid; gap: .58cqi; }
+
+  .bar {
+    display: grid;
+    grid-template-columns: 8.2cqi 1fr 5.4cqi;
+    align-items: center;
+    gap: .8cqi;
+    font-size: 1.1cqi;
+  }
+
+  .bar .lb { font-family: var(--f-mono); color: var(--ink-2); }
+
+  .bar .tr {
+    height: 1.1cqi;
+    background: var(--surface-3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .bar .fl {
+    height: 100%;
+    background: var(--info);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .bar .vl {
+    font-family: var(--f-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    text-align: right;
+    font-weight: 600;
+  }
+
+  /* file tree */
+  .tree {
+    font-family: var(--f-mono);
+    font-size: 1.1cqi;
+    line-height: 1.62;
+    color: var(--ink-2);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .tree b { color: var(--ink); font-weight: 600; }
+  .tree i { color: var(--muted); font-style: normal; }
+  .tree u { color: var(--accent); text-decoration: none; }
+
+  /* key/value rows */
+  .kv { display: grid; gap: .6cqi; }
+
+  .kv .r {
+    display: grid;
+    grid-template-columns: 11cqi 1fr;
+    gap: 1cqi;
+    font-size: 1.22cqi;
+    line-height: 1.4;
+    color: var(--ink-2);
+    padding-bottom: .55cqi;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .kv .r:last-child { border-bottom: 0; padding-bottom: 0; }
+
+  .kv .r .k {
+    font-family: var(--f-mono);
+    font-size: 1.04cqi;
+    font-weight: 600;
+    color: var(--accent);
+  }
+
+  .note {
+    background: var(--accent-wash);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 2px 2px 0;
+    padding: .9cqi 1.1cqi;
+    font-size: 1.2cqi;
+    line-height: 1.45;
+    color: var(--ink-2);
+  }
+
+  .note b { color: var(--ink); font-weight: 650; }
+
+  /* title slide */
+  .hero {
+    grid-column: 1 / -1;
+    padding: 5cqi 6cqi;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2cqi;
+    background:
+      radial-gradient(120% 90% at 88% 8%, var(--accent-wash) 0%, transparent 55%),
+      var(--surface);
+  }
+
+  .hero .rule {
+    width: 7cqi;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .hero .meta {
+    display: flex;
+    gap: 1.6cqi;
+    align-items: center;
+    flex-wrap: wrap;
+    font-family: var(--f-mono);
+    font-size: 1.08cqi;
+    color: var(--muted);
+    letter-spacing: .04em;
+  }
+
+  .hero .meta span { display: inline-flex; gap: .5cqi; }
+  .hero .meta b { color: var(--ink); font-weight: 600; }
+
+  /* ───────────────────────── controls ───────────────────────── */
+  .bar-nav {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-family: var(--f-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .rail { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+  .act { display: flex; flex-direction: column; gap: 4px; }
+
+  .act .nm {
+    font-size: 9px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .act .tk { display: flex; gap: 3px; }
+
+  .tk button {
+    width: 22px;
+    height: 4px;
+    padding: 0;
+    border: 0;
+    border-radius: 1px;
+    background: var(--line-2);
+    cursor: pointer;
+    transition: background .15s;
+  }
+
+  .tk button:hover { background: var(--muted); }
+  .tk button[aria-current="true"] { background: var(--accent); }
+  .tk button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .btns { display: flex; gap: 6px; align-items: center; }
+
+  .btn {
+    font-family: var(--f-mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--line-2);
+    border-radius: 2px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .btn[disabled] { opacity: .38; cursor: default; }
+  .btn[disabled]:hover { border-color: var(--line-2); color: var(--ink-2); }
+
+  .hint { font-size: 10px; letter-spacing: .05em; }
+  .hint kbd {
+    font-family: var(--f-mono);
+    border: 1px solid var(--line-2);
+    border-bottom-width: 2px;
+    border-radius: 2px;
+    padding: 1px 4px;
+    color: var(--ink-2);
+  }
+
+  @media (max-width: 720px) {
+    .deck { padding: 10px 10px 12px; }
+    .frame { width: 100%; }
+    .hint { display: none; }
+  }
+</style>
+
+<div class="deck">
+  <div class="stage">
+    <div class="frame" id="frame">
+
+      <!-- 01 ───────────────────────────────────────────── -->
+      <section class="slide on" data-act="0">
+        <div class="hero">
+          <span class="eyebrow">SOUTEC · Metodología CCEM</span>
+          <h1 class="t">El harness, de punta a punta</h1>
+          <div class="rule"></div>
+          <p class="lead" style="font-size:1.85cqi">
+            Cómo se instala en un proyecto nuevo, cómo se adopta en uno que ya lleva años,
+            y cómo el tablero compartido y el monitor de tokens vuelven visible el trabajo
+            de todo el equipo.
+          </p>
+          <div class="term" style="max-width:56cqi">
+            <span class="l"><span class="c"># en cualquier repo, nuevo o legacy</span></span>
+            <span class="l big"><span class="p">$</span> npx github:ialvarezsoutec/souclaude-harness#v1</span>
+          </div>
+          <div class="meta">
+            <span><b>souclaude-harness</b> v2.3.0</span>
+            <span>·</span>
+            <span>Node ≥ 22.4 + git</span>
+            <span>·</span>
+            <span>Sin registry, sin token</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 02 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="0">
+        <div class="gutter"><b>Qué es</b><i></i><s>I</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Qué es</span><span class="count">02 / 15</span></div>
+          <h2 class="t">Tres capas que conviene no confundir</h2>
+          <div class="body">
+            <div class="cols c3" style="flex:1">
+              <div class="card">
+                <span class="tag">El método</span>
+                <h3>CCEM</h3>
+                <p>Los principios, el flujo Spec-Driven, el prompting anti-hack, la trazabilidad
+                  y los criterios para evaluar herramientas.</p>
+                <p style="margin-top:auto;color:var(--muted)"><code>.claude/skills/</code>
+                  <code>docs/constitution.md</code></p>
+              </div>
+              <div class="card">
+                <span class="tag">Cómo se ejecuta</span>
+                <h3>Orquestación multiagente</h3>
+                <p>Un patrón <b>opt-in</b>: cuatro roles con herramientas acotadas que hacen
+                  cumplir CCEM. No corre en cada sesión — lo pides cuando lo quieres.</p>
+                <p style="margin-top:auto;color:var(--muted)"><code>.claude/agents/</code>
+                  <code>AGENTS.md</code></p>
+              </div>
+              <div class="card">
+                <span class="tag">El vehículo</span>
+                <h3>souclaude-harness</h3>
+                <p>El CLI que emite y mantiene al día todo lo anterior en cualquier repo:
+                  uno vacío, uno legacy o uno con una versión vieja.</p>
+                <p style="margin-top:auto;color:var(--muted)"><code>src/</code>
+                  <code>templates/</code> <code>bin/cli.mjs</code></p>
+              </div>
+            </div>
+          </div>
+          <p class="foot">Las skills son <em>project-local</em>: se commitean con el repo.
+            Quien clona, las tiene — no hay instalación por persona ni por máquina.</p>
+        </div>
+      </section>
+
+      <!-- 03 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="1">
+        <div class="gutter"><b>Proyecto nuevo</b><i></i><s>II</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Proyecto nuevo</span><span class="count">03 / 15</span></div>
+          <h2 class="t">Un comando. Cuatro verbos.</h2>
+          <div class="body">
+            <div class="cols split" style="flex:1">
+              <div style="display:flex;flex-direction:column;gap:1.2cqi;min-width:0">
+                <div class="tw" style="flex:1">
+                  <table>
+                    <thead>
+                      <tr><th>Comando</th><th>Qué hace</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td><span class="verdict v-ok">init</span></td>
+                        <td>Instala. Sirve igual en un repo vacío y en uno con cinco años de código.</td></tr>
+                      <tr><td><span class="verdict v-info">upgrade</span></td>
+                        <td>Actualiza a la última versión y aplica las migraciones.</td></tr>
+                      <tr><td><span class="verdict v-none">status</span></td>
+                        <td>Solo lectura. Salida <code>0</code> al día · <code>1</code> hay upgrade ·
+                          <code>2</code> hay drift.</td></tr>
+                      <tr><td><span class="verdict v-hold">adopt</span></td>
+                        <td>Para una estructura hecha a mano. <b>No toca ningún archivo</b>: solo
+                          escribe el lockfile.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="note">Sin comando, <b>se autodetecta</b>: hay lockfile →
+                  <code>upgrade</code> · hay estructura previa → <code>adopt</code> ·
+                  repo limpio → <code>init</code>.</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1.2cqi;min-width:0">
+                <div class="term" style="flex:1">
+                  <span class="l"><span class="c"># ver el plan sin escribir un solo byte</span></span>
+                  <span class="l"><span class="p">$</span> npx …souclaude-harness#v1 --dry-run</span>
+                  <span class="l">&nbsp;</span>
+                  <span class="l"><span class="g">create</span>   CLAUDE.md</span>
+                  <span class="l"><span class="g">create</span>   docs/constitution.md</span>
+                  <span class="l"><span class="g">create</span>   .claude/skills/ccem-core/</span>
+                  <span class="l"><span class="c">noop</span>     .gitignore <span class="c">(bloque ya presente)</span></span>
+                  <span class="l">&nbsp;</span>
+                  <span class="l"><span class="c">→ 0 bytes escritos</span></span>
+                </div>
+                <ul class="plain">
+                  <li><b>--dry-run</b> imprime el plan y no escribe nada. El árbol queda byte-idéntico.</li>
+                  <li><b>--yes</b> acepta los defaults; <code>--name --type --stack --lang</code>
+                    responden sin modo interactivo.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="1">
+        <div class="gutter"><b>Proyecto nuevo</b><i></i><s>II</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Proyecto nuevo</span><span class="count">04 / 15</span></div>
+          <h2 class="t">Día 1, de cero a listo</h2>
+          <div class="body">
+            <div class="cols split" style="flex:1">
+              <ol class="steps">
+                <li><span><b>Ten git y Node ≥ 22.4.</b> Nada más: no hay registry,
+                  ni <code>.npmrc</code>, ni token.</span></li>
+                <li><span><b>Corre el instalador</b> en la raíz del repo.
+                  <code>npx github:ialvarezsoutec/souclaude-harness#v1</code></span></li>
+                <li><span><b>Responde las cuatro preguntas</b> — nombre, tipo, stack e idioma —
+                  o pásalas por flag y sáltate el modo interactivo.</span></li>
+                <li><span><b>Conecta el Vault</b> cuando lo pida (<code>--vault-path</code> si ya
+                  lo tienes clonado, <code>--no-vault</code> para omitirlo).</span></li>
+                <li><span><b>Abre el repo con Claude Code.</b> Lo primero que lee es
+                  <code>CLAUDE.md</code> y <code>docs/constitution.md</code>.</span></li>
+                <li><span><b>Completa P7 y P8</b> de la constitución: son los dos principios que
+                  cada proyecto define por su cuenta.</span></li>
+              </ol>
+              <div style="display:flex;flex-direction:column;gap:1.2cqi;min-width:0">
+                <div class="card" style="flex:1">
+                  <span class="tag">Lo que NO tienes que hacer</span>
+                  <ul class="plain" style="margin-top:.3cqi">
+                    <li>Instalar skills a mano, una por una.</li>
+                    <li>Copiar un <code>CLAUDE.md</code> de otro repo y editarlo.</li>
+                    <li>Pedirle a cada persona del equipo que configure su máquina.</li>
+                    <li>Mantener las reglas sincronizadas entre proyectos a mano.</li>
+                  </ul>
+                </div>
+                <div class="note"><b>El repo queda autosuficiente.</b> Quien lo clona recibe el
+                  método completo — mismas skills, misma constitución, mismas reglas de Git.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="1">
+        <div class="gutter"><b>Proyecto nuevo</b><i></i><s>II</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Proyecto nuevo</span><span class="count">05 / 15</span></div>
+          <h2 class="t">Qué queda instalado</h2>
+          <div class="body">
+            <div class="cols split" style="flex:1">
+              <div class="tree"><b>CLAUDE.md</b>                    <i>contexto del proyecto, &lt;200 líneas</i>
+<b>AGENTS.md</b>                    <i>mapa del flujo multiagente</i>
+<b>notes.md</b>                     <i>scratchpad persistente</i>
+<b>docs/</b>
+  constitution.md            <i>principios P1-P10</i>
+  decisions/                 <i>ADRs + su template</i>
+<b>specs/</b>                       <i>plantillas SDD: full y lite</i>
+<b>progress/</b>                    <i>estado vivo del trabajo</i>
+<b>.claude/</b>
+  settings.json              <i>permisos + deny de secretos</i>
+  harness.json               <i>lockfile: versión + hash</i>
+  vault.local.json           <i>ruta local del Vault</i>
+  <u>skills/</u>                   <i>ccem-* · soutec-github · comandos</i>
+  <u>agents/</u>                   <i>orchestrator · spec-author</i>
+                             <i>implementer · reviewer</i>
+<b>.github/</b>                     <i>plantilla de PR + CODEOWNERS</i>
+<b>.gitignore</b>                   <i>solo un bloque delimitado</i></div>
+              <div style="display:flex;flex-direction:column;gap:1.1cqi;min-width:0">
+                <p class="lead" style="font-size:1.4cqi">Cada archivo tiene una <b>política</b> que
+                  decide qué pasa cuando llega una versión nueva del harness.</p>
+                <div class="kv">
+                  <div class="r"><span class="k">user-owned</span>
+                    <span>Se siembra una vez. Si lo editas, no se pisa nunca.<br>
+                      <code>CLAUDE.md</code> <code>constitution.md</code> <code>notes.md</code></span></div>
+                  <div class="r"><span class="k">managed</span>
+                    <span>El harness es dueño y el upgrade lo mantiene fresco.<br>
+                      <code>skills/</code> <code>agents/</code> <code>AGENTS.md</code></span></div>
+                  <div class="r"><span class="k">merge-json</span>
+                    <span>Solo agrega claves que faltan. Jamás pisa un valor tuyo.<br>
+                      <code>.claude/settings.json</code></span></div>
+                  <div class="r"><span class="k">append-block</span>
+                    <span>Solo gestiona un bloque delimitado. Tus líneas quedan intactas.<br>
+                      <code>.gitignore</code></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 06 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="2">
+        <div class="gutter"><b>Proyecto existente</b><i></i><s>III</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Proyecto existente</span><span class="count">06 / 15</span></div>
+          <h2 class="t">El mismo comando, tres puntos de partida</h2>
+          <div class="body">
+            <div class="cols c3" style="flex:1">
+              <div class="card">
+                <span class="chip ch-ok" style="align-self:flex-start">init</span>
+                <h3>Repo legacy, sin harness</h3>
+                <p>Cinco años de código y ninguna carpeta <code>.claude/</code>. El instalador
+                  <b>solo agrega la superficie de Claude</b>: no toca tu código, tus tests ni
+                  tu build.</p>
+                <p style="margin-top:auto;color:var(--muted)">Nada de lo tuyo entra en el plan.</p>
+              </div>
+              <div class="card">
+                <span class="chip ch-hold" style="align-self:flex-start">adopt</span>
+                <h3>Estructura hecha a mano</h3>
+                <p>Ya tienes un <code>CLAUDE.md</code> y skills propias que armaste tú.
+                  <b>No se escribe ni un archivo</b>: solo se anota en el lockfile que lo que hay
+                  ya cuenta como harness.</p>
+                <p style="margin-top:auto;color:var(--muted)">Desde ahí, los upgrades funcionan normal.</p>
+              </div>
+              <div class="card">
+                <span class="chip ch-info" style="align-self:flex-start">upgrade</span>
+                <h3>Harness de una versión vieja</h3>
+                <p>Trae skills nuevas, reglas nuevas y corre las <b>migraciones</b>, que
+                  transforman lo viejo antes de comparar — así un fix antiguo aparece como
+                  un update normal.</p>
+                <p style="margin-top:auto;color:var(--muted)">Se invoca con <code>/harness-upgrade</code>.</p>
+              </div>
+            </div>
+            <div class="note">Los tres son <b>el mismo code path</b>. No hay tres flujos con tres
+              conjuntos de bugs: hay una sola tabla de veredictos, y es la de la próxima lámina.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 07 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="2">
+        <div class="gutter"><b>Proyecto existente</b><i></i><s>III</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Proyecto existente · la garantía</span><span class="count">07 / 15</span></div>
+          <h2 class="t">Un archivo tuyo nunca se sobrescribe en silencio</h2>
+          <div class="body">
+            <p class="lead" style="font-size:1.4cqi">El motor cruza tres cosas para cada archivo:
+              qué hay <b>en disco</b>, qué dice el <b>lockfile</b> que había, y qué querría
+              <b>emitir el harness hoy</b>.</p>
+            <div class="tw" style="flex:1">
+              <table>
+                <thead>
+                  <tr>
+                    <th>En disco</th><th>En el lockfile</th><th>¿Cambió el template?</th>
+                    <th>Veredicto</th><th>Qué pasa</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td>no está</td><td>no está</td><td>—</td>
+                    <td><span class="verdict v-ok">create</span></td><td>Se crea.</td></tr>
+                  <tr><td><b>está</b></td><td>no está</td><td>—</td>
+                    <td><span class="verdict v-hold">foreign</span></td>
+                    <td><b>Nunca se pisa</b> → queda <code>.new</code> al lado.</td></tr>
+                  <tr><td>está, intacto</td><td>está</td><td>no</td>
+                    <td><span class="verdict v-none">noop</span></td><td>Nada.</td></tr>
+                  <tr><td>está, intacto</td><td>está</td><td>sí</td>
+                    <td><span class="verdict v-info">update</span></td>
+                    <td>Se actualiza. No pierdes nada: no lo habías tocado.</td></tr>
+                  <tr><td>está, <b>editado por ti</b></td><td>está</td><td>no</td>
+                    <td><span class="verdict v-none">local-edit</span></td><td>Se respeta. No se toca.</td></tr>
+                  <tr><td>está, <b>editado por ti</b></td><td>está</td><td>sí</td>
+                    <td><span class="verdict v-hold">conflict</span></td>
+                    <td><b>Nunca se pisa</b> → queda <code>.new</code> al lado.</td></tr>
+                  <tr><td>lo escribimos, lo borraste</td><td>está</td><td>—</td>
+                    <td><span class="verdict v-ok">restore</span></td><td>Se reescribe.</td></tr>
+                  <tr><td>está</td><td>ya no en el manifest</td><td>—</td>
+                    <td><span class="verdict v-hold">obsolete</span></td>
+                    <td>Solo con <code>--prune</code> y doble confirmación.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <p class="foot">Salvaguardas: backup de todo lo sobrescrito en
+            <code>.claude/backup-&lt;ts&gt;/</code> · <code>--prune</code> exige tipear
+            <em>BORRAR</em> · <code>--force</code> exige tipear <em>FORCE</em>.
+            La herramienta obedece la misma constitución que instala.</p>
+        </div>
+      </section>
+
+      <!-- 08 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="2">
+        <div class="gutter"><b>Proyecto existente</b><i></i><s>III</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Proyecto existente · mantenerlo al día</span><span class="count">08 / 15</span></div>
+          <h2 class="t">Qué haces cuando aparece un <code style="font-size:.72em">.new</code></h2>
+          <div class="body">
+            <div class="cols split" style="flex:1">
+              <div style="display:flex;flex-direction:column;gap:1.1cqi;min-width:0">
+                <div class="term">
+                  <span class="l"><span class="c"># 1 · ¿estoy al día?</span></span>
+                  <span class="l"><span class="p">$</span> npx …#v1 status</span>
+                  <span class="l"><span class="c">→ salida 1: hay una versión nueva</span></span>
+                  <span class="l">&nbsp;</span>
+                  <span class="l"><span class="c"># 2 · ¿qué cambiaría?</span></span>
+                  <span class="l"><span class="p">$</span> npx …#v1 upgrade --dry-run</span>
+                  <span class="l">&nbsp;</span>
+                  <span class="l"><span class="c"># 3 · aplicarlo</span></span>
+                  <span class="l"><span class="p">$</span> npx …#v1 upgrade</span>
+                  <span class="l"><span class="g">update</span>    .claude/skills/ccem-sdd/</span>
+                  <span class="l"><span class="c">conflict</span>  CLAUDE.md <span class="c">→ CLAUDE.md.new</span></span>
+                </div>
+                <div class="note">Desde Claude Code es un solo comando:
+                  <code>/harness-upgrade</code>. Corre <code>status</code>, luego el
+                  <code>--dry-run</code>, <b>espera tu OK</b> y recién ahí aplica.</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1.1cqi;min-width:0">
+                <div class="card" style="flex:1">
+                  <span class="tag">El archivo .new</span>
+                  <h3>La propuesta queda al lado. Tú decides.</h3>
+                  <p>Cuando tu archivo difiere del que el harness querría emitir, no hay pisada
+                    y no hay merge automático: aparece <code>&lt;archivo&gt;.new</code> junto al
+                    tuyo y el original queda intacto.</p>
+                  <div class="term" style="font-size:1.1cqi">
+                    <span class="l"><span class="p">$</span> git diff --no-index \</span>
+                    <span class="l">      CLAUDE.md CLAUDE.md.new</span>
+                  </div>
+                  <p>Lees el diff, te llevas lo que sirve y borras el <code>.new</code>.
+                    Es una <b>sugerencia</b>, no una migración pendiente.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="foot">Los dos invariantes que sostienen esto en los tests:
+            <em>idempotencia</em> — correr <code>init</code> dos veces no cambia nada la segunda —
+            y <em>pureza de <code>--dry-run</code></em> — el árbol queda byte-idéntico.</p>
+        </div>
+      </section>
+
+      <!-- 09 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="3">
+        <div class="gutter"><b>El hilo</b><i></i><s>IV</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">El día a día</span><span class="count">09 / 15</span></div>
+          <h2 class="t">El ID del hito es el hilo</h2>
+          <div class="body">
+            <p class="lead" style="font-size:1.4cqi">La roca nace en la reunión trimestral y se
+              descompone en hitos. <b>El hito emite el ID</b>, y ese ID reaparece idéntico en cada
+              eslabón hasta el release.</p>
+            <div class="chain">
+              <div class="link"><span class="k">Roca · trimestre</span><span class="v">Q3Y26-REA</span></div>
+              <span class="arw">→</span>
+              <div class="link"><span class="k">Hito</span><span class="v">REA-H3</span></div>
+              <span class="arw">→</span>
+              <div class="link"><span class="k">Carpeta de spec</span><span class="v">specs/REA-H3-captura-lead/</span></div>
+              <span class="arw">→</span>
+              <div class="link"><span class="k">Rama</span><span class="v">feature/REA-H3-captura-lead</span></div>
+              <span class="arw">→</span>
+              <div class="link"><span class="k">Tasks</span><span class="v">REA-H3-T001…</span></div>
+              <span class="arw">→</span>
+              <div class="link"><span class="k">PR · release</span><span class="v">squash &amp; merge</span></div>
+            </div>
+            <div class="cols c2" style="flex:1">
+              <div class="card">
+                <span class="tag">Por qué importa</span>
+                <p><code>grep -r REA-H3 specs/</code> y <code>git log --grep=REA-H3</code>
+                  devuelven <b>lo mismo</b>. Cualquiera puede reconstruir por qué existe una línea
+                  de código sin preguntarle a nadie.</p>
+                <p>Un hito puede producir varios specs: mismo ID, distinto slug. Cada carpeta es
+                  una rama y un PR.</p>
+              </div>
+              <div class="card" style="border-color:var(--hold)">
+                <span class="tag" style="color:var(--hold)">La regla dura</span>
+                <h3>Si no tienes el ID, pregunta. No lo inventes.</h3>
+                <p>Sin ID no hay rama — <b>los hotfixes incluidos</b>. La urgencia cambia la
+                  prioridad, nunca el procedimiento. Si una rama o un release no tiene ID, la
+                  cadena está rota y se repara antes de seguir.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="3">
+        <div class="gutter"><b>El hilo</b><i></i><s>IV</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">El día a día</span><span class="count">10 / 15</span></div>
+          <h2 class="t">Tres frenos humanos antes de escribir código</h2>
+          <div class="body">
+            <div class="flow">
+              <span class="node">spec.md</span><span class="arw">→</span>
+              <span class="gate">⏸ HUMANO</span><span class="arw">→</span>
+              <span class="node">plan.md</span><span class="arw">→</span>
+              <span class="gate">⏸ HUMANO</span><span class="arw">→</span>
+              <span class="node">tasks.md</span><span class="arw">→</span>
+              <span class="gate">⏸ HUMANO</span><span class="arw">→</span>
+              <span class="node">implement</span><span class="arw">→</span>
+              <span class="node">review</span><span class="arw">→</span>
+              <span class="node">PR</span>
+            </div>
+            <p class="lead" style="font-size:1.4cqi">Hasta que los tres estén aprobados, la rama
+              <b>solo admite commits <code>docs:</code></b>. Durante <code>implement</code> el
+              review es incremental, task por task — nunca en batch al final.</p>
+            <div class="cols c2" style="flex:1;align-items:start">
+              <div class="tw">
+                <table>
+                  <thead><tr><th>Agente</th><th>Rol</th><th>¿Código?</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>orchestrator</code></td><td>Descompone, coordina y hace respetar
+                      los checkpoints.</td><td><span class="chip ch-hold">no</span></td></tr>
+                    <tr><td><code>spec-author</code></td><td>Redacta spec, plan y tasks — una fase
+                      por invocación.</td><td><span class="chip ch-hold">no</span></td></tr>
+                    <tr><td><code>implementer</code></td><td>Implementa task por task, cada cambio
+                      con su test.</td><td><span class="chip ch-ok">sí</span></td></tr>
+                    <tr><td><code>reviewer</code></td><td>Aprueba o rechaza. <b>Sin</b> herramientas
+                      de escritura: dictamina.</td><td><span class="chip ch-hold">no</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1.1cqi">
+                <div class="note"><b>La separación es el punto.</b> Quien especifica no implementa,
+                  y quien implementa <b>no se aprueba a sí mismo</b>. Un <code>reviewer</code> sin
+                  permiso de escritura no es una recomendación: es enforcement.</div>
+                <div class="card">
+                  <span class="tag">Cuándo NO montar todo esto</span>
+                  <p>Bug fix puntual, ajuste cosmético, spike, script one-off, hotfix o typo:
+                    <b>se hace directo</b>. Ceremonia que no sirve viola P9 — Simplicity First.</p>
+                  <p>Para un cambio mediano existe la versión comprimida:
+                    <code>/spec-new &lt;ID&gt; &lt;slug&gt; --lite</code>. Mismos checkpoints,
+                    menos ceremonia.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="4">
+        <div class="gutter"><b>Equipo</b><i></i><s>V</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Trabajo en equipo</span><span class="count">11 / 15</span></div>
+          <h2 class="t">Dos repos con reglas opuestas, a propósito</h2>
+          <div class="body">
+            <div class="cols c2" style="flex:1">
+              <div class="card" style="border-top:2px solid var(--info)">
+                <span class="tag" style="color:var(--info)">Repo del proyecto</span>
+                <h3>Todo cambio se revisa</h3>
+                <ul class="plain">
+                  <li>Código, tests, specs y progreso.</li>
+                  <li>Siempre <b>rama + Pull Request</b>. Nunca directo a <code>main</code>.</li>
+                  <li>El coordinador hace el squash &amp; merge.</li>
+                </ul>
+                <p style="margin-top:auto"><b>Por qué:</b> lo que entra al código pasa por revisión,
+                  sin excepciones y sin atajos por urgencia.</p>
+              </div>
+              <div class="card" style="border-top:2px solid var(--accent)">
+                <span class="tag">El Vault</span>
+                <h3>El tablero refleja el ahora</h3>
+                <ul class="plain">
+                  <li>Kanban, espejos de specs y progreso, rocas, evidencia.</li>
+                  <li><b>Push directo a <code>main</code></b>, sin PR.</li>
+                  <li>Repo aparte, para no ensuciar el del proyecto.</li>
+                </ul>
+                <p style="margin-top:auto"><b>Por qué:</b> si el tablero esperara a un merge,
+                  mostraría el pasado. Tiene que mostrar el ahora.</p>
+              </div>
+            </div>
+            <div class="cols c3">
+              <div class="note" style="border-left-color:var(--info)">Nunca se cruzan: código,
+                diffs y tests <b>jamás</b> van al Vault.</div>
+              <div class="note">La ruta local vive en <code>.claude/vault.local.json</code>,
+                que escribe el instalador.</div>
+              <div class="note" style="border-left-color:var(--hold)">Si el Vault no está
+                configurado, el espejo <b>se omite sin fallar</b>. El trabajo local nunca se
+                bloquea.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="4">
+        <div class="gutter"><b>Equipo</b><i></i><s>V</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Trabajo en equipo · el tablero</span><span class="count">12 / 15</span></div>
+          <h2 class="t">Nadie pisa el trabajo de nadie</h2>
+          <div class="body">
+            <div class="kan">
+              <div class="col"><h4>Backlog</h4>
+                <div class="task"><span class="id">REA-H3-T004</span><span class="d">validar formulario</span><span class="w">@pendiente</span></div>
+                <div class="task"><span class="id">REA-H3-T005</span><span class="d">reintento de envío</span><span class="w">@pendiente</span></div>
+              </div>
+              <div class="col"><h4>En curso</h4>
+                <div class="task mine"><span class="id">REA-H3-T003</span><span class="d">capturar lead al cierre</span><span class="w">@sofia</span></div>
+              </div>
+              <div class="col"><h4>En review</h4>
+                <div class="task rev"><span class="id">REA-H3-T002</span><span class="d">persistencia del ticket</span><span class="w">@nacho</span></div>
+              </div>
+              <div class="col"><h4>Hecho</h4>
+                <div class="task done"><span class="id">REA-H3-T001</span><span class="d">esqueleto del dominio</span><span class="w">@nacho</span></div>
+              </div>
+            </div>
+            <div class="cols split" style="flex:1">
+              <div style="display:flex;flex-direction:column;gap:1cqi">
+                <p class="lead" style="font-size:1.34cqi"><b>La tarjeta se mueve al empezar</b>,
+                  no al terminar. Por eso el tablero sirve como señal en vivo y no como reporte
+                  tardío.</p>
+                <div class="tw">
+                  <table>
+                    <thead><tr><th>Quién</th><th>Mueve la tarjeta</th></tr></thead>
+                    <tbody>
+                      <tr><td><code>spec-author</code></td><td>La crea en <b>Backlog</b> al emitir <code>tasks.md</code>.</td></tr>
+                      <tr><td><code>implementer</code></td><td>A <b>En curso</b> al tomarla; a <b>En review</b> al cerrarla.</td></tr>
+                      <tr><td><code>reviewer</code></td><td>A <b>Hecho</b> con <code>APPROVED</code>, o de vuelta a <b>En curso</b>.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1cqi">
+                <div class="term" style="font-size:1.1cqi">
+                  <span class="l"><span class="c"># obligatorio antes de tomar un task</span></span>
+                  <span class="l"><span class="p">$</span> git -C "&lt;vault&gt;" pull --rebase</span>
+                  <span class="l"><span class="c"># y lee Project-REA/kanban.md</span></span>
+                </div>
+                <div class="card" style="border-color:var(--hold)">
+                  <span class="tag" style="color:var(--hold)">El anti-solapamiento</span>
+                  <p>Si la tarjeta ya está en <b>En curso</b> con otro dueño, la está trabajando
+                    otra persona u otra máquina: <b>paras y preguntas</b>. No la tomas, no la
+                    mueves y no saltas a otra por tu cuenta.</p>
+                  <p style="color:var(--muted)">Una tarjeta = una línea, así que dos personas
+                    nunca se contradicen al hacer merge: se conservan ambas.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="5">
+        <div class="gutter"><b>Monitor</b><i></i><s>VI</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Monitor de tokens</span><span class="count">13 / 15</span></div>
+          <h2 class="t">Cada lanzamiento elige su modelo, y queda anotado</h2>
+          <div class="body">
+            <div class="cols c3">
+              <div class="card">
+                <span class="tag">Paso 1 · clasificar</span>
+                <p>La tarea se cuenta contra un checklist de señales, no por intuición.</p>
+                <p><span class="chip ch-mut">mecánica</span> 0 señales &nbsp;
+                  <span class="chip ch-info">estándar</span> 1-2 blandas &nbsp;
+                  <span class="chip ch-hold">compleja</span> ≥3 blandas o ≥1 dura</p>
+              </div>
+              <div class="card">
+                <span class="tag">Paso 2 · rutear</span>
+                <p>La matriz <b>agente × clase</b> decide modelo y esfuerzo. Cambiar la política es
+                  editar un solo archivo: la skill <code>ccem-model-router</code>.</p>
+              </div>
+              <div class="card">
+                <span class="tag">Paso 3 · registrar</span>
+                <p>Una línea JSONL por lanzamiento en <code>progress/model-router.jsonl</code>.
+                  <b>Un hito sin líneas es una violación visible del protocolo.</b></p>
+              </div>
+            </div>
+            <div class="cols split" style="flex:1;align-items:start">
+              <div class="tw">
+                <table>
+                  <thead><tr><th>Agente</th><th>mecánica</th><th>estándar</th><th>compleja</th></tr></thead>
+                  <tbody>
+                    <tr><td><code>spec-author</code></td><td>Ejecución</td><td>Ejecución</td>
+                      <td><b>Decisiones</b></td></tr>
+                    <tr><td><code>implementer</code></td><td>Volumen</td><td>Ejecución</td>
+                      <td>Ejecución <span class="chip ch-acc">+ Advisor</span></td></tr>
+                    <tr><td><code>reviewer</code></td><td>Ejecución</td><td>Ejecución</td>
+                      <td>Ejecución</td></tr>
+                  </tbody>
+                </table>
+                <p class="foot" style="border:0;padding-top:.8cqi">El <code>implementer</code>
+                  complejo <em>no</em> sube de tier: consulta puntualmente al modelo de Decisiones
+                  (~400-700 tokens) en vez de correr el task entero en el modelo caro.</p>
+              </div>
+              <div class="term" style="font-size:1.02cqi">
+                <span class="l"><span class="c">// una línea por lanzamiento</span></span>
+                <span class="l">{"hito": <span class="g">"REA-H3"</span>,</span>
+                <span class="l"> "task": <span class="g">"REA-H3-T003"</span>,</span>
+                <span class="l"> "agente": <span class="g">"implementer"</span>,</span>
+                <span class="l"> "clase": <span class="g">"estandar"</span>,</span>
+                <span class="l"> "senales": [<span class="g">"mas_de_3_archivos"</span>],</span>
+                <span class="l"> "resultado": <span class="g">"approved"</span>,</span>
+                <span class="l"> "rework": <span class="p">0</span>,</span>
+                <span class="l"> "tokens_in": <span class="p">42150</span>,</span>
+                <span class="l"> "tokens_out": <span class="p">8300</span>,</span>
+                <span class="l"> "costo_usd": <span class="p">0.94</span>,</span>
+                <span class="l"> "medicion": <span class="g">"estimado"</span>}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 14 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="5">
+        <div class="gutter"><b>Monitor</b><i></i><s>VI</s></div>
+        <div class="pane">
+          <div class="top">
+            <span class="eyebrow">Monitor de tokens · qué te dice</span>
+            <span class="count">14 / 15</span>
+          </div>
+          <h2 class="t">El equipo ve dónde se va el esfuerzo</h2>
+          <div class="body">
+            <div class="tiles">
+              <div class="tile"><span class="k">Lanzamientos</span><span class="n">48</span>
+                <span class="s">en el trimestre</span></div>
+              <div class="tile"><span class="k">Escaladas</span>
+                <span class="n">6,2<small>%</small></span>
+                <span class="s">umbral de revisión: 10 %</span></div>
+              <div class="tile"><span class="k">Rework</span><span class="n">7</span>
+                <span class="s">devoluciones del reviewer</span></div>
+              <div class="tile"><span class="k">Medido</span>
+                <span class="n">34<small>%</small></span>
+                <span class="s">el resto es estimación</span></div>
+            </div>
+            <div class="cols split" style="flex:1;align-items:start">
+              <div style="display:flex;flex-direction:column;gap:.7cqi">
+                <span class="eyebrow" style="color:var(--muted)">Costo por hito · USD</span>
+                <div class="bars">
+                  <div class="bar"><span class="lb">REA-H1</span>
+                    <span class="tr"><span class="fl" style="width:46%"></span></span>
+                    <span class="vl">4,10</span></div>
+                  <div class="bar"><span class="lb">REA-H2</span>
+                    <span class="tr"><span class="fl" style="width:71%"></span></span>
+                    <span class="vl">6,35</span></div>
+                  <div class="bar"><span class="lb">REA-H3</span>
+                    <span class="tr"><span class="fl" style="width:100%"></span></span>
+                    <span class="vl">8,90</span></div>
+                  <div class="bar"><span class="lb">REA-H4</span>
+                    <span class="tr"><span class="fl" style="width:29%"></span></span>
+                    <span class="vl">2,58</span></div>
+                  <div class="bar"><span class="lb">REA-H5</span>
+                    <span class="tr"><span class="fl" style="width:38%"></span></span>
+                    <span class="vl">3,40</span></div>
+                </div>
+                <p class="foot" style="border:0;padding-top:.6cqi">Cifras de <em>ejemplo</em> para
+                  mostrar la forma del informe — no son telemetría real de ningún proyecto.</p>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1cqi">
+                <div class="card" style="border-color:var(--hold)">
+                  <span class="tag" style="color:var(--hold)">La regla de honestidad</span>
+                  <p>Si la herramienta no reporta el uso real de tokens, el orchestrator
+                    <b>estima</b> por tamaño de artefactos y lo marca como tal. Un
+                    <code>estimado</code> sirve para <b>comparar</b> celdas de la matriz e hitos
+                    entre sí — <b>jamás</b> se presenta como cifra contable ni de facturación.</p>
+                </div>
+                <div class="card">
+                  <span class="tag">El ritual · /rock-close</span>
+                  <p>Al cerrar el trimestre se resume el JSONL y se ajusta la matriz si:</p>
+                  <ul class="plain" style="font-size:1.14cqi">
+                    <li>las escaladas superan el <b>10 %</b> de los lanzamientos,</li>
+                    <li>una celda <b>concentra el rework</b> — su tier quedó corto,</li>
+                    <li>una celda <b>nunca falla</b> — puede bajar un tier.</li>
+                  </ul>
+                  <p style="color:var(--muted)">Aprendizaje como ritual humano, sin ML: lo decide
+                    el equipo mirando los datos.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 15 ───────────────────────────────────────────── -->
+      <section class="slide" data-act="6">
+        <div class="gutter"><b>Empezar</b><i></i><s>VII</s></div>
+        <div class="pane">
+          <div class="top"><span class="eyebrow">Cómo empezar hoy</span><span class="count">15 / 15</span></div>
+          <h2 class="t">Dos caminos, el mismo comando</h2>
+          <div class="body">
+            <div class="cols c2">
+              <div class="card" style="border-top:2px solid var(--ok)">
+                <span class="tag" style="color:var(--ok)">Proyecto nuevo</span>
+                <div class="term" style="font-size:1.14cqi">
+                  <span class="l"><span class="p">$</span> npx github:ialvarezsoutec/</span>
+                  <span class="l">      souclaude-harness#v1</span>
+                </div>
+                <ul class="plain">
+                  <li>Responde nombre, tipo, stack e idioma.</li>
+                  <li>Conecta el Vault y completa P7 y P8.</li>
+                  <li>Abre el repo con Claude Code y arranca.</li>
+                </ul>
+              </div>
+              <div class="card" style="border-top:2px solid var(--info)">
+                <span class="tag" style="color:var(--info)">Proyecto existente</span>
+                <div class="term" style="font-size:1.14cqi">
+                  <span class="l"><span class="p">$</span> npx …#v1 status</span>
+                  <span class="l"><span class="p">$</span> npx …#v1 upgrade --dry-run</span>
+                </div>
+                <ul class="plain">
+                  <li>Lee el plan antes de aplicar nada.</li>
+                  <li>Revisa cada <code>.new</code> con <code>git diff --no-index</code>.</li>
+                  <li>Desde Claude Code: <code>/harness-upgrade</code>.</li>
+                </ul>
+              </div>
+            </div>
+            <div class="cols c3" style="flex:1">
+              <div class="card">
+                <span class="tag">Antes de cada task</span>
+                <p><code>git -C "&lt;vault&gt;" pull --rebase</code>, lee el kanban y mueve tu
+                  tarjeta <b>al empezar</b>. Si ya la tiene otra persona, para y pregunta.</p>
+              </div>
+              <div class="card">
+                <span class="tag">Antes de cada PR</span>
+                <p><code>/constitution-check</code> audita tu diff contra P1-P10 y te marca las
+                  violaciones con archivo y línea. Completa la plantilla de PR de verdad.</p>
+              </div>
+              <div class="card">
+                <span class="tag">Cuando dudes</span>
+                <p>Las fuentes de verdad son <code>docs/constitution.md</code>,
+                  <code>AGENTS.md</code> y <code>progress/README.md</code>. Si algo es ambiguo:
+                  <b>para y pregunta</b>.</p>
+              </div>
+            </div>
+          </div>
+          <p class="foot"><em>P9 — Simplicity First</em> y <em>P10 — Surgical Changes</em> aplican
+            siempre, en todo proyecto. Todo lo demás es andamiaje para que esas dos se cumplan solas.</p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="bar-nav">
+    <div class="btns">
+      <button class="btn" id="prev" aria-label="Lámina anterior">← Anterior</button>
+      <button class="btn" id="next" aria-label="Lámina siguiente">Siguiente →</button>
+    </div>
+    <div class="rail" id="rail"></div>
+    <div class="btns">
+      <button class="btn" id="full">Pantalla completa</button>
+    </div>
+    <span class="hint"><kbd>←</kbd> <kbd>→</kbd> para navegar · <kbd>F</kbd> pantalla completa</span>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+    var acts = [
+      { name: 'Qué es', n: 2 },
+      { name: 'Proyecto nuevo', n: 3 },
+      { name: 'Existente', n: 3 },
+      { name: 'El hilo', n: 2 },
+      { name: 'Equipo', n: 2 },
+      { name: 'Monitor', n: 2 },
+      { name: 'Empezar', n: 1 }
+    ];
+    var rail = document.getElementById('rail');
+    var prev = document.getElementById('prev');
+    var next = document.getElementById('next');
+    var full = document.getElementById('full');
+    var frame = document.getElementById('frame');
+    var ticks = [];
+    var i = 0;
+    var k = 0;
+
+    acts.forEach(function (a) {
+      var wrap = document.createElement('div');
+      wrap.className = 'act';
+      var nm = document.createElement('span');
+      nm.className = 'nm';
+      nm.textContent = a.name;
+      var tk = document.createElement('div');
+      tk.className = 'tk';
+      for (var j = 0; j < a.n; j++) {
+        var idx = k++;
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('aria-label', 'Ir a la lámina ' + (idx + 1));
+        b.addEventListener('click', (function (n) {
+          return function () { go(n); };
+        })(idx));
+        tk.appendChild(b);
+        ticks.push(b);
+      }
+      wrap.appendChild(nm);
+      wrap.appendChild(tk);
+      rail.appendChild(wrap);
+    });
+
+    function go(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach(function (s, x) { s.classList.toggle('on', x === i); });
+      ticks.forEach(function (t, x) { t.setAttribute('aria-current', x === i ? 'true' : 'false'); });
+      prev.disabled = i === 0;
+      next.disabled = i === slides.length - 1;
+    }
+
+    prev.addEventListener('click', function () { go(i - 1); });
+    next.addEventListener('click', function () { go(i + 1); });
+
+    full.addEventListener('click', function () {
+      if (document.fullscreenElement) { document.exitFullscreen(); }
+      else if (frame.requestFullscreen) { frame.requestFullscreen(); }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) { return; }
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(i + 1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(i - 1); }
+      else if (e.key === 'Home') { e.preventDefault(); go(0); }
+      else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+      else if (e.key === 'f' || e.key === 'F') { full.click(); }
+    });
+
+    go(0);
+  })();
+</script>
