@@ -2,7 +2,40 @@
 
 El harness y el CLI se versionan juntos.
 
-## [2.4.0] — no publicado
+## [2.4.0] — 2026-08-11
+
+`souclaude vault-sync`: la sincronización con el Vault deja de ser prosa y pasa a ser un
+comando; el monitor publica el consumo al Vault por defecto; el CI queda alineado con el
+requisito real de Node.
+
+### Agregado
+
+- **Comando `vault-sync`**: pull `--rebase` seguro por defecto (con `rebase --abort`
+  defensivo), `--push -m "<msg>" [--paths a,b]` para espejos y kanban (add → commit →
+  pull → push, jamás `--force`), `--status`. Exit codes 0/1/2/3 — los agentes distinguen
+  "Vault sin configurar" (3) de "falló el sync" (1) y lo reportan en vez de omitirlo en
+  silencio. El push ocurre dentro del proceso Node, así que no choca con el
+  `permissions.ask` de `git push`. Helper reutilizable en `src/core/vault-sync.js`; el
+  publisher del monitor lo adopta y borra su copia del patrón.
+- **El monitor publica por defecto**: con `.claude/vault.local.json` presente y panel en
+  vivo, los snapshots agregados (<1 KB, ADR 20260810) se publican sin flag; `--no-publish`
+  es el opt-out por corrida. La sección CUENTAS de todo el equipo se llena sola.
+- Los `.md` de agentes y `progress/README.md` invocan `vault-sync` en lugar de la
+  secuencia git a mano; `.claude/settings.json` permite el comando sin prompt.
+
+### Corregido
+
+- **CI en Node 22/24 (antes 20)**: `parseArgs({ allowNegative: true })` requiere
+  Node >= 22.4 (igual que `engines`), así que en Node 20 todo `--no-<flag>` salía con
+  exit 2 y los tests de `vault` y `mode` fallaban solo en GitHub. La matriz ahora prueba
+  22 (piso de `engines`) y 24 (versión de trabajo); `push` a `dev` también dispara CI;
+  `package-lock.json` regenerado (estaba fosilizado en 1.0.0); `.nvmrc` y `.npmrc`
+  (`engine-strict`) nuevos.
+- **Timeout del fetcher con timer propio ref'd**: `AbortSignal.timeout` usa un timer
+  unref'd y bajo `node --test` en Node 22 el event loop moría antes del abort, dejando
+  la promesa colgada y cancelando en cascada los 8 tests del fetcher.
+
+---
 
 `souclaude monitor`: panel de consumo de tokens de Claude Code en la terminal.
 
