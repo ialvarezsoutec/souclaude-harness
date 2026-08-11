@@ -55,6 +55,11 @@ import { charsFor } from './caps.js'
  *           Lo que el dominio ya dejo fuera aguas arriba. El panel lo suma a lo que
  *           recorta por altura para decir la verdad en la linea "y N mas".
  * @property {string[]} [avisos]
+ * @property {string[]} [historico]
+ *           Filas ya formateadas de gasto extra archivado (SHS-H3-T105, panel-presenter.js
+ *           ya arma el texto exacto: "Extra ago-2026  $21.36/$20.00  alcanzado 06-08").
+ *           Se pintan al pie, atenuadas, fuera de `limites` -- por eso nunca disparan
+ *           UMBRAL_ALARMA ni el titulo `LIMITE N%`.
  */
 
 const PALETA = {
@@ -266,6 +271,21 @@ function lineasLimites(ctx, limites) {
     if (anchoResto > 0) celdas.push({ texto: textoReset(ctx, l), ancho: RESTO, tinte: 'dim' })
     return lineaCaja(ctx, celdas, ctx.tinteMarco)
   })
+}
+
+// --- historico (SHS-H3-T105) ---
+
+// Fuera de `limites`, ninguna fila entra al calculo de severidad (limiteEnAlarma)
+// ni al titulo (tituloPanel): un extra ya archivado no es informacion accionable.
+function lineasHistorico(ctx, historico) {
+  const lista = Array.isArray(historico) ? historico.filter((h) => typeof h === 'string' && h !== '') : []
+  if (lista.length === 0) return []
+
+  const lineas = [regla(ctx, ctx.chars.frame.ml, ctx.chars.frame.mr, 'HISTORICO', '', ctx.tinteMarco)]
+  for (const linea of lista) {
+    lineas.push(lineaCaja(ctx, [{ texto: linea, ancho: RESTO, tinte: 'dim' }], ctx.tinteMarco))
+  }
+  return lineas
 }
 
 function limiteEnAlarma(limites) {
@@ -797,8 +817,9 @@ function renderFull(ctx, vista) {
     lineaVacia(ctx, ctx.tinteMarco),
   ]
   const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), '', ctx.tinteMarco)
+  const historico = lineasHistorico(ctx, vista.historico)
 
-  const disponible = ctx.rows - cabeza.length - 1
+  const disponible = ctx.rows - cabeza.length - 1 - historico.length
   const secciones = [
     seccionAhora(ctx, vista),
     seccionConsumo(ctx, vista),
@@ -816,7 +837,7 @@ function renderFull(ctx, vista) {
     if (i < incluidas.length - 1) cuerpo.push(lineaVacia(ctx, ctx.tinteMarco))
   })
 
-  return [...cabeza, ...cuerpo, pie]
+  return [...cabeza, ...cuerpo, ...historico, pie]
 }
 
 function renderAgents(ctx, vista) {
@@ -831,13 +852,17 @@ function renderAgents(ctx, vista) {
     lineaVacia(ctx, ctx.tinteMarco),
   ]
   const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), '', ctx.tinteMarco)
+  // Mismo tratamiento que renderFull: el historico se descuenta del presupuesto
+  // de altura para no desplazar el pie fuera del contrato de `rows` (ver
+  // spec.md:69, "sin desaparecer" -- tambien vale en modo agents).
+  const historico = lineasHistorico(ctx, vista.historico)
 
   const seccion = seccionAhora(ctx, vista)
-  const disponible = Math.max(0, ctx.rows - cabeza.length - 1)
+  const disponible = Math.max(0, ctx.rows - cabeza.length - 1 - historico.length)
   const n = Math.max(seccion.min, Math.min(seccion.max, disponible))
   const cuerpo = disponible >= seccion.min ? seccion.build(n).slice(0, disponible) : []
 
-  return [...cabeza, ...cuerpo, pie]
+  return [...cabeza, ...cuerpo, ...historico, pie]
 }
 
 function renderCompact(ctx, vista, avisos) {
@@ -882,9 +907,15 @@ function renderCompact(ctx, vista, avisos) {
 
   for (const a of avisos) lineas.push(lineaPlana(ctx, a, 'yellow'))
 
-  // Con poca altura se conservan la primera linea (limites) y las ultimas (totales y avisos).
+  // El extra historico no puede desaparecer solo porque el modo sea compact
+  // (spec.md:69): una linea condensada al pie, coherente con el resto de este
+  // modo (una linea por dato, sin caja).
+  const historico = Array.isArray(vista?.historico) ? vista.historico.filter((h) => typeof h === 'string' && h !== '') : []
+  for (const h of historico) lineas.push(lineaPlana(ctx, h, 'dim'))
+
+  // Con poca altura se conservan la primera linea (limites) y las ultimas (totales, historico y avisos).
   if (lineas.length > ctx.rows) {
-    const cola = 2 + avisos.length
+    const cola = 2 + avisos.length + historico.length
     const cabeza = Math.max(1, ctx.rows - cola)
     return [...lineas.slice(0, cabeza), ...lineas.slice(lineas.length - Math.min(cola, ctx.rows - cabeza))]
   }
@@ -908,6 +939,12 @@ function renderAngosto(ctx, vista) {
   lineas.push(
     lineaPlana(ctx, `total ${fmtTokens(num(c.totalTokens))} ${sep} ${fmtDinero(num(c.costoUsd))}`, 'dim')
   )
+
+  // El extra historico tampoco desaparece aca (spec.md:69): una sola linea
+  // condensada, igual que el resto de este modo (una linea por dato).
+  const historico = Array.isArray(vista?.historico) ? vista.historico.filter((h) => typeof h === 'string' && h !== '') : []
+  if (historico.length > 0) lineas.push(lineaPlana(ctx, historico[0], 'dim'))
+
   lineas.push(lineaPlana(ctx, `terminal muy angosta (${COLS_MINIMAS} col minimo)`, 'yellow'))
 
   return lineas.slice(0, ctx.rows)

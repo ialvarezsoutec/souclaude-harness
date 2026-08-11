@@ -61,6 +61,7 @@ export function presentar(vista, { ahora, top } = {}) {
     ahora: instante,
     actualizadoEn: actualizadoEn(v, instante),
     limites: filasDeLimites(v.limites),
+    historico: seccionHistorico(v.historico),
     agentes: seccionAgentes(v.agentesActivos, proyectos),
     consumo: seccionConsumo(v, totales),
     desglose: seccionDesglose(totales),
@@ -96,21 +97,29 @@ function filasDeLimites(limites) {
   if (!limites || typeof limites !== 'object') return []
   const filas = []
 
-  agregarVentana(filas, limites.cincoHoras, 'Ventana 5h')
-  agregarVentana(filas, limites.sieteDias, 'Ventana 7d')
+  // El tipo aca es el mismo "kind" que la API usa en limits[] para el
+  // duplicado real de cada ventana (ver comentario de abajo): asi la clave de
+  // dedup compara contra el kind correcto, no contra un comodin.
+  agregarVentana(filas, limites.cincoHoras, 'Ventana 5h', 'session')
+  agregarVentana(filas, limites.sieteDias, 'Ventana 7d', 'weekly_all')
 
   // cachedUsageUtilization publica el MISMO limite dos veces: una en
   // five_hour/seven_day y otra como entrada de limits[] (kind "session" y
   // "weekly_all"). Sin filtrar, el header gasta seis filas en cuatro datos, y
   // las filas del header son el espacio mas valioso del panel. Se descarta la
-  // entrada de porGrupo que coincide en porcentaje Y en reseteaEn con una
-  // ventana ya emitida: es el mismo limite, no dos.
-  const yaEmitidos = filas.map((f) => `${f.porcentaje}|${f.reseteaEn}`)
+  // entrada de porGrupo que coincide en tipo, modelo, porcentaje Y reseteaEn
+  // con una ventana ya emitida: es el mismo limite, no dos. Comparar solo por
+  // porcentaje+reset (la clave vieja) colapsaba tambien limites distintos que
+  // por coincidencia comparten % y reset (ej. un weekly_scoped por modelo con
+  // el mismo % que la ventana 7d total) — el tipo y el modelo evitan esa
+  // colision falsa sin dejar de deduplicar el caso real (weekly_all == 7d).
+  const yaEmitidos = filas.map((f) => `${f.tipo ?? null}|${f.modelo ?? null}|${f.porcentaje}|${f.reseteaEn}`)
 
   for (const g of Array.isArray(limites.porGrupo) ? limites.porGrupo : []) {
     if (!g || !Number.isFinite(g.porcentaje)) continue
     const reseteaEn = aEpoch(g.reseteaEn)
-    if (yaEmitidos.includes(`${g.porcentaje}|${reseteaEn}`)) continue
+    const clave = `${g.tipo ?? null}|${g.modelo ?? null}|${g.porcentaje}|${reseteaEn}`
+    if (yaEmitidos.includes(clave)) continue
     filas.push({
       etiqueta: etiquetaDeGrupo(g),
       modelo: g.modelo ?? null,
@@ -120,11 +129,18 @@ function filasDeLimites(limites) {
   }
 
   const extra = limites.gastoExtra
-  if (extra && Number.isFinite(extra.porcentaje)) {
+  // La API ya trae su propio porcentaje (`utilizacion`): se usa ese en vez del
+  // recalculo local (`porcentaje`), que puede diferir por redondeo de
+  // `decimal_places` (ej. 107% recalculado vs 100% real).
+  const porcentajeExtra = extra && Number.isFinite(extra.utilizacion) ? extra.utilizacion : extra?.porcentaje
+  // SHS-H3-T105: un extra marcado `historico` (domain/arbol.js, 24h+ desde que
+  // se detecto alcanzado) sale de las filas vivas -- no participa del orden por
+  // severidad ni de la alarma del titulo. Se pinta aparte en seccionHistorico().
+  if (extra && extra.historico !== true && Number.isFinite(porcentajeExtra)) {
     filas.push({
       etiqueta: `Extra ${fmtDinero(extra.usadoUsd ?? 0)}/${fmtDinero(extra.limiteUsd ?? 0)}`,
       modelo: null,
-      porcentaje: extra.porcentaje,
+      porcentaje: porcentajeExtra,
       reseteaEn: null,
     })
   }
@@ -134,10 +150,11 @@ function filasDeLimites(limites) {
   return filas.sort((a, b) => b.porcentaje - a.porcentaje)
 }
 
-function agregarVentana(filas, ventana, etiqueta) {
+function agregarVentana(filas, ventana, etiqueta, tipo) {
   if (!ventana || !Number.isFinite(ventana.porcentaje)) return
   filas.push({
     etiqueta,
+    tipo,
     modelo: null,
     porcentaje: ventana.porcentaje,
     reseteaEn: aEpoch(ventana.reseteaEn),
@@ -161,6 +178,36 @@ function aEpoch(valor) {
     return Number.isFinite(t) ? t : null
   }
   return null
+}
+
+// --- historico (SHS-H3-T105) ---
+
+const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
+// UTC siempre: `detectadoEn` es un epoch ms sin zona horaria propia (lo fija
+// usage-history.js con el `ahora` de quien corre el monitor); calcular en UTC
+// evita que el texto cambie segun el huso horario de la maquina que lo lee.
+function etiquetaMesDe(ms) {
+  const d = new Date(ms)
+  return `${MESES[d.getUTCMonth()]}-${d.getUTCFullYear()}`
+}
+
+function etiquetaFechaDe(ms) {
+  const d = new Date(ms)
+  return `${String(d.getUTCDate()).padStart(2, '0')}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+// vista.historico ya viene armado por el dominio (domain/arbol.js::conHistoricoDeExtra):
+// este modulo solo lo formatea a texto para el pie del panel, nunca decide que
+// entra o sale de la seccion.
+function seccionHistorico(historico) {
+  const lista = Array.isArray(historico) ? historico : []
+  return lista
+    .filter((h) => h && Number.isFinite(h.usado) && Number.isFinite(h.limite) && Number.isFinite(h.detectadoEn))
+    .map(
+      (h) =>
+        `Extra ${etiquetaMesDe(h.detectadoEn)}  ${fmtDinero(h.usado)}/${fmtDinero(h.limite)}  alcanzado ${etiquetaFechaDe(h.detectadoEn)}`
+    )
 }
 
 // --- agentes ---

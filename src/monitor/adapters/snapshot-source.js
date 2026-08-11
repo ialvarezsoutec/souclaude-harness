@@ -18,6 +18,8 @@ export function createSnapshotSource({
   ttlLimitsMs,
   tailer = createTailer(),
   limitsReader = createLimitsReader({ ttlMs: ttlLimitsMs }),
+  usageHistory,
+  usageFetcher,
 } = {}) {
   // ESTADO ENTRE TICKS. El tailer solo devuelve lo NUEVO de cada archivo, asi
   // que si `collect` devolviera solo eso el panel mostraria los ultimos 2
@@ -102,6 +104,40 @@ export function createSnapshotSource({
       avisos.push({ file: paths.configFile, reason: err.code ?? err.message })
     }
 
+    // 5a. Aviso de limites viejos (SHS-H3-T106). `usageFetcher.estado()` ya
+    // existe (usage-fetcher.js) pero hasta esta task no tenia consumidor real
+    // fuera de su propio test: si viene con fallos seguidos o con un backoff
+    // vigente, se agrega al mismo canal de avisos que ya usa este paso -- no
+    // se crea un canal nuevo.
+    if (usageFetcher) {
+      const est = usageFetcher.estado()
+      const enBackoff = typeof est.backoffHasta === 'number' && est.backoffHasta > instante
+      if (est.fallosSeguidos > 0 || enBackoff) {
+        const desdeMs = instante - (est.ultimoOkMs ?? est.ultimoIntentoMs ?? instante)
+        const minutosDesde = Math.max(0, Math.round(desdeMs / 60_000))
+        const minutosReintento = enBackoff ? Math.max(0, Math.round((est.backoffHasta - instante) / 60_000)) : 0
+        avisos.push({ reason: `limites sin refrescar desde hace ${minutosDesde}m (reintento en ${minutosReintento}m)` })
+      }
+    }
+
+    // 5b. Historico del gasto extra persistido (SHS-H3-T105). La ESCRITURA es
+    // responsabilidad de commands/monitor.js::registrarHistorico (T104, corre
+    // despues de construirVista, con el gasto extra ya leido en este mismo
+    // snapshot); aca solo se LEE lo que usage-history.js ya tenia guardado de
+    // ticks anteriores, para que domain/arbol.js pueda decidir vivo|historico
+    // sobre un dato real. Mismo patron que limitsReader: la falla se captura
+    // hacia avisos, nunca tumba el tick. Sin usageHistory inyectado (tests que
+    // no lo necesitan, --emit-router), registroExtra queda vacio -- nunca se
+    // inventa un registro.
+    let registroExtra = { abierto: null, archivados: [] }
+    if (usageHistory) {
+      try {
+        registroExtra = usageHistory.leer()
+      } catch (err) {
+        avisos.push({ file: 'usage-history', reason: err.code ?? err.message })
+      }
+    }
+
     // MEMORIA ACOTADA: los eventos acumulados se recortan a la ventana en cada
     // tick y el dedup del tailer se purga con el mismo corte. Sin esto, un
     // monitor abierto 8 horas crece sin limite. Un evento sin ts no se puede
@@ -126,6 +162,7 @@ export function createSnapshotSource({
       archivos: files,
       vivos,
       limites,
+      registroExtra,
       avisos,
     }
   }

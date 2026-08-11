@@ -6,6 +6,7 @@ import { resolveClaudeHome } from '../monitor/adapters/claude-home.js'
 import { createSnapshotSource } from '../monitor/adapters/snapshot-source.js'
 import { createLimitsReader } from '../monitor/adapters/usage-limits-reader.js'
 import { createUsageFetcher } from '../monitor/adapters/usage-fetcher.js'
+import { createUsageHistory } from '../monitor/adapters/usage-history.js'
 import { detectCaps } from '../monitor/adapters/caps.js'
 import { createTtyRenderer } from '../monitor/adapters/tty-renderer.js'
 import { renderPanel } from '../monitor/adapters/panel-layout.js'
@@ -23,12 +24,49 @@ import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writ
 //   --claude-home   apunta a un fixture: no hay credenciales que leer, y ademas
 //                   ningun test puede depender de la red
 // En esos casos se lee solo el cache de .claude.json, como antes.
-function crearLimitsReader(flags) {
-  const sinRed = flags['no-refresh'] === true || flags.refresh === false || ui.isCI() || Boolean(flags['claude-home'])
-  if (sinRed) return undefined
+function sinRefrescoDeRed(flags) {
+  return flags['no-refresh'] === true || flags.refresh === false || ui.isCI() || Boolean(flags['claude-home'])
+}
 
+// Una sola instancia por corrida (o `undefined` si no se toca la red): la
+// comparten `crearLimitsReader` (para refrescar los limites) y
+// `createSnapshotSource` (SHS-H3-T106, para reportar su propio `estado()` como
+// aviso). Antes cada uno tenia su propio fetcher (o directamente no lo tenia,
+// en el caso de snapshot-source), asi que el aviso de "limites sin refrescar"
+// nunca podia aparecer en el panel real, solo en el test con un fake.
+function crearUsageFetcher(flags) {
+  if (sinRefrescoDeRed(flags)) return undefined
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
-  return createLimitsReader({ fetcher: createUsageFetcher({ paths }) })
+  return createUsageFetcher({ paths })
+}
+
+function crearLimitsReader(usageFetcher) {
+  if (!usageFetcher) return undefined
+  return createLimitsReader({ fetcher: usageFetcher })
+}
+
+// Persistencia del historico del gasto extra (ver adapters/usage-history.js y
+// docs/decisions/20260810-monitor-persiste-historico-de-gasto-extra.md): la API
+// nunca informa cuando se detecto el limite alcanzado, asi que el monitor lleva
+// su propio registro. `--seed-extra-detectado-en <ISO>` solo importa la primera
+// vez (sin usage-history.json todavia); en cualquier corrida posterior el
+// adaptador lo ignora.
+function crearUsageHistory(flags) {
+  const paths = resolveClaudeHome({ override: flags['claude-home'] })
+  return createUsageHistory({ paths, seedDetectadoEn: flags['seed-extra-detectado-en'] })
+}
+
+// Registra el gasto extra recien leido en el historico persistido. Nunca lanza:
+// un fallo de disco no puede tumbar un tick del panel (ver usage-history.js).
+// El error (de disco o de logica) no se traga en silencio: se empuja al mismo
+// canal de avisos que usa snapshot-source.js (ver snapshot-source.js:137),
+// para que un fallo real siga siendo visible en el panel en vez de desaparecer.
+function registrarHistorico(usageHistory, vista, ahora) {
+  try {
+    usageHistory.registrar(vista?.limites?.gastoExtra ?? null, ahora)
+  } catch (err) {
+    vista?.avisos?.push({ file: 'usage-history', reason: err.code ?? err.message })
+  }
 }
 
 // `souclaude monitor`: panel de consumo de tokens. Tres modos excluyentes:
@@ -77,7 +115,20 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
   }
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
-  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags) })
+  const usageHistory = crearUsageHistory(flags)
+  // SHS-H3-T106: mismo fetcher para refrescar limites y para reportar su
+  // propio estado() como aviso -- ver crearUsageFetcher.
+  const usageFetcher = crearUsageFetcher(flags)
+  // SHS-H3-T105: el mismo usageHistory que registrarHistorico() usa para
+  // ESCRIBIR (tras cada buildView) se compone aca tambien hacia adentro, para
+  // que collect() pueda LEER lo persistido y domain/arbol.js sepa si el extra
+  // vigente ya paso a historico.
+  const source = createSnapshotSource({
+    paths,
+    limitsReader: crearLimitsReader(usageFetcher),
+    usageHistory,
+    usageFetcher,
+  })
   const clock = { now: () => Date.now() }
 
   const caps = detectCaps({ overrides: flags.ascii ? { unicode: false } : {} })
@@ -85,6 +136,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
 
   if (flags.json) {
     const vista = await buildView({ source, clock, opciones })
+    registrarHistorico(usageHistory, vista, clock.now())
     console.log(renderJson(vista))
     return codigoDeSalida(vista)
   }
@@ -92,17 +144,18 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
   const enVivo = !flags.once && process.stdout.isTTY === true && !ui.isCI()
   if (!enVivo) {
     const vista = await buildView({ source, clock, opciones })
+    registrarHistorico(usageHistory, vista, clock.now())
     const cols = process.stdout.isTTY === true ? caps.cols : COLS_SNAPSHOT
     process.stdout.write(renderPlain(vista, { cols, caps, modo, top: opciones.top }) + '\n')
     return codigoDeSalida(vista)
   }
 
-  return await enVivoLoop({ source, clock, opciones, caps, modo, flags })
+  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory })
 }
 
 // --- panel en vivo ---
 
-async function enVivoLoop({ source, clock, opciones, caps, modo, flags }) {
+async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory }) {
   const intervalo = Math.max(INTERVALO_MINIMO, enteroPositivo(flags.interval, INTERVALO_DEFAULT))
   const renderer = createTtyRenderer()
 
@@ -127,6 +180,7 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags }) {
     enTick = true
     try {
       vista = await buildView({ source, clock, opciones })
+      registrarHistorico(usageHistory, vista, clock.now())
       errorDelTick = null
     } catch (err) {
       // Un error en un tick no mata el bucle: se anota como aviso y se sigue con la
@@ -195,7 +249,9 @@ async function emitRouter(flags, cwd) {
   }
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
-  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(flags) })
+  // --emit-router no dibuja panel ni consume `avisos`: solo necesita que los
+  // limites sigan refrescandose igual que antes, no reportar estado().
+  const source = createSnapshotSource({ paths, limitsReader: crearLimitsReader(crearUsageFetcher(flags)) })
   const clock = { now: () => Date.now() }
 
   // top: null (sin recorte). Este modo busca UN agente o sesion puntual en

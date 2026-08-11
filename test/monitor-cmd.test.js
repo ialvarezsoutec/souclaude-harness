@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import fs from 'node:fs'
 
 import { monitor } from '../src/commands/monitor.js'
 import { mkClaudeHome, lineaAssistant, lineaTitulo } from './helpers-monitor.js'
@@ -258,6 +259,27 @@ test('un flag inexistente (--noexiste): exit 2, lo rechaza parseArgs strict', ()
 // robustez
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// SHS-H3-T106: el usageFetcher compartido con createSnapshotSource
+// ---------------------------------------------------------------------------
+
+test('monitor --once --json --claude-home: sin refresco de red, nunca aparece el aviso de "sin refrescar"', async () => {
+  // --claude-home apunta a un fixture (sinRefrescoDeRed en commands/monitor.js):
+  // no se crea usageFetcher, asi que createSnapshotSource nunca puede reportar
+  // un estado() de fallos/backoff. Este es el comportamiento esperado -- ver
+  // tasks.md SHS-H3-T106 ("verificacion manual" para el caso con red real).
+  const home = mkClaudeHome({
+    proyectos: { p1: { 'sess-1.jsonl': [lineaAssistant({ entrada: 10, salida: 5 })] } },
+  })
+
+  const { code, salida } = await correrJsonEnProceso({ once: true, json: true, 'claude-home': home })
+
+  assert.equal(code, 0)
+  const vista = JSON.parse(salida)
+  const hayAvisoDeRefresco = (vista.avisos ?? []).some((a) => String(a?.reason ?? a).includes('sin refrescar'))
+  assert.equal(hayAvisoDeRefresco, false)
+})
+
 test('monitor --claude-home vacio (maquina recien instalada): exit 0, JSON valido con proyectos: []', async () => {
   const home = mkClaudeHome({}) // sin proyectos ni sesiones
 
@@ -346,4 +368,139 @@ test('codigos de limite via subproceso: exit 2 con 95%+', () => {
   const home = mkClaudeHome({ config: configConLimite(99) })
   const { status } = correrSubproceso(['--once', '--json', '--claude-home', home])
   assert.equal(status, 2)
+})
+
+// ---------------------------------------------------------------------------
+// SHS-H3-T104: --seed-extra-detectado-en tiene que llegar de verdad hasta
+// crearUsageHistory(). Rework: el flag se leia en commands/monitor.js pero
+// nunca se registro en el parser de cli.js (parseArgs strict lo rechazaba con
+// "Unknown option"), asi que la feature estaba muerta -- este test corre por
+// SUBPROCESO (bin/cli.mjs), la unica forma de probar de verdad parseArgs
+// strict (ver cabecera de este archivo).
+// ---------------------------------------------------------------------------
+
+// porcentaje bajo a proposito (20%, no 95%+): este test solo verifica que el
+// flag llega hasta el adaptador, no el codigo de salida por alarma (eso ya lo
+// cubren los tests de "codigos de limite" de mas arriba).
+function configConGastoExtraAlcanzado() {
+  return {
+    cachedUsageUtilization: {
+      fetchedAtMs: Date.now(),
+      utilization: {
+        five_hour: { utilization: 10, resets_at: null },
+        seven_day: { utilization: 10, resets_at: null },
+        extra_usage: {
+          is_enabled: false,
+          monthly_limit: 2000,
+          used_credits: 400,
+          utilization: 20,
+          disabled_reason: null,
+          spend_limit_reached: true,
+        },
+      },
+    },
+  }
+}
+
+test('monitor --seed-extra-detectado-en via subproceso: parseArgs lo acepta y llega hasta usage-history.json', () => {
+  const home = mkClaudeHome({ config: configConGastoExtraAlcanzado() })
+  const seed = '2026-08-06T18:00:00.000Z'
+
+  const { status, stderr } = correrSubproceso([
+    '--once',
+    '--json',
+    '--no-refresh',
+    '--claude-home',
+    home,
+    '--seed-extra-detectado-en',
+    seed,
+  ])
+
+  // Sin el flag registrado en OPTIONS de cli.js, parseArgs strict rechaza la
+  // invocacion entera con "Unknown option '--seed-extra-detectado-en'" y
+  // status 2 -- exactamente el bug de este rework.
+  assert.equal(status, 0, `no debe rechazar el flag (stderr: ${stderr})`)
+
+  const rutaHistoria = path.join(home, 'souclaude', 'usage-history.json')
+  assert.ok(fs.existsSync(rutaHistoria), 'usage-history.json deberia existir: crearUsageHistory() nunca corrio')
+
+  const historia = JSON.parse(fs.readFileSync(rutaHistoria, 'utf8'))
+  assert.ok(historia.abierto, 'deberia haber abierto un registro para el gasto extra alcanzado')
+  assert.equal(
+    historia.abierto.detectadoEn,
+    Date.parse(seed),
+    'el seed deberia fijar detectadoEn, no el "ahora" de la corrida',
+  )
+})
+
+// ---------------------------------------------------------------------------
+// RF-05 (SHS-H3-T105) / criterio de exito de spec.md:209-211: `--json` incluye
+// `historico` -- este punto lo cerraba `tasks.md` con verificacion manual
+// unicamente, contra la regla que la propia spec fija (spec.md:24-27, "ningun
+// RF se cierra con verificacion manual como unico criterio"). Aca corre el
+// pipeline real con `--claude-home` y se afirma sobre el JSON.parse de la
+// salida, con el fixture del payload real del 2026-08-06 ($21.36/$20.00).
+// ---------------------------------------------------------------------------
+
+function configConExtraAlPayloadReal() {
+  return {
+    cachedUsageUtilization: {
+      fetchedAtMs: Date.now(),
+      utilization: {
+        five_hour: { utilization: 10, resets_at: null },
+        seven_day: { utilization: 10, resets_at: null },
+        extra_usage: {
+          is_enabled: false,
+          monthly_limit: 2000,
+          used_credits: 2136,
+          utilization: 100,
+          disabled_reason: 'org_level_disabled_until',
+          spend_limit_reached: true,
+        },
+      },
+    },
+  }
+}
+
+test('monitor --once --json: con un registro abierto de mas de 24h, historico trae el extra archivado', async () => {
+  const home = mkClaudeHome({ config: configConExtraAlPayloadReal() })
+
+  const detectadoEn = Date.now() - 25 * 60 * 60_000
+  fs.mkdirSync(path.join(home, 'souclaude'), { recursive: true })
+  fs.writeFileSync(
+    path.join(home, 'souclaude', 'usage-history.json'),
+    JSON.stringify({
+      abierto: { detectadoEn, usado: 21.36, limite: 20, moneda: 'USD', cerradoEn: null },
+      archivados: [],
+    }),
+    'utf8',
+  )
+
+  const { code, salida } = await correrJsonEnProceso({
+    once: true,
+    json: true,
+    'no-refresh': true,
+    'claude-home': home,
+  })
+
+  // El extra ya paso a historico: no participa de la alarma del header ni del
+  // codigo de salida (RF-05) -- por eso 0 y no 2, aunque spend_limit_reached
+  // siga en true en el payload crudo.
+  assert.equal(code, 0, 'un extra ya historico no debe disparar el codigo de alarma por limite')
+  const vista = JSON.parse(salida)
+
+  assert.deepEqual(vista.historico, [{ usado: 21.36, limite: 20, moneda: 'USD', detectadoEn }])
+  assert.equal(vista.limites.gastoExtra.historico, true)
+})
+
+test('monitor --once --json: sin ningun registro de gasto extra en disco, historico es []', async () => {
+  const home = mkClaudeHome({
+    proyectos: { p1: { 'sess-1.jsonl': [lineaAssistant({ entrada: 10, salida: 5 })] } },
+  })
+
+  const { code, salida } = await correrJsonEnProceso({ once: true, json: true, 'claude-home': home })
+
+  assert.equal(code, 0)
+  const vista = JSON.parse(salida)
+  assert.deepEqual(vista.historico, [])
 })

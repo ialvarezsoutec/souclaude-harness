@@ -45,6 +45,9 @@ const OPTIONS = {
   ascii: { type: 'boolean' },
   refresh: { type: 'boolean', default: true },
   'claude-home': { type: 'string' },
+  // Seed unico del historico del gasto extra (usage-history.js): solo importa
+  // la primera vez, sin usage-history.json todavia. Ver SHS-H3-T104.
+  'seed-extra-detectado-en': { type: 'string' },
   // monitor --emit-router: el puente de telemetria estimada a medida.
   'emit-router': { type: 'boolean' },
   hito: { type: 'string' },
@@ -171,6 +174,9 @@ ${pc.bold('FLAGS DE MONITOR')}
                        ~/.claude.json solo se actualiza cuando corres /usage,
                        asi que sin refresco el dato puede tener 20-50 minutos.
   --claude-home <ruta> Usa otra carpeta ~/.claude (util para fixtures y tests).
+  --seed-extra-detectado-en <ISO>  Fecha de deteccion del gasto extra alcanzado,
+                       solo para la primera vez que se crea usage-history.json.
+                       En corridas posteriores (el archivo ya existe) se ignora.
 
 ${pc.bold('MONITOR --EMIT-ROUTER')}
   Escribe UNA linea "medida" en progress/model-router.jsonl a partir de la
