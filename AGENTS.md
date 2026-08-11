@@ -123,6 +123,36 @@ explícito y entradas/salidas bien definidas. Si en el futuro aparece otro
 caso concreto de este tipo, se agrega con su propio nombre descriptivo, no
 como una casilla vacía a llenar.
 
+## Reconocimiento: el `Explore` nativo
+
+Antes de redactar el CÓMO técnico hay que conocer el terreno, y barrerlo con `Glob`/`Grep`
+quema el contexto más caro del flujo. Para eso se usa el agente **`Explore` de Claude Code**
+—read-only, devuelve la conclusión y no el volcado de archivos—, **no** un rol nuevo del
+harness: no existe `.claude/agents/explorer.md` ni hace falta. Decisión y costos en
+[`docs/decisions/20260811-explorer-nativo-en-el-flujo-sdd.md`](docs/decisions/20260811-explorer-nativo-en-el-flujo-sdd.md).
+
+| Agente | ¿Puede lanzar `Explore`? | Cuándo |
+|---|---|---|
+| `spec-author` | ✅ **solo en fase Plan** | Mapear el terreno antes de redactar `plan.md`. Máx. 1 por fase. |
+| `implementer` | ✅ acotado | Solo si el task toca código que `plan.md` no describe. Máx. 1 por task. |
+| `reviewer` | ❌ nunca | Su valor es la independencia del juicio: lee él, no un tercero que resume. |
+| `orchestrator` | ❌ nunca | Su reconocimiento es de estado, no semántico; ya tiene `Read`/`Glob`/`Grep`. |
+
+**No genera artefacto propio.** El hallazgo se consume en el momento y aterriza en el
+artefacto que ya existía —`plan.md` o `impl_summary.md`—, así que la regla
+anti-teléfono-descompuesto se respeta: el disco sigue siendo la fuente de verdad. Un
+`exploration.md` versionado sería ruido que caduca apenas cambia el código.
+
+**Lo que esto cuesta, dicho de frente**: en `auto`, el `orchestrator` encadena verificando el
+artefacto él mismo. Si `plan.md` se apoya en un mapa que nadie más vio, esa verificación
+alcanza para decir que el plan está *completo*, no que sea *correcto respecto del código
+real*. Por eso la autorización se acota a la fase Plan, donde `plan.md` es lo bastante
+detallado como para que un error de reconocimiento se note al leerlo.
+
+**Telemetría**: el `orchestrator` registra cada lanzamiento en `progress/model-router.jsonl`
+con `agente: "explore"`, igual que cualquier otro. Corre siempre en `inherit` —no se le
+elige tier—, pero su costo tiene que ser visible.
+
 ## Reglas que todos respetan
 
 Los agentes **no redefinen** las reglas del harness; las cumplen. Fuente de verdad:

@@ -149,6 +149,19 @@ Tú ejecutas el **Soutec Model Router**. La política vive en la skill `ccem-mod
    `resultado`/`rework` al cerrar el ciclo del task. Un lanzamiento sin línea es una
    violación del protocolo, igual que un resultado sin referencia a archivo.
 
+### El `Explore` nativo no lo lanzas tú
+
+`spec-author` (fase Plan) e `implementer` (task sobre código que `plan.md` no describe) están
+autorizados a lanzar el agente `Explore` de Claude Code por su cuenta; `reviewer` y **tú** no.
+Tu reconocimiento es de estado —qué artefactos existen, en qué rama estás— y para eso ya
+tienes `Read`/`Glob`/`Grep`/`Bash`.
+
+Lo que sí es tuyo es **registrarlo**: cuando un subagente reporte haber explorado, agrega su
+línea en `progress/model-router.jsonl` con `agente: "explore"`, `clase: "mecanica"`,
+`modelo: "inherit"` y `task` el del task en curso (o `null` en fase Plan). No se le elige
+tier, pero su costo tiene que ser visible en `/rock-close`. Reglas completas en `AGENTS.md`
+y en `docs/decisions/20260811-explorer-nativo-en-el-flujo-sdd.md`.
+
 ## Regla anti-teléfono-descompuesto
 
 Instruye a cada subagente para que **escriba su resultado en disco**, no en su respuesta.

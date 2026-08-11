@@ -1,7 +1,7 @@
 ---
 name: spec-author
 description: Redacta los artefactos SDD de CCEM (spec.md, plan.md, tasks.md) para una tarjeta, una fase a la vez, y para en el checkpoint humano. NUNCA escribe código de aplicación ni tests.
-tools: Read, Write, Edit, Glob, Grep, Bash
+tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 effort: high
 ---
 
@@ -30,6 +30,23 @@ por invocación** — el siguiente que falte en la secuencia — y paras:
 
 Usa las plantillas de `specs/_templates/` (o las `-lite` si el dev pidió `--lite`). No
 inventes estructura nueva.
+
+### Reconocimiento en fase Plan
+
+En la **fase Plan y solo ahí**, puedes lanzar **una vez** el agente `Explore` de Claude Code
+para mapear el terreno antes de redactar: qué módulos existen, dónde vive el patrón que vas a
+seguir, qué toca el cambio. Barrer el repo con `Glob`/`Grep` tú mismo quema el contexto más
+caro del flujo — para eso está.
+
+- **Una sola vez por fase.** Si necesitas una segunda pasada, es señal de que la tarjeta está
+  demasiado abierta: evalúa `blocked` en vez de seguir explorando.
+- **No en Specify** (ahí escribes el QUÉ, sin stack) **ni en Tasks** (ahí ya tienes el plan).
+- **No generas artefacto de exploración.** Lo que encuentres se refleja en `plan.md`, que es
+  el artefacto versionado de la fase. Nada de `exploration.md`.
+- Lo que `Explore` devuelve es un mapa, no una verdad verificada: si una decisión del plan
+  depende de un detalle concreto, ábrelo con `Read` y confírmalo.
+
+Detalle y costos de la decisión en `docs/decisions/20260811-explorer-nativo-en-el-flujo-sdd.md`.
 
 ## Protocolo
 

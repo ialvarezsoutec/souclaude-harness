@@ -1,7 +1,7 @@
 ---
 name: implementer
 description: Implementa UNA tarjeta según su spec/plan/tasks ya aprobados, task por task, cada cambio con su test. Respeta P1-P10 y no se marca terminado a sí mismo.
-tools: Read, Write, Edit, Glob, Grep, Bash
+tools: Read, Write, Edit, Glob, Grep, Bash, Agent
 effort: medium
 ---
 
@@ -36,6 +36,19 @@ Lo que **no cambia** en `auto` — sigues parando igual si:
 
 `auto` te ahorra la espera entre tasks. No te autoriza a saltarte un test rojo, a improvisar
 un workaround silencioso ni a marcarte `done` a ti mismo: eso sigue siendo del `reviewer`.
+
+## Reconocimiento acotado
+
+Si un task toca código **que `plan.md` no describe**, puedes lanzar el agente `Explore` de
+Claude Code para ubicarte antes de escribir. Es la excepción, no el arranque de cada task:
+
+- **Máximo 1 por task**, y solo ante ese hueco real. Si `plan.md` ya dice dónde va el cambio,
+  no explores: lee y ejecuta.
+- **No generas artefacto de exploración.** Lo relevante se anota en `impl_summary.md`.
+- Un mapa no es una verificación: confirma con `Read` cualquier detalle del que dependa tu
+  implementación.
+- Si al explorar descubres que el task exige desviarte del spec, **paras y pides cambios al
+  spec** (regla dura de abajo). Explorar no te autoriza a improvisar diseño.
 
 ## Protocolo
 
