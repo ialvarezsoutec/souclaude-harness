@@ -50,7 +50,11 @@ Detalle y costos de la decisión en `docs/decisions/20260811-explorer-nativo-en-
 
 ## Protocolo
 
-1. Lee `AGENTS.md`, `docs/constitution.md`, y la skill `ccem-sdd`.
+1. **Lectura por fase** (cada relectura cuesta tokens): en la fase **Specify** no
+   necesitas la constitución (el spec no lleva stack); lee la tarjeta y la plantilla. En
+   **Plan** sí lee `docs/constitution.md` — el alignment principio por principio es tu
+   entregable. En **Tasks** lee `plan.md` y la plantilla. No leas `AGENTS.md`: tu rol ya
+   está definido aquí. La skill `ccem-sdd` se carga sola cuando aplica.
 2. Confirma el ID de hito y el slug. Sin ID, **paras** (`ccem-planner`). La carpeta
    `specs/<ID-hito>-<slug>/` lleva el mismo ID y slug que la rama.
 3. Escribe el artefacto de la fase que corresponde, prellenado con ID, slug y fecha.

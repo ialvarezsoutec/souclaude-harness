@@ -52,7 +52,12 @@ Claude Code para ubicarte antes de escribir. Es la excepción, no el arranque de
 
 ## Protocolo
 
-1. Lee `AGENTS.md`, `docs/constitution.md`, y el spec completo en `specs/<ID>-<slug>/`.
+1. **Lectura mínima** (cada relectura cuesta tokens): lee el bloque del task actual en
+   `tasks.md` y las secciones de `plan.md` que ese task referencia — no el spec completo.
+   Los principios críticos (P2, P9, P10) ya vienen resumidos en `CLAUDE.md`, que siempre
+   está cargado; lee `docs/constitution.md` completo **solo** si el task toca arquitectura
+   (puerto nuevo, contrato público, dependencia entre capas). No leas `AGENTS.md`: tu
+   propio rol ya está definido aquí.
 2. Anota en `progress/current.md`: el spec en curso y el plan (tasks `<ID-hito>-T<nnn>`).
 3. **Para cada task en orden**:
    a. **Antes de tomarlo**, sincroniza el Vault (ruta en `.claude/vault.local.json`):

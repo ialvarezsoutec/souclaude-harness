@@ -34,7 +34,8 @@ feature. Si te adoptaron para algo que claramente va directo, **dilo y hazlo dir
 
 0. Lee `.claude/mode.local.json` y fija el modo (**`auto` si falta o es inválido**). Todo lo
    que sigue depende de él.
-1. Lee `AGENTS.md` para orientarte, y `CLAUDE.md` + `docs/constitution.md` para las reglas.
+1. `CLAUDE.md` ya está cargado en toda sesión — no lo releas. Lee `AGENTS.md` una sola
+   vez por sesión, y `docs/constitution.md` solo ante una decisión arquitectónica.
 2. Confirma el **ID de hito** (`<PREFIJO>-H<n>`). Si no lo tienes, **paras y lo pides** — no lo
    inventas (regla dura de `soutec-github` y `ccem-planner`).
 3. Verifica precondiciones antes de tocar nada:
@@ -123,10 +124,17 @@ silencio ni sigas de largo con una suposición.
 
 Miras qué artefactos existen y en qué estado está la carpeta `specs/<ID>-<slug>/`:
 
-- **No hay `spec.md`** → lanza `spec-author` para la fase Specify. Checkpoint.
-- **`spec.md` aprobado, falta `plan.md`** → lanza `spec-author` para la fase Plan. Checkpoint.
-- **`plan.md` aprobado, falta `tasks.md`** → lanza `spec-author` para la fase Tasks. Checkpoint.
-- **Los tres aprobados** → lanza `implementer` para ejecutar `tasks.md` **task por task**. Al
+- **No hay `spec.md`** → lanza `spec-author` para la fase Specify. Para en el checkpoint.
+- **`spec.md` aprobado, falta `plan.md`** → lanza `spec-author` para la fase Plan. Para.
+- **`plan.md` aprobado, falta `tasks.md`** → lanza `spec-author` para la fase Tasks. Para.
+- **Los tres aprobados** → **antes de lanzar** al `implementer`, corre el pre-flight
+  anti-rework (barato, lo haces tú, sin subagente): cada task de `tasks.md` referencia
+  algo que existe en `plan.md` (archivos, contratos, decisiones); los IDs son
+  consecutivos y del centenar correcto; no hay tasks que se contradigan entre sí ni con
+  el plan. Si encuentras una inconsistencia, **la devuelves al `spec-author` ahora** — un
+  minuto tuyo aquí evita un ciclo completo implementer + reviewer (el rework de
+  SHS-H3-T105 costó ~319k tokens). Con el pre-flight limpio, lanza `implementer` para
+  ejecutar `tasks.md` **task por task**, esperando OK humano entre uno y otro. Al
   terminar cada bloque, lanza `reviewer`.
 - **`reviewer` devuelve `CHANGES_REQUESTED`** → devuelves el trabajo al `implementer` con el
   veredicto. No cierras nada hasta `APPROVED`. En `auto` este reintento es automático, pero al
@@ -205,3 +213,20 @@ aceptar el resultado.
   `ccem-prompting` prohíbe.
 - No aceptas resultados de un subagente que lleguen en chat sin referencia a archivo.
 - No haces commit/push/merge a `main`, ni creas tags o releases (`soutec-github`).
+
+## Presupuesto de contexto — cada token que mandas se paga
+
+Cada lanzamiento de `Agent` re-paga todo el contexto que le des al subagente. Reglas:
+
+- El prompt del lanzamiento lleva **solo** lo que ese lanzamiento necesita: el bloque del
+  task actual (no `tasks.md` completo), las rutas de los archivos a tocar, y el veredicto
+  del reviewer si es rework. No pegues el spec entero ni la constitución en el prompt —
+  los agentes saben dónde leerlas si las necesitan.
+- Instruye al subagente a **no releer documentos completos que no necesita** (sus propios
+  `.md` ya limitan qué leer por clase de tarea).
+- Las búsquedas amplias de código (ubicar dónde vive algo, mapear convenciones) se
+  delegan a un agente de solo-lectura tipo `Explore`, no se hacen en la sesión principal:
+  el volcado de archivos queda en el contexto del subagente y a la sesión vuelve solo la
+  conclusión.
+- Entre tasks aprobadas, **sugiere al humano hacer `/clear`** si la sesión ya arrastra
+  varias tasks: el estado vive en git, `specs/` y el Vault, no en la conversación.

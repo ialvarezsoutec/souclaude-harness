@@ -155,6 +155,25 @@ Reglas que causan errores si se omiten. Agregar/quitar según el proyecto.
 - [Regla concreta 1]
 - [Regla concreta 2]
 
+## Economía de tokens
+
+Las sesiones re-pagan el contexto en cada mensaje. Reglas para no despilfarrar:
+
+- **`/clear` entre tasks.** Al cerrar una task (commit hecho, OK humano dado), limpia la
+  sesión antes de tomar la siguiente. El estado vive en git, `specs/`, `progress/` y el
+  Vault — no en la conversación. Una sesión que arrastra 3 tasks paga el historial de
+  las 3 en cada turno.
+- **Búsquedas amplias → subagente de solo-lectura (`Explore`).** Ubicar dónde vive algo o
+  mapear convenciones no se hace con greps y lecturas en la sesión principal: el volcado
+  queda en el subagente y a la sesión vuelve solo la conclusión.
+- **Subagentes con contexto mínimo.** El prompt de un lanzamiento lleva el bloque del
+  task y las rutas afectadas, no artefactos completos. Cada agente tiene su regla de
+  lectura mínima en `.claude/agents/`.
+- **Modelo por clase de tarea.** La matriz de `ccem-model-router` decide modelo y effort;
+  no se fuerza el tier caro por defecto. Tareas mecánicas van en `haiku`.
+- **Conectores MCP al mínimo.** Cada conector de claude.ai suma contexto fijo a cada
+  mensaje de cada sesión. Mantén conectados solo los que este proyecto usa de verdad.
+
 ## Behavior expectations
 
 - Si algo es ambiguo o parece mal: **para y pregunta.** No adivines ni reinterpretes.

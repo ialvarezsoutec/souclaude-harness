@@ -109,3 +109,11 @@ rm -rf "$WORK"
   oficial (sin isotipo/contraportada). Si hace falta un fallback sin la skill, está en el
   historial de git.
 - **Skill gemela `soutec-md-a-pdf-nativo`** — no se creó: `soutec-md-a-pdf` ya es nativa.
+
+## 2026-08-10 — Optimización de consumo de tokens
+La telemetría de SHS-H3 mostró tareas estándar de 243k-319k tokens de salida. Causas:
+contexto fijo grande (conectores MCP + relecturas completas de constitución/spec por cada
+subagente) y rework (1 devolución ≈ duplica el costo del task). Cambios aplicados: sección
+"Economía de tokens" en CLAUDE.md, tier `haiku` para tareas mecánicas en ccem-model-router,
+reglas de lectura mínima en los 4 agentes, pre-flight anti-rework en el orchestrator.
+Pendiente humano: desconectar conectores de claude.ai que este repo no usa.

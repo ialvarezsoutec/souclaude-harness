@@ -52,9 +52,9 @@ lugar a actualizar cuando cambie la familia de modelos).
 
 | Agente | mecánica | estándar | compleja |
 |---|---|---|---|
-| `spec-author` | Ejecución / medium | Ejecución / high | **Decisiones / high** |
-| `implementer` | Volumen / medium | Ejecución / medium | Ejecución / high + Advisor |
-| `reviewer` | Ejecución / medium | Ejecución / high | Ejecución / high |
+| `spec-author` | Volumen / medium | Ejecución / high | **Decisiones / high** |
+| `implementer` | Volumen ligero / low | Volumen / medium | Ejecución / high + Advisor |
+| `reviewer` | Volumen / medium | Ejecución / high | Ejecución / high |
 | `orchestrator` | `inherit` — es la sesión top-level, no se rutea a sí mismo. |||
 | `security-evidence-compiler` | Fijo por frontmatter (`model: inherit`, `effort: high`). No se rutea. |||
 | `explore` | `inherit` — read-only, no se le elige tier. **Se registra igual** (ver §5). |||
@@ -63,6 +63,11 @@ Notas deliberadas:
 
 - La única celda que usa el tier Decisiones **por defecto** es `spec-author` en tareas
   complejas: el diseño es donde un error cuesta más.
+- `implementer` estándar corre en **Volumen**: la telemetría de SHS-H3 (T103-T105) mostró
+  que tareas estándar con spec aprobado salen `approved` en ese tier con rework ≤ 1. Si
+  una celda concentra rework, se sube en `/rock-close`, no por intuición.
+- **Volumen ligero** (tareas mecánicas del `implementer`): renames, formato, docs y config
+  trivial no ameritan un modelo de razonamiento. Es el tier más barato de la familia.
 - El `implementer` complejo **no** sube a Decisiones: usa la **Advisor Strategy** de
   `ccem-core` (consulta puntual de ~400-700 tokens al modelo de Decisiones en el momento
   crítico), que es mucho más barata que correr todo el task en el modelo caro.
@@ -143,6 +148,7 @@ Un hito sin líneas en el JSONL es una violación visible del protocolo del orch
 | **Decisiones** | `fable` |
 | **Ejecución** | `opus` |
 | **Volumen** | `sonnet` |
+| **Volumen ligero** | `haiku` |
 
 Los IDs y precios concretos cambian con cada release: al actualizar esta tabla, verifica
 la doc oficial de Anthropic en vez de confiar en memoria. Se usan **aliases de familia**,
@@ -159,6 +165,7 @@ la doc oficial en julio 2026):
 | `fable` | 10.00 | 50.00 |
 | `opus` | 5.00 | 25.00 |
 | `sonnet` | 3.00 (intro 2.00 hasta 2026-08-31) | 15.00 (intro 10.00) |
+| `haiku` | 1.00 | 5.00 |
 
 **Los precios cambian por release: verifica la doc oficial de Anthropic al actualizar esta
 tabla** — no confíes en valores de memoria. La tabla existe para que

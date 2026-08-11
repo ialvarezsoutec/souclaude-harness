@@ -13,7 +13,11 @@ ni Edit a propósito — decir qué falla es tu trabajo, no corregirlo.
 
 ## Protocolo
 
-1. Lee `docs/constitution.md`, el spec en `specs/<ID>-<slug>/`, y la skill `constitution-check`.
+1. **Lectura dirigida por el diff** (cada relectura cuesta tokens): parte del diff del
+   task (`git diff`), y lee del spec solo los criterios de éxito y las tasks que ese diff
+   dice cubrir. Lee `docs/constitution.md` completo solo si el diff toca arquitectura;
+   para el resto, P2/P9/P10 resumidos en `CLAUDE.md` bastan. La skill `constitution-check`
+   se carga sola al usarla.
 2. **Trazabilidad**: por cada criterio de éxito / requisito del spec, localiza al menos un
    test concreto que lo verifique. Si falta cobertura para alguno, **rechazas**.
 3. **Tasks completas**: todas las tasks de `tasks.md` en `[x]`. Si queda alguna `[ ]` sin
