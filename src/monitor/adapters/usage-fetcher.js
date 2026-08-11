@@ -124,6 +124,13 @@ function fallback(cache) {
 // cabecera Authorization.
 async function pedirUtilizacion(doFetch, token, timeoutMs) {
   if (typeof doFetch !== 'function') return null
+  // Timer propio (ref'd) en vez de AbortSignal.timeout: ese usa un timer
+  // unref'd, y si el event loop se queda sin trabajo referenciado antes de que
+  // dispare (Node 22 bajo `node --test`), el proceso termina con la promesa
+  // colgada para siempre ("Promise resolution is still pending but the event
+  // loop has already resolved") y arrastra en cascada los tests siguientes.
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     const res = await doFetch(ENDPOINT, {
       method: 'GET',
@@ -132,7 +139,7 @@ async function pedirUtilizacion(doFetch, token, timeoutMs) {
         'anthropic-beta': 'oauth-2025-04-20',
         Accept: 'application/json',
       },
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: controller.signal,
     })
 
     // 401 incluido: se trata como un fallo mas. No renovamos el token.
@@ -143,6 +150,8 @@ async function pedirUtilizacion(doFetch, token, timeoutMs) {
     return body
   } catch {
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }
 
