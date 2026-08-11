@@ -27,4 +27,10 @@ Observaciones no bloqueantes (deuda anotada):
 - En `pushSeguro`, un fallo del `add` se etiqueta `push_fallo` (impreciso, sin efecto
   en exit codes).
 
-## Ronda 2 — pendiente de re-dictamen tras las correcciones docs.
+## Ronda 2 — APPROVED
+
+Verificado sobre `1753e58` (+ `63e97f8`, pr-body): B1 y B2 resueltos; `git diff` de
+`src/`, `test/` y `.claude/` vacío desde la ronda 1, así que trazabilidad, constitución,
+anti-hack y tests (391/391) siguen vigentes. Deuda no bloqueante anotada arriba.
+
+APPROVED -> progress/vault-sync/review.md
