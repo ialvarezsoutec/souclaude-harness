@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
 
 jobs:
@@ -10,10 +10,13 @@ jobs:
     # Windows es el entorno real de los devs de SOUTEC (OneDrive, CRLF, rutas con
     # espacios). Ubuntu esta para que el lockfile escrito en Windows se pueda leer
     # desde CI: por eso el hash se normaliza a LF y las rutas van en POSIX.
+    # Node 22 custodia el piso de engines (>=22.4, por allowNegative en parseArgs);
+    # 24 es la version de trabajo del equipo.
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
+        node: [22, 24]
 
     runs-on: ${{ matrix.os }}
 
@@ -22,7 +25,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ matrix.node }}
 
       - run: npm ci
 
