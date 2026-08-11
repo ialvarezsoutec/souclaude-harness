@@ -7,10 +7,22 @@
       "Read(./.env.*)",
       "Read(./secrets/**)",
       "Read(./**/*.pem)",
-      "Read(./**/id_rsa*)"
+      "Read(./**/*.key)",
+      "Read(./**/*.pfx)",
+      "Read(./**/credentials.json)",
+      "Read(./**/secrets.json)",
+      "Read(./**/id_rsa*)",
+      "Read(~/.claude/.credentials.json)",
+      "Read(~/.aws/credentials)",
+      "Read(~/.ssh/**)"
     ],
     "ask": [
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git merge:*)",
+      "Bash(git tag:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(gh release:*)"
     ]
   }
 }

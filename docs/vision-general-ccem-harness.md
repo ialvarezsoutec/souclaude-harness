@@ -29,7 +29,7 @@ Alrededor de esa frase hay tres capas que conviene no confundir:
 | Capa | Qué es | Dónde vive |
 |---|---|---|
 | **CCEM** | La *metodología*: principios, flujo SDD, prompting anti-hack, trazabilidad, criterios de research. | `.claude/skills/`, `docs/constitution.md` |
-| **La orquestación multiagente** | Un *patrón de ejecución* opt-in que hace cumplir CCEM con 4 roles separados. | `.claude/agents/`, `AGENTS.md` |
+| **La orquestación multiagente** | Un *patrón de ejecución* que hace cumplir CCEM con 4 roles separados, y se activa según la complejidad del pedido. | `.claude/agents/`, `AGENTS.md` |
 | **souclaude-harness** | El *CLI/instalador* que emite y mantiene al día todo lo anterior en cualquier repo. | `src/`, `templates/`, `bin/cli.mjs` |
 
 CCEM es el método. La orquestación es *una forma de ejecutarlo*. El harness es el *vehículo
@@ -290,12 +290,22 @@ cierra nada hasta `APPROVED`.
 Los checkpoints humanos y "ningún agente se auto-aprueba ni marca `done`" son **P6 hecho
 producto**.
 
-### 3.2 Cómo se invoca
+### 3.2 Cómo se activa
 
-Es **opt-in**: no corre en cada sesión, se pide ("actuá como `orchestrator` para la tarjeta
-PLN-XXX"). Como un subagente de Claude Code no siempre puede lanzar otros subagentes, en la
-práctica **la sesión principal adopta el rol `orchestrator`** y desde ahí lanza a los demás.
-Para un cambio que la matriz marca como "saltá SDD", no se monta el flujo: se hace directo.
+Hay **dos puertas**. La formal es que el usuario lo pida: `/spec-new <ID> <slug>` —que crea
+la rama, la carpeta y los tres artefactos— o el pedido en palabras ("actúa como
+`orchestrator` para la tarjeta PLN-XXX"). Ahí se monta el flujo sin discutir la
+clasificación.
+
+La segunda es el **triaje por complejidad**: ante todo pedido que implique escribir código, la
+sesión lo clasifica contra la matriz de `ccem-sdd` antes de tocar nada. Un cambio cosmético o
+un fix puntual se hace directo —montar el flujo ahí viola P9—; una feature nueva, una
+integración externa o un cambio de contrato entran al flujo completo. Cubre el caso que antes
+se caía: el pedido complejo que nadie marcó como tal. El triaje está en `AGENTS.md` y
+`CLAUDE.md`.
+
+Como un subagente de Claude Code no siempre puede lanzar otros subagentes, en la práctica
+**la sesión principal adopta el rol `orchestrator`** y desde ahí lanza a los demás.
 
 ### 3.3 Resultados por disco, no por chat
 

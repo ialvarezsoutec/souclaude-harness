@@ -25,23 +25,137 @@ aprueba a sí mismo**.
 hito (ID <PREFIJO>-H<n>) ─► rama tipo/<ID-hito>-<slug>
         │
         ▼
-spec.md ─► ⏸ HUMANO ─► plan.md ─► ⏸ HUMANO ─► tasks.md ─► ⏸ HUMANO ─► implement ─► review ─► PR
+spec.md ─► ⏸ ─► plan.md ─► ⏸ ─► tasks.md ─► ⏸ ─► implement ─► review ─► PR
 ```
 
-Son **tres checkpoints humanos** antes de escribir código, no uno. Hasta que `spec.md`,
-`plan.md` y `tasks.md` estén aprobados, la rama **solo admite commits `docs:`**. Durante
-`implement`, el review es incremental (task por task), nunca en batch al final.
+Son **tres checkpoints** antes de escribir código, no uno. Hasta que `spec.md`, `plan.md` y
+`tasks.md` estén aprobados, la rama **solo admite commits `docs:`**. Durante `implement`, el
+review es incremental (task por task), nunca en batch al final.
 
-## Cómo se invoca (opt-in)
+Quién levanta cada `⏸` depende del **modo de trabajo**.
 
-La orquestación **no** corre en cada sesión: la pides cuando la quieres.
+## Modo de trabajo: `manual` y `auto`
 
-> "Actuá como `orchestrator` para el hito REA-H3."
+**El default es `auto`: el flujo corre solo.** No hay que configurar nada para trabajar
+desatendido — es el comportamiento base del harness.
+
+Quien quiera revisar fase por fase lo pide explícito:
+
+```
+npx souclaude mode          # muestra el modo actual
+npx souclaude mode manual   # pide OK en cada checkpoint
+npx souclaude mode auto     # vuelve al default (borra el opt-in)
+```
+
+El opt-in vive en `.claude/mode.local.json` — **archivo local, gitignorado**, como
+`.claude/vault.local.json`: es de tu máquina, no del proyecto. Si falta, está corrupto o trae
+un valor inválido, **el modo es `auto`**.
+
+Por qué el default es autónomo: el modo de trabajo lo eliges con el **permission mode de
+Claude Code** (shift+tab), y ese modo **no se expone en runtime** — un agente no puede
+consultarlo. Si el flujo desatendido dependiera de escribir un archivo, ciclar a automático no
+cambiaría nada. Por eso el harness corre solo por defecto y `manual` es el opt-in.
+
+| | `auto` (default) | `manual` |
+|---|---|---|
+| Checkpoints spec/plan/tasks | El `orchestrator` verifica y encadena | Esperan tu OK |
+| Entre task y task | Encadena | Espera tu OK |
+| `reviewer` | **Obligatorio** | Obligatorio |
+| Ambigüedad, `blocked`, tests rojos | **Para** | Para |
+| Acciones destructivas o externas (P6) | **Para** | Para |
+
+Lo que `auto` elimina es **la espera por una aprobación humana**, no el control de calidad. El
+`reviewer` independiente sigue corriendo y su `CHANGES_REQUESTED` sigue bloqueando; el
+Anti-Hack de `ccem-prompting` sigue vigente; y P6 —"no existe autonomía total sobre sistemas
+externos"— sigue mandando: en `auto`, `git push`, merge a `main`, tags, releases y deploys
+**siguen pidiendo tu confirmación**. Relajar eso no es cuestión de un flag: exige un ADR y
+cambiar la constitución.
+
+En `auto`, el `orchestrator` toma el checkpoint en tu lugar: lee el artefacto recién escrito,
+verifica que esté completo y sea coherente, y recién ahí encadena, dejando `auto_ok` en
+`progress/history.md`. Un artefacto a medias no se aprueba solo por estar en `auto`.
+
+### Modo ≠ permisos: son dos perillas distintas
+
+| | Qué gobierna | Dónde se configura |
+|---|---|---|
+| **Modo** (`auto`/`manual`) | Los **checkpoints metodológicos** del flujo SDD: ¿hay que esperar tu OK entre fases y entre tasks? | `.claude/mode.local.json` |
+| **Permisos** | Si Claude pide confirmación para **ejecutar una herramienta** (correr un comando, editar un archivo) | `permissions` en `.claude/settings.json` + el permission mode de Claude Code (shift+tab) |
+
+Para que Claude ejecute comandos sin preguntarte, la perilla es **permisos**, no el modo. El
+harness deja `permissions.deny` sobre secretos (`.env`, claves, credenciales) y `permissions.ask`
+sobre el puñado de operaciones que P6 marca como irreversibles:
+
+```
+git push · git merge · git tag · git reset --hard · gh pr merge · gh release
+```
+
+Esa lista es corta a propósito: **todo lo demás corre sin preguntar**. Editar, leer, `npm test`,
+`git add`, `git commit`, `git fetch` — nada de eso pide permiso. Lo que queda en `ask` es lo que
+reescribe historia, publica hacia afuera o destruye trabajo, que es exactamente lo que P6
+protege ("no existe autonomía total sobre sistemas externos"). Un `git push` es la frontera
+donde el trabajo deja tu máquina y pasa a ser de todos.
+
+Si en tu contexto necesitas que esas seis también corran solas, sácalas de `ask` en tu
+`.claude/settings.local.json` (personal, gitignorado) — pero es una decisión consciente que
+va contra P6, no un default del harness.
+
+## Cómo se activa (por complejidad, no por invocación)
+
+Hay **dos puertas de entrada al flujo**, y ninguna reemplaza a la otra:
+
+| Puerta | Cómo se ve | Qué pasa |
+|---|---|---|
+| **El usuario lo pide** | `/spec-new <ID> <slug>` · "hagamos esto con SDD" · "actúa como `orchestrator` para REA-H3" | Se monta el flujo, **sin triaje**. Su pedido gana |
+| **El triaje lo determina** | Cualquier pedido que implique escribir código | Clasificas contra `ccem-sdd` y actúas según el resultado |
+
+La primera es la vía formal y existía desde siempre: **`/spec-new` es el comando canónico**
+—crea la rama, `specs/<ID-hito>-<slug>/` y los tres artefactos desde las plantillas, y
+entrevista para llenar la spec—. Si el usuario lo invoca, no le discutas la clasificación: si
+te parece que el trabajo era simple, dilo en una línea, pero lo haces.
+
+Lo que se agregó es la segunda: antes, un pedido complejo sin invocación explícita se
+implementaba a mano. Ahora **ante todo pedido que implique escribir código** clasificas
+primero contra la matriz de `ccem-sdd` y actúas según el resultado.
+
+### El triaje, antes de tocar nada
+
+Tres salidas posibles. La matriz completa vive en `ccem-sdd` (fuente de verdad); esto es cómo
+se aplica:
+
+| Señal en el pedido | Salida | Qué haces |
+|---|---|---|
+| Feature nueva · integración con sistema externo · contrato o schema nuevo · migración · superficie de seguridad (auth, datos sensibles) · >3 archivos · >2 días | **SDD completo** | Adoptas `orchestrator` y arrancas por `spec.md` |
+| Ajuste a componente existente · optimización con métrica base | **SDD lite** | Plantillas `-lite`, mismo flujo |
+| Fix puntual · cosmético (color, copy, rename, formato) · spike · hotfix · typo · script one-off | **Directo** | Lo haces y ya. **Montar SDD aquí viola P9** |
+
+Ejemplos, para calibrar:
+
+- *"Cambia el color de este botón"* · *"renombra esta variable"* · *"arregla este typo"* →
+  **directo**. Un solo archivo, sin decisión de diseño, reversible de un vistazo.
+- *"Agrega un módulo de login con Entra ID y recuperación de cuenta"* → **SDD completo**. Es
+  integración externa + superficie de seguridad + contrato nuevo: tres señales duras, y
+  cualquiera sola ya bastaba.
+
+**Ante la duda, pregunta en una línea** en vez de asumir. Montar ceremonia sobre un cambio de
+color desperdicia el día; hacer a mano un login con Entra ID se salta el diseño justo donde
+un error cuesta más caro.
+
+### Cuando el triaje da SDD
 
 Un subagente de Claude Code no siempre puede lanzar otros subagentes, así que en la práctica
 **la sesión principal adopta el rol `orchestrator`** y desde ahí lanza a `spec-author`,
-`implementer` y `reviewer` según la fase. Para un cambio que la matriz de `ccem-sdd` marca
-como "saltá SDD" (fix puntual, cosmético, spike, hotfix), no montes el flujo: hazlo directo.
+`implementer` y `reviewer` según la fase.
+
+Anuncia la clasificación en una línea antes de arrancar —*"Esto es SDD completo: integración
+externa + superficie de seguridad. Arranco por `spec.md`."*— para que el humano pueda
+corregirte antes de que escribas nada. Si te dice que no hace falta, **le haces caso**: es su
+decisión, no la tuyas.
+
+Si el pedido llega **sin rama ni hito** (el caso normal de un pedido complejo que aparece de
+la nada), no arranques a escribir en `main`: crea la rama según las reglas de `CLAUDE.md`
+—con ID de hito si hay, `tipo/<slug>` si no— y sigue. Eso es parte del flujo, no un permiso
+aparte.
 
 ## Agentes especialistas bajo demanda
 
@@ -54,6 +168,36 @@ No es un rol genérico de "asesor" — es un agente con contrato de activación
 explícito y entradas/salidas bien definidas. Si en el futuro aparece otro
 caso concreto de este tipo, se agrega con su propio nombre descriptivo, no
 como una casilla vacía a llenar.
+
+## Reconocimiento: el `Explore` nativo
+
+Antes de redactar el CÓMO técnico hay que conocer el terreno, y barrerlo con `Glob`/`Grep`
+quema el contexto más caro del flujo. Para eso se usa el agente **`Explore` de Claude Code**
+—read-only, devuelve la conclusión y no el volcado de archivos—, **no** un rol nuevo del
+harness: no existe `.claude/agents/explorer.md` ni hace falta. Decisión y costos en
+[`docs/decisions/20260811-explorer-nativo-en-el-flujo-sdd.md`](docs/decisions/20260811-explorer-nativo-en-el-flujo-sdd.md).
+
+| Agente | ¿Puede lanzar `Explore`? | Cuándo |
+|---|---|---|
+| `spec-author` | ✅ **solo en fase Plan** | Mapear el terreno antes de redactar `plan.md`. Máx. 1 por fase. |
+| `implementer` | ✅ acotado | Solo si el task toca código que `plan.md` no describe. Máx. 1 por task. |
+| `reviewer` | ❌ nunca | Su valor es la independencia del juicio: lee él, no un tercero que resume. |
+| `orchestrator` | ❌ nunca | Su reconocimiento es de estado, no semántico; ya tiene `Read`/`Glob`/`Grep`. |
+
+**No genera artefacto propio.** El hallazgo se consume en el momento y aterriza en el
+artefacto que ya existía —`plan.md` o `impl_summary.md`—, así que la regla
+anti-teléfono-descompuesto se respeta: el disco sigue siendo la fuente de verdad. Un
+`exploration.md` versionado sería ruido que caduca apenas cambia el código.
+
+**Lo que esto cuesta, dicho de frente**: en `auto`, el `orchestrator` encadena verificando el
+artefacto él mismo. Si `plan.md` se apoya en un mapa que nadie más vio, esa verificación
+alcanza para decir que el plan está *completo*, no que sea *correcto respecto del código
+real*. Por eso la autorización se acota a la fase Plan, donde `plan.md` es lo bastante
+detallado como para que un error de reconocimiento se note al leerlo.
+
+**Telemetría**: el `orchestrator` registra cada lanzamiento en `progress/model-router.jsonl`
+con `agente: "explore"`, igual que cualquier otro. Corre siempre en `inherit` —no se le
+elige tier—, pero su costo tiene que ser visible.
 
 ## Reglas que todos respetan
 

@@ -1,6 +1,6 @@
 # Spec Lite: el CLI clona el Vault de forma segura y con menos fricción
 
-**Status**: draft
+**Status**: implemented
 **Owner**: Ignacio A
 **Hito**: SHS-H2
 **Creado**: 2026-08-04
@@ -69,15 +69,17 @@ En orden de prioridad:
 
 ## Success criteria
 
-- [ ] Un test reproduce el escenario real: prompt de destino con una ruta relativa que cae
-      dentro de `cwd`, y `ensureVault` la rechaza sin clonar nada ahí.
-- [ ] `--vault-path <ruta-dentro-del-repo> --vault-clone --yes` también se rechaza (mismo
+- [x] Un test reproduce el escenario real: prompt de destino con una ruta relativa que cae
+      dentro de `cwd`, y `ensureVault` la rechaza sin clonar nada ahí. (El prompt de ruta
+      solo aparece si el usuario rechaza el destino sugerido — ver plan.md, corrección
+      encontrada en T102.)
+- [x] `--vault-path <ruta-dentro-del-repo> --vault-clone --yes` también se rechaza (mismo
       chequeo, camino no interactivo).
-- [ ] Con `../soubunker-vault` presente y válido junto al repo de prueba, `init --yes` lo
+- [x] Con `../soubunker-vault` presente y válido junto al repo de prueba, `init --yes` lo
       conecta sin ninguna pregunta y sin el flag `--vault-clone`.
-- [ ] El camino interactivo sin Vault detectado hace **una sola** pregunta antes de
+- [x] El camino interactivo sin Vault detectado hace **una sola** pregunta antes de
       clonar, no dos.
-- [ ] `npm test` sigue en verde total y `verify --strict` limpio.
+- [x] `npm test` sigue en verde total (289/289) y `verify --strict` limpio.
 
 ## Riesgos
 

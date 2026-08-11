@@ -57,6 +57,7 @@ lugar a actualizar cuando cambie la familia de modelos).
 | `reviewer` | Ejecución / medium | Ejecución / high | Ejecución / high |
 | `orchestrator` | `inherit` — es la sesión top-level, no se rutea a sí mismo. |||
 | `security-evidence-compiler` | Fijo por frontmatter (`model: inherit`, `effort: high`). No se rutea. |||
+| `explore` | `inherit` — read-only, no se le elige tier. **Se registra igual** (ver §5). |||
 
 Notas deliberadas:
 
@@ -112,6 +113,14 @@ escrita por el orchestrator (Bash, `>>`). Campos:
   artefactos (prompt enviado + archivos leídos/escritos, ~4 caracteres por token) y marca
   `"estimado"`. **Regla de honestidad**: un `"estimado"` es orden de magnitud para
   comparar celdas de la matriz — jamás se presenta como cifra contable ni de facturación.
+
+**Lanzamientos de `Explore`**: el agente `Explore` de Claude Code lo lanzan `spec-author`
+(fase Plan) e `implementer` (task sobre código no descrito en `plan.md`); `reviewer` y
+`orchestrator` no. No se rutea —corre en `inherit`— pero **se registra igual**, con
+`agente: "explore"`, `clase: "mecanica"`, `modelo: "inherit"` y `resultado: "approved"`. Su
+costo entra al total del hito como cualquier otro lanzamiento: si el reconocimiento se vuelve
+caro, tiene que verse en `/rock-close`, no esconderse. Decisión completa en
+`docs/decisions/20260811-explorer-nativo-en-el-flujo-sdd.md`.
 
 **Aprendizaje = ritual humano, sin ML.** En `/rock-close` se resume el JSONL del
 trimestre y se ajusta la matriz si:

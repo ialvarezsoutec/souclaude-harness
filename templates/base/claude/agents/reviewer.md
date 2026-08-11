@@ -37,6 +37,11 @@ ni Edit a propósito — decir qué falla es tu trabajo, no corregirlo.
 - Nunca apruebes si quedan tasks en `[ ]` sin justificación.
 - Nunca edites el código del implementer. Si algo falla, lo describes, no lo tocas.
 - Sé concreto: archivo y línea. Nada de feedback genérico.
+- **No delegas la lectura.** A diferencia de `spec-author` e `implementer`, tú no lanzas el
+  agente `Explore` ni ningún subagente: tu valor es la independencia del juicio, y un
+  veredicto apoyado en el resumen de un tercero es exactamente cómo un review se vuelve
+  ceremonial. El diff lo lees tú, con `Read` y `Grep`
+  (`docs/decisions/20260811-explorer-nativo-en-el-flujo-sdd.md`).
 
 ## Veredicto
 

@@ -19,8 +19,31 @@ hito y el cierre — el hito emite los IDs).
 Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`; y de la
 capa de rocas: `/rock-plan`, `/rock-status`, `/rock-close`, `/export-ninety`.
 
-Agentes de orquestación (opt-in) en `.claude/agents/`: `orchestrator`, `spec-author`,
-`implementer`, `reviewer`. El flujo completo está en `AGENTS.md`.
+Agentes de orquestación en `.claude/agents/`: `orchestrator`, `spec-author`, `implementer`,
+`reviewer`. El flujo completo está en `AGENTS.md`.
+
+## Cuándo se activa el flujo SDD
+
+**Ante todo pedido que implique escribir código, clasifícalo antes de tocar nada.** El flujo
+SDD se activa **por complejidad**, no porque alguien lo pida por su nombre:
+
+- **Directo, sin ceremonia** — fix puntual, cosmético (color, copy, rename, formato), typo,
+  spike, hotfix, script one-off. *"Cambia el color de este botón"* se hace y ya. Montar SDD
+  aquí **viola P9**.
+- **SDD** — feature nueva, integración con un sistema externo, contrato o schema nuevo,
+  migración, superficie de seguridad (auth, datos sensibles), >3 archivos o >2 días. *"Agrega
+  un módulo de login con Entra ID y recuperación de cuenta"* entra por acá: adoptas
+  `orchestrator` y arrancas por `spec.md`.
+
+Anuncia la clasificación en una línea antes de arrancar, para que el humano pueda corregirte
+a tiempo; si te dice que no hace falta, le haces caso. **Ante la duda, pregunta** en vez de
+asumir. La matriz completa está en la skill `ccem-sdd` y el triaje detallado en `AGENTS.md`.
+
+**El triaje no es la única puerta.** El usuario puede pedir SDD directamente —con
+`/spec-new <ID> <slug>`, o en palabras ("hagamos esto con SDD", "actúa como
+`orchestrator`")— y entonces **se monta el flujo sin discutir la clasificación**: su pedido
+explícito gana. Si además te parece que el trabajo era simple, puedes decirlo en una línea,
+pero haces lo que te pidió.
 
 ## Constitución
 
@@ -47,12 +70,16 @@ hotfixes también.
 - **Toda rama nace de un hito de una roca.** Formato: `tipo/<ID-hito>-<slug>`
   (`feature/REA-H3-captura-lead`). Tipos: `feature` `fix` `hotfix` `docs` `chore`
   `refactor` `experiment`. El ID del hito es `<PREFIJO>-H<n>` (`REA-H3`), emitido en el
-  Paso 2 de la roca (`/rock-plan`). **Planner no se usa. Si no tienes el ID, PREGUNTA. No
-  lo inventes.**
-- La carpeta de spec lleva **el mismo ID y el mismo slug** que la rama:
-  `specs/<ID-hito>-<slug>/`. Ese ID es el hilo que amarra hito, spec, rama, commits, PR y
-  release. Sin él, la cadena está rota. Un hito puede producir varios specs (mismo ID,
-  distinto slug); cada carpeta = una rama = un PR.
+  Paso 2 de la roca (`/rock-plan`).
+  **Excepción temporal (rocas/Planner desactivados por ahora):** mientras no se usen
+  rocas, no es obligatorio parar a pedir el ID de hito. Si no hay uno, usa el formato
+  `tipo/<slug>` (sin prefijo de ID) y seguí adelante. En cuanto se retome el uso de rocas,
+  esta excepción se revierte y vuelve a regir "si no tienes el ID, PREGUNTA. No lo
+  inventes."
+- La carpeta de spec lleva **el mismo ID (o el mismo slug, si no hay ID)** que la rama:
+  `specs/<ID-hito>-<slug>/` o, sin ID, `specs/<slug>/`. Ese identificador es el hilo que
+  amarra hito, spec, rama, commits, PR y release. Un hito puede producir varios specs
+  (mismo ID, distinto slug); cada carpeta = una rama = un PR.
 - Commits: `tipo: descripción breve` (español, sin scope). Tipos: `feat` `fix` `docs`
   `chore` `refactor` `test` `style` `build` `ci` `perf` `revert`. Un hotfix se commitea
   como `fix:`. Prohibidos: `update`, `cosas`, `ahora sí`.
@@ -85,8 +112,21 @@ momento. Protocolo completo, convención de commits y manejo de conflictos en
 Hasta que `spec.md`, `plan.md` y `tasks.md` estén listos, la rama **solo admite commits
 `docs:`**. Nada de código todavía.
 
-Un commit por task, no en batch. Ejecutar de a un task y **esperar el OK humano** antes
-de pasar al siguiente. PR draft tras 2-3 commits, no al final.
+Un commit por task, **nunca en batch**: se ejecuta de a un task, con su test y su commit.
+PR draft tras 2-3 commits, no al final.
+
+Quién aprueba el paso de un task al siguiente depende del **modo de trabajo**:
+
+- **`auto` — el default.** El flujo encadena sin pedir OK: no hay que configurar nada. **Sigue
+  parando igual** ante un spec ambiguo, un `blocked`, tests rojos, un `CHANGES_REQUESTED` del
+  reviewer, o cualquier acción destructiva o sobre un sistema externo (P6: push, merge, tags,
+  releases, deploys).
+- **`manual` — opt-in** (`npx souclaude mode manual`): se **espera el OK humano** antes de
+  pasar al siguiente task y en cada checkpoint de spec/plan/tasks.
+
+El modo se lee de `.claude/mode.local.json` (local y gitignorado); si el archivo falta o es
+inválido, rige `auto`. Cambia quién aprueba el avance, no si hay control de calidad: el
+`reviewer` es obligatorio en ambos modos. Detalle completo en `AGENTS.md`.
 
 ## Language
 

@@ -9,6 +9,8 @@ import { upgrade } from './commands/upgrade.js'
 import { status } from './commands/status.js'
 import { adopt } from './commands/adopt.js'
 import { verify } from './commands/verify.js'
+import { monitor } from './commands/monitor.js'
+import { mode } from './commands/mode.js'
 import * as ui from './ui.js'
 
 const OPTIONS = {
@@ -26,12 +28,37 @@ const OPTIONS = {
   vault: { type: 'boolean', default: true },
   'vault-path': { type: 'string' },
   'vault-repo': { type: 'string' },
+  'vault-clone': { type: 'boolean' },
   'assume-version': { type: 'string' },
+  // monitor. --interval y --top solo pueden ser 'string' en parseArgs (no hay tipo
+  // numerico): el comando los convierte y valida.
+  interval: { type: 'string' },
+  since: { type: 'string' },
+  project: { type: 'string' },
+  session: { type: 'string' },
+  sort: { type: 'string' },
+  top: { type: 'string' },
+  once: { type: 'boolean' },
+  json: { type: 'boolean' },
+  compact: { type: 'boolean' },
+  agents: { type: 'boolean' },
+  ascii: { type: 'boolean' },
+  refresh: { type: 'boolean', default: true },
+  'claude-home': { type: 'string' },
+  // monitor --emit-router: el puente de telemetria estimada a medida.
+  'emit-router': { type: 'boolean' },
+  hito: { type: 'string' },
+  task: { type: 'string' },
+  agente: { type: 'string' },
+  resultado: { type: 'string' },
+  rework: { type: 'string' },
+  motivo: { type: 'string' },
+  clase: { type: 'string' },
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean' },
 }
 
-const COMMANDS = { init, upgrade, status, adopt, verify }
+const COMMANDS = { init, upgrade, status, adopt, verify, monitor, mode }
 
 export async function main(argv, cwd) {
   let parsed
@@ -66,7 +93,9 @@ export async function main(argv, cwd) {
   }
 
   try {
-    return await COMMANDS[command](flags, cwd)
+    // _positionals viaja dentro de flags para no cambiarle la firma a los seis
+    // comandos que no lo necesitan. Hoy solo `mode <valor>` lee un positional.
+    return await COMMANDS[command]({ ...flags, _positionals: positionals }, cwd)
   } catch (err) {
     ui.log.error(err.message)
     if (flags.verbose) console.error(err.stack)
@@ -101,6 +130,12 @@ ${pc.bold('COMANDOS')}
             solo anota en .claude/harness.json que ya coincide con el harness.
   ${pc.cyan('verify')}    Audita el propio harness (manifest vs templates/base/): huerfanos,
             rutas rotas, ids/dest duplicados, criticos faltantes. No mira ningun proyecto.
+  ${pc.cyan('monitor')}   Panel de consumo de tokens de Claude Code: limites, agentes vivos,
+            sesiones y proyectos. Sale 0/1/2 segun el peor limite (util en un hook).
+  ${pc.cyan('mode')}      Modo de trabajo de los agentes. Por defecto es 'auto': el flujo
+            encadena las fases sin pedir OK. 'manual' es el opt-in para revisar
+            fase por fase. Sin argumento, solo muestra el modo actual. El opt-in
+            se guarda en .claude/mode.local.json (local, gitignorado).
 
   Sin comando, se autodetecta: hay lockfile -> upgrade · hay estructura previa -> adopt · repo limpio -> init
 
@@ -114,9 +149,44 @@ ${pc.bold('FLAGS')}
   --name, --type, --stack, --lang    Responden las preguntas sin modo interactivo.
   --vault-path <ruta>  Conecta el Vault ya clonado sin preguntar (escribe .claude/vault.local.json).
   --vault-repo <url>   Repo del Vault a clonar. Por defecto, el del manifest.
+  --vault-clone        Con --yes, clona el Vault si no esta conectado (por defecto,
+                       --yes nunca clona). Rechaza cualquier destino dentro de este repo.
   --no-vault           Omite el paso del Vault por completo.
   --assume-version     (adopt) Version del harness que se asume instalada.
   --strict             (verify) Los warnings (huerfanos) tambien hacen fallar el comando.
+
+${pc.bold('FLAGS DE MONITOR')}
+  --interval <ms>      Refresco del panel en vivo. Default 2000, minimo 250.
+  --since <ventana>    Ventana de datos: 30m, 1h, 6h, 24h, 7d o all. Default 24h.
+  --project <txt>      Filtra por proyecto. "." usa el directorio actual.
+  --session <prefijo>  Filtra por prefijo de session id.
+  --sort <criterio>    tokens (default), costo o reciente.
+  --top <n>            Filas por contenedor. Default 10. No afecta los totales.
+  --once               Un snapshot en texto plano y sale. Sin TTY o en CI es lo mismo.
+  --json               Vuelca el modelo de datos completo y sale. No pinta panel.
+  --compact            Vista de una linea por sesion, sin caja.
+  --agents             Solo la seccion AHORA (agentes vivos).
+  --ascii              Fuerza glifos ASCII (equivale a SOUCLAUDE_ASCII=1).
+  --no-refresh         No consulta los limites de plan a la API. El caché de
+                       ~/.claude.json solo se actualiza cuando corres /usage,
+                       asi que sin refresco el dato puede tener 20-50 minutos.
+  --claude-home <ruta> Usa otra carpeta ~/.claude (util para fixtures y tests).
+
+${pc.bold('MONITOR --EMIT-ROUTER')}
+  Escribe UNA linea "medida" en progress/model-router.jsonl a partir de la
+  telemetria real de un agente o sesion ya corridos (ver SKILL ccem-model-router).
+  Es la unica escritura del comando: sin este flag, monitor es de solo lectura.
+
+  --emit-router           Activa el modo. No dibuja panel.
+  --hito <id>             Obligatorio. ID del hito (ej. SHS-H3).
+  --task <id>             ID completo del task (ej. SHS-H3-T019). Sin task, null.
+  --agente <rol>          spec-author, implementer, reviewer...
+  --resultado <valor>     approved | changes_requested | escalated | fallback | aborted.
+  --rework <n>            Devoluciones del reviewer sobre ese task. Default 0.
+  --motivo <texto>        Obligatorio si --resultado es escalated o fallback.
+  --clase <valor>         mecanica | estandar | compleja.
+  --session <prefijo>     (mismo flag de arriba) sesion a medir, si no se mide un agente.
+  --force                 (mismo flag de arriba) reescribe aunque ya exista la linea (idempotencia).
 
 ${pc.bold('GARANTIA')}
   Un archivo tuyo NUNCA se sobrescribe en silencio. Si difiere del harness, la

@@ -2,6 +2,54 @@
 
 El harness y el CLI se versionan juntos.
 
+## [2.4.0] — no publicado
+
+`souclaude monitor`: panel de consumo de tokens de Claude Code en la terminal.
+
+### Agregado
+
+- **Comando `monitor`**: panel de límites de plan, agentes vivos, sesiones,
+  proyectos y desglose por tipo de token y por modelo, leído directamente de
+  `~/.claude/projects/**/*.jsonl`. Modos `--once`, `--compact`, `--agents`,
+  `--json` y panel en vivo con TTY (alternate buffer, resize, teclas). Sale
+  0/1/2 según el peor límite de plan — pensado para un hook. No suma ninguna
+  dependencia nueva.
+- **Refresco propio de los límites de plan**: `cachedUsageUtilization` de
+  `~/.claude.json` solo se reescribe cuando el humano corre `/usage` — medido
+  con un poller sobre `fetchedAtMs`: cero refrescos en 12 minutos de actividad
+  continua, y `claude auth status` tampoco lo toca. El monitor ahora consulta
+  el mismo endpoint que usa Claude Code, `GET
+  https://api.anthropic.com/api/oauth/usage`, con el token OAuth que Claude
+  Code ya guarda, TTL de 5 minutos y caché propio en
+  `~/.claude/souclaude/usage-cache.json`. Entre las dos fuentes gana la de
+  lectura más reciente, entera: los campos nunca se mezclan. El endpoint es
+  interno y no documentado — puede romperse con cualquier actualización de
+  Claude Code — así que ante 401, 404, cambio de forma o timeout el monitor
+  cae al caché y el panel muestra la edad real del dato, nunca inventa un
+  número.
+- **Flag `--no-refresh`**: desactiva la consulta a la API para CI, para
+  `--claude-home` apuntando a un fixture, o cuando el humano prefiere no
+  tocar la red. Ningún test sale a internet.
+- **Reglas `deny` nuevas en `.claude/settings.json`**: `~/.claude/.credentials.json`
+  (guarda, además del token de Claude, los OAuth de los conectores MCP de
+  terceros — es probablemente el archivo más sensible de la máquina),
+  `~/.ssh/**` y `~/.aws/credentials`, más las que `CLAUDE.md` ya daba por
+  existentes (`*.key`, `*.pfx`, `credentials.json`, `secrets.json`).
+- **18 tests nuevos** sobre el manejo del token con credenciales falsas
+  reconocibles (suite total: 284 pass).
+
+### Decisiones
+
+- **Deduplicación por `message.id`**: varias líneas `assistant` de un mismo
+  transcript comparten `message.id` y repiten el objeto `usage` completo. Sin
+  deduplicar, el consumo se infla 2-3x — el síntoma es un número mal, no una
+  excepción, así que la regla vive en el acumulador de dominio
+  (`domain/consumo.js`), no en un adapter donde se pueda saltear.
+- **Tokens medidos, costo estimado**: los tokens salen del `usage` de cada
+  respuesta (dato real); el costo en USD sale de una tabla de precios local,
+  porque la máquina no guarda lo que costó cada llamada (dato estimado). El
+  panel lo declara en su propio pie para que nunca se confundan.
+
 ## [2.3.0] — no publicado
 
 El Vault deja de ser un paso manual: el instalador lo conecta (y lo clona si hace falta), y

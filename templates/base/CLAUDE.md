@@ -20,6 +20,32 @@ modelo y esfuerzo por subagente, escalamiento excepcional y telemetría).
 Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`; y de la
 capa de rocas: `/rock-plan`, `/rock-status`, `/rock-close`, `/export-ninety`.
 
+Agentes de orquestación en `.claude/agents/`: `orchestrator`, `spec-author`, `implementer`,
+`reviewer`. El flujo completo está en `AGENTS.md`.
+
+## Cuándo se activa el flujo SDD
+
+**Ante todo pedido que implique escribir código, clasifícalo antes de tocar nada.** El flujo
+SDD se activa **por complejidad**, no porque alguien lo pida por su nombre:
+
+- **Directo, sin ceremonia** — fix puntual, cosmético (color, copy, rename, formato), typo,
+  spike, hotfix, script one-off. *"Cambia el color de este botón"* se hace y ya. Montar SDD
+  aquí **viola P9**.
+- **SDD** — feature nueva, integración con un sistema externo, contrato o schema nuevo,
+  migración, superficie de seguridad (auth, datos sensibles), >3 archivos o >2 días. *"Agrega
+  un módulo de login con Entra ID y recuperación de cuenta"* entra por acá: adoptas
+  `orchestrator` y arrancas por `spec.md`.
+
+Anuncia la clasificación en una línea antes de arrancar, para que el humano pueda corregirte
+a tiempo; si te dice que no hace falta, le haces caso. **Ante la duda, pregunta** en vez de
+asumir. La matriz completa está en la skill `ccem-sdd` y el triaje detallado en `AGENTS.md`.
+
+**El triaje no es la única puerta.** El usuario puede pedir SDD directamente —con
+`/spec-new <ID> <slug>`, o en palabras ("hagamos esto con SDD", "actúa como
+`orchestrator`")— y entonces **se monta el flujo sin discutir la clasificación**: su pedido
+explícito gana. Si además te parece que el trabajo era simple, puedes decirlo en una línea,
+pero haces lo que te pidió.
+
 ## Constitución
 
 **Siempre** leer `docs/constitution.md` antes de cualquier decisión arquitectónica o
@@ -83,8 +109,21 @@ momento. Protocolo completo, convención de commits y manejo de conflictos en
 Hasta que `spec.md`, `plan.md` y `tasks.md` estén listos, la rama **solo admite commits
 `docs:`**. Nada de código todavía.
 
-Un commit por task, no en batch. Ejecutar de a un task y **esperar el OK humano** antes
-de pasar al siguiente. PR draft tras 2-3 commits, no al final.
+Un commit por task, **nunca en batch**: se ejecuta de a un task, con su test y su commit.
+PR draft tras 2-3 commits, no al final.
+
+Quién aprueba el paso de un task al siguiente depende del **modo de trabajo**:
+
+- **`auto` — el default.** El flujo encadena sin pedir OK: no hay que configurar nada. **Sigue
+  parando igual** ante un spec ambiguo, un `blocked`, tests rojos, un `CHANGES_REQUESTED` del
+  reviewer, o cualquier acción destructiva o sobre un sistema externo (P6: push, merge, tags,
+  releases, deploys).
+- **`manual` — opt-in** (`npx souclaude mode manual`): se **espera el OK humano** antes de
+  pasar al siguiente task y en cada checkpoint de spec/plan/tasks.
+
+El modo se lee de `.claude/mode.local.json` (local y gitignorado); si el archivo falta o es
+inválido, rige `auto`. Cambia quién aprueba el avance, no si hay control de calidad: el
+`reviewer` es obligatorio en ambos modos. Detalle completo en `AGENTS.md`.
 
 ## Language
 
