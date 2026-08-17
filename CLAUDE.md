@@ -51,15 +51,17 @@ Trabajas contra **dos repos a la vez**, con reglas opuestas a propósito:
 
 | | Este repo (proyecto) | El Vault |
 |---|---|---|
-| Qué va | Código, tests, progreso | Kanban, espejos de progreso |
+| Qué va | Código, tests, progreso | Milestones, planes, kanban, sesiones |
 | Cómo se escribe | Rama + PR. **Nunca** directo a `main` | **Push directo a `main`**, sin PR |
 | Por qué | Todo cambio se revisa | El tablero refleja el ahora, no el último merge |
 
 La ruta local del Vault está en `.claude/vault.local.json` (la escribe `npx souclaude`).
-Antes de tomar una tarjeta del kanban: `git -C "<vault>" pull --rebase` y lee
-`Project-<PREFIJO>/kanban.md`. Si ya está **En curso** con otro dueño, la está
-trabajando otra máquina: **para y pregunta**. Protocolo completo en
-`progress/README.md`. **Nunca `git push --force`, en ninguno de los dos.**
+Antes de empezar a trabajar: `git -C "<vault>" pull --rebase` y lee
+`Project-<PREFIJO>/milestones.md` y `kanban.md`. Si el milestone o la tarea ya está
+**En curso** con otro dueño u otra máquina: **para y pregunta**. Al tomar o cerrar
+algo, mueve la tarjeta y pushea **en ese momento**; al cerrar la sesión, agrega tu
+línea (con tokens) a `sessions.md`. Protocolo completo en `progress/README.md`.
+**Nunca `git push --force`, en ninguno de los dos.**
 
 ## Language
 
