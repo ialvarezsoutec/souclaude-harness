@@ -6,6 +6,7 @@ import {
   columnas,
   fmtDinero,
   fmtDuracion,
+  fmtDuracionMin,
   fmtRelativo,
   fmtTokens,
   rellenarDerecha,
@@ -197,6 +198,45 @@ function regla(ctx, izq, der, titulo, extra, tinte) {
   return tenir(izq + cuerpo + der, tinte, ctx.color)
 }
 
+/**
+ * Igual que regla(), pero con un tercer texto CENTRADO en el tramo de relleno
+ * entre el titulo (izquierda) y el extra (derecha): usada en la barra
+ * superior del panel para poner "CUENTAS" a la izquierda y "souclaude
+ * monitor" centrado en la misma linea (ver renderFull).
+ */
+function reglaConCentro(ctx, izq, der, titulo, centro, extra, tinte) {
+  const h = ctx.chars.frame.h
+  const interno = Math.max(0, ctx.cols - 2)
+
+  const t = titulo ? truncar(sanearCelda(titulo), Math.max(0, interno - 6), { elipsis: ctx.elipsis }) : ''
+  const prefijo = h + (t ? ` ${t} ` : '')
+
+  let ex = ''
+  if (extra) {
+    const hueco = interno - anchoVisual(prefijo) - 5
+    if (hueco >= 6) ex = truncar(sanearCelda(extra), hueco, { elipsis: ctx.elipsis })
+  }
+  const sufijo = ex ? ` ${ex} ${h}` : ''
+
+  const huecoTotal = Math.max(0, interno - anchoVisual(prefijo) - anchoVisual(sufijo))
+
+  const c = centro ? truncar(sanearCelda(centro), Math.max(0, huecoTotal - 2), { elipsis: ctx.elipsis }) : ''
+  const bloqueCentro = c ? ` ${c} ` : ''
+  const anchoCentro = anchoVisual(bloqueCentro)
+
+  // El centro solo entra si deja al menos 1 caracter de linea a cada lado; si
+  // no hay hueco (terminal muy angosta), se degrada a la regla sin centro.
+  if (anchoCentro + 2 > huecoTotal) {
+    const cuerpo = ajustar(prefijo + h.repeat(huecoTotal) + sufijo, interno, h)
+    return tenir(izq + cuerpo + der, tinte, ctx.color)
+  }
+
+  const izqRelleno = Math.floor((huecoTotal - anchoCentro) / 2)
+  const derRelleno = huecoTotal - anchoCentro - izqRelleno
+  const cuerpo = ajustar(prefijo + h.repeat(izqRelleno) + bloqueCentro + h.repeat(derRelleno) + sufijo, interno, h)
+  return tenir(izq + cuerpo + der, tinte, ctx.color)
+}
+
 // --- helpers de datos ---
 
 function num(v) {
@@ -221,6 +261,26 @@ function limitesOrdenados(vista) {
     .filter((l) => l && Number.isFinite(l.porcentaje))
     .slice()
     .sort((a, b) => b.porcentaje - a.porcentaje)
+}
+
+// Filas del header de barras: con una sola cuenta, identico a limitesOrdenados
+// (solo la cuenta local). Con SOUCLAUDE_LOCAL_ACCOUNTS o Vault activos, un
+// bloque de filas por cada cuenta con datos, con el alias antepuesto a la
+// etiqueta ("dev 5h", "dev_claude 5h") para no confundir a que cuenta
+// pertenece cada barra. El titulo del panel y la alarma (limiteEnAlarma)
+// siguen mirando SOLO limitesOrdenados/la cuenta local: no tiene sentido que
+// el titulo grite LIMITE por el consumo de otra cuenta.
+function limitesParaHeader(vista) {
+  const porCuenta = Array.isArray(vista?.limitesPorCuenta) ? vista.limitesPorCuenta : []
+  if (porCuenta.length <= 1) return limitesOrdenados(vista)
+
+  const filas = []
+  for (const bloque of porCuenta) {
+    for (const l of bloque.filas) {
+      filas.push({ ...l, etiqueta: `${bloque.alias} ${l.etiqueta}` })
+    }
+  }
+  return filas
 }
 
 function textoReset(ctx, limite) {
@@ -248,9 +308,14 @@ function glifoEstado(ctx, estado) {
 
 // --- header de limites ---
 
-function lineasLimites(ctx, limites) {
+function lineasLimites(ctx, limites, { multiCuenta = false } = {}) {
   const interior = ctx.interior
-  const anchoEtiqueta = Math.max(9, Math.min(18, Math.floor(interior * 0.2)))
+  // Con multiples cuentas la etiqueta lleva el alias antepuesto ("dev_claude
+  // Ventana 5h"): el cap normal (18) trunca eso a "dev_claude Vent...", asi
+  // que el techo sube para dejar entrar alias + "Ventana Nh" completos.
+  const topeEtiqueta = multiCuenta ? 28 : 18
+  const proporcion = multiCuenta ? 0.28 : 0.2
+  const anchoEtiqueta = Math.max(9, Math.min(topeEtiqueta, Math.floor(interior * proporcion)))
   const anchoBarra = Math.max(6, Math.min(32, Math.floor(interior * 0.34)))
   const fijos = anchoEtiqueta + anchoBarra + 4 + 2
   const anchoResto = Math.max(0, interior - fijos - 4)
@@ -458,51 +523,125 @@ function seccionConsumo(ctx, vista) {
   }
 }
 
-// Seccion CUENTAS: una fila por cuenta del equipo (la local + las publicadas
-// en el Vault). Fuera del orden por severidad del header, del titulo LIMITE y
-// del exit code: informa para decidir con cual cuenta seguir, no alarma.
+// Ancho minimo de columna para que dos cuentas quepan lado a lado con barras
+// legibles (alias + costo + un par de filas de limite con barra visible). Por
+// debajo de esto, se apilan verticalmente.
+const ANCHO_MIN_COLUMNA_CUENTA = 34
+
+// Seccion CUENTAS: el titulo "CUENTAS" y el grafico de barras (antes header
+// aparte) viven ahora en la barra superior del panel (ver renderFull); esta
+// seccion arranca directo con el contenido. Cada cuenta arma su propio bloque
+// de FILAS DE CELDAS (cabecera con alias/costo + una fila por limite con
+// datos: Ventana 7d/5h, Fable solo en la local, Extra si aplica), sin bordes
+// propios -- los bordes de caja los pone UNA SOLA VEZ este build() por linea
+// de pantalla. Nunca lineaCaja() anidado: fila() trunca con
+// str.replace(REGEX_ANSI,'') antes de colorear, asi que colorear una caja y
+// despues reinyectarla como celda de OTRA fila() le borraria el color (ver
+// mismo problema ya resuelto en seccionDesglose, dosColumnas). Con
+// exactamente 2 cuentas y espacio suficiente, los dos bloques se arman a
+// mitad de ancho y sus celdas se concatenan en la misma fila, SIN separador
+// visible entre ambas mitades. Con 1, 3+ cuentas o poco ancho, cada bloque
+// usa el interior completo y se apilan verticalmente.
 function seccionCuentas(ctx, vista) {
-  const filas = Array.isArray(vista?.cuentas?.filas) ? vista.cuentas.filas : []
-  const remotas = filas.filter((f) => !f.esLocal).length
+  const resumenes = Array.isArray(vista?.cuentas?.filas) ? vista.cuentas.filas : []
+  const porAlias = new Map(
+    (Array.isArray(vista?.limitesPorCuenta) ? vista.limitesPorCuenta : []).map((b) => [b.alias, b.filas])
+  )
+
+  const anchoMitad = Math.floor(ctx.interior / 2)
+  const ladoALado = resumenes.length === 2 && anchoMitad >= ANCHO_MIN_COLUMNA_CUENTA
+
+  const filasDeCeldas = ladoALado
+    ? combinarLadoALado(ctx, resumenes, porAlias, anchoMitad)
+    : resumenes.flatMap((f) => bloqueDeCuenta(ctx, f, porAlias.get(f.alias) ?? [], ctx.interior, true))
 
   return {
     id: 'cuentas',
-    min: Math.min(2, 1 + filas.length),
-    max: 1 + filas.length,
+    min: Math.min(1, filasDeCeldas.length),
+    max: Math.max(1, filasDeCeldas.length),
     build(n) {
-      const extra = remotas > 0 ? `${remotas} remota${remotas === 1 ? '' : 's'}` : 'solo esta maquina'
-      const lineas = [regla(ctx, ctx.chars.frame.ml, ctx.chars.frame.mr, 'CUENTAS', extra, ctx.tinteMarco)]
-
-      for (const f of filas.slice(0, Math.max(0, n - 1))) {
-        // Una fila vieja se apaga entera: un 12% de hace una hora pintado de
-        // verde invita a confiar en un dato que ya no dice nada.
-        const apagado = f.vieja ? 'dim' : null
-        const origen = f.esLocal ? 'local' : texto(f.maquina, 'remota')
-        const frescura = f.esLocal
-          ? ''
-          : `${fmtRelativo(ctx.ahora - (f.frescuraMs ?? 0), ctx.ahora)}${f.vieja ? ' (dato viejo)' : ''}`
-
-        lineas.push(
-          lineaCaja(
-            ctx,
-            [
-              { texto: texto(f.alias, '?'), ancho: 12, tinte: apagado ?? (f.esLocal ? 'bold' : null) },
-              { texto: '5h', ancho: 2, tinte: 'dim' },
-              { texto: pctTexto(f.cincoHoras ?? NaN), ancho: 5, alinear: 'd', tinte: apagado ?? tinteDePct(f.cincoHoras) },
-              { texto: '7d', ancho: 2, tinte: 'dim' },
-              { texto: pctTexto(f.sieteDias ?? NaN), ancho: 5, alinear: 'd', tinte: apagado ?? tinteDePct(f.sieteDias) },
-              { texto: f.extra ? `extra ${f.extra}` : '', ancho: 22, tinte: apagado ?? 'dim' },
-              { texto: f.costoUsd != null ? fmtDinero(f.costoUsd) : '', ancho: 8, alinear: 'd', tinte: apagado },
-              { texto: origen, ancho: 10, tinte: apagado ?? 'cyan' },
-              { texto: frescura, ancho: RESTO, tinte: 'dim' },
-            ],
-            ctx.tinteMarco
-          )
-        )
+      if (filasDeCeldas.length === 0) {
+        return [lineaCaja(ctx, [{ texto: 'sin cuentas', ancho: RESTO, tinte: 'dim' }], ctx.tinteMarco)]
       }
-      return lineas
+      return filasDeCeldas.slice(0, n).map((celdas) => lineaCaja(ctx, celdas, ctx.tinteMarco))
     },
   }
+}
+
+// Arma las FILAS DE CELDAS (no strings, no lineaCaja) de una cuenta: cabecera
+// (alias + costo, sin maquina/frescura -- con SOUCLAUDE_LOCAL_ACCOUNTS esos
+// datos son ruido: misma maquina, "ahora" siempre) + una fila por limite con
+// datos, cada una sumando exactamente `ancho` (mas separadores de fila()).
+//
+// `soloRest` distingue los dos casos de uso: cuando el bloque ocupa una
+// columna COMPLETA (apilado, `soloRest: true`) la ultima celda es RESTO y
+// fila() le da todo el sobrante real. Cuando el bloque comparte fila con
+// otro (lado a lado, `soloRest: false`) NO puede usar RESTO -- fila() solo
+// resuelve la PRIMERA celda RESTO que encuentra en toda la fila combinada, y
+// la segunda mitad quedaria con ancho 0 (ver comentario en fila()) -- asi
+// que cada celda de relleno recibe un ancho NUMERICO fijo, calculado contra
+// el `ancho` de esa mitad.
+function bloqueDeCuenta(ctx, f, filasLimite, ancho, soloRest = false) {
+  const apagado = f.vieja ? 'dim' : null
+  // La cuenta local (esLocal) es la que corre ESTE monitor ahora mismo: se
+  // marca con "> " antepuesto al alias en vez de un texto generico "local".
+  const marcaActiva = f.esLocal ? '> ' : '  '
+  const anchoRellenoCabecera = soloRest ? RESTO : Math.max(0, ancho - 16 - 1 - 8 - 1)
+
+  const cabecera = [
+    { texto: `${marcaActiva}${texto(f.alias, '?')}`, ancho: 16, tinte: apagado ?? (f.esLocal ? 'bold' : null) },
+    { texto: f.costoUsd != null ? fmtDinero(f.costoUsd) : '', ancho: 8, alinear: 'd', tinte: apagado },
+    { texto: '', ancho: anchoRellenoCabecera },
+  ]
+
+  const filas = filasLimite.map((l) => celdasLimiteDeCuenta(ctx, l, apagado, ancho, soloRest))
+  return [cabecera, ...filas]
+}
+
+// Celdas de una fila de limite (Ventana 7d/5h, Fable, Extra) dentro del
+// bloque de una cuenta, con barra proporcional al ANCHO recibido (interior
+// completo o mitad, segun si la cuenta comparte fila con otra). El texto de
+// reset (`textoReset`) recibe ancho FIJO cuando `soloRest` es false, por la
+// misma razon que la celda de relleno de la cabecera (ver bloqueDeCuenta).
+function celdasLimiteDeCuenta(ctx, l, apagadoForzado, ancho, soloRest) {
+  const sev = severidad(l.porcentaje)
+  const tinte = apagadoForzado ?? tinteDeNivel(sev.nivel)
+  const anchoEtiqueta = Math.max(9, Math.min(16, Math.floor(ancho * 0.22)))
+  const anchoBarra = Math.max(4, Math.min(28, Math.floor(ancho * 0.32)))
+  const b = barra(l.porcentaje, anchoBarra, { lleno: ctx.chars.bar.full, vacio: ctx.chars.bar.empty })
+  const anchoFijos = 2 + anchoEtiqueta + anchoBarra + 5 + 2 + 4 // 4 separadores entre 5 celdas + la de reset
+  const anchoReset = soloRest ? RESTO : Math.max(0, ancho - anchoFijos)
+
+  return [
+    { texto: '', ancho: 2 },
+    { texto: texto(l.etiqueta, texto(l.modelo, 'limite')), ancho: anchoEtiqueta, tinte: apagadoForzado ?? 'dim' },
+    { texto: b, ancho: anchoBarra, tinte },
+    { texto: pctTexto(l.porcentaje), ancho: 5, alinear: 'd', tinte },
+    { texto: sev.marca, ancho: 2, tinte },
+    { texto: textoReset(ctx, l), ancho: anchoReset, tinte: 'dim' },
+  ]
+}
+
+// Arma los bloques de las 2 cuentas a mitad de ancho cada uno (celdas puras,
+// con anchos NUMERICOS fijos -- ver bloqueDeCuenta/celdasLimiteDeCuenta,
+// soloRest: false) y concatena las celdas de izquierda + derecha en una
+// unica fila que build() convierte a linea con UN lineaCaja. Sin separador
+// visible entre las dos mitades: cada bloque ya suma exactamente anchoMitad
+// en celdas fijas. Si un bloque tiene menos filas que el otro, el lado corto
+// se completa con una celda vacia del mismo ancho (no se repiten datos de la
+// cuenta mas chica ni se desalinea la fila).
+function combinarLadoALado(ctx, resumenes, porAlias, anchoMitad) {
+  const bloques = resumenes.map((f) => bloqueDeCuenta(ctx, f, porAlias.get(f.alias) ?? [], anchoMitad, false))
+  const alto = Math.max(...bloques.map((b) => b.length), 0)
+  const vacia = [{ texto: '', ancho: anchoMitad }]
+
+  const filas = []
+  for (let i = 0; i < alto; i++) {
+    const izq = bloques[0]?.[i] ?? vacia
+    const der = bloques[1]?.[i] ?? vacia
+    filas.push([...izq, ...der])
+  }
+  return filas
 }
 
 // Mismos umbrales que el header (85/95), pero sin marca: aca el color alcanza.
@@ -638,11 +777,10 @@ function seccionSesiones(ctx, vista) {
   const sep = ctx.chars.separator
   const recortadas = num(vista?.recortes?.sesiones)
 
-  // La columna CUENTA solo se muestra si hay mas de una cuenta con sesiones en
-  // esta vista (SOUCLAUDE_LOCAL_ACCOUNTS): con una sola, la columna solo
-  // repetiria el mismo alias en cada fila sin aportar nada.
-  const conMultiplesCuentas = new Set(filas.map((x) => x.cuenta ?? '')).size > 1
-  const anchos = anchosSesiones(ctx.interior, conMultiplesCuentas)
+  // La columna CUENTA siempre se muestra (aunque todas las sesiones sean de
+  // la misma cuenta): identifica de quien es cada fila sin depender de que
+  // haya SOUCLAUDE_LOCAL_ACCOUNTS configurado.
+  const anchos = anchosSesiones(ctx.interior, true)
 
   function cabecera() {
     return lineaCaja(
@@ -663,13 +801,13 @@ function seccionSesiones(ctx, vista) {
   }
 
   function filaSesion(x) {
-    const dur = Number.isFinite(x.duracionMs) ? fmtDuracion(x.duracionMs) : '-'
+    const dur = Number.isFinite(x.duracionMs) ? fmtDuracionMin(x.duracionMs) : '-'
     return lineaCaja(
       ctx,
       [
         { texto: texto(x.id), ancho: anchos.id, tinte: 'cyan' },
         { texto: texto(x.titulo, '(sin titulo)'), ancho: RESTO },
-        anchos.cuenta ? { texto: texto(x.cuenta, 'local'), ancho: anchos.cuenta, tinte: 'dim' } : null,
+        anchos.cuenta ? { texto: texto(x.cuenta, '?'), ancho: anchos.cuenta, tinte: 'dim' } : null,
         anchos.proyecto ? { texto: texto(x.proyecto), ancho: anchos.proyecto, tinte: 'dim' } : null,
         anchos.rama ? { texto: texto(x.rama), ancho: anchos.rama, tinte: 'dim' } : null,
         anchos.modelo ? { texto: texto(x.modelo), ancho: anchos.modelo } : null,
@@ -873,22 +1011,25 @@ function renderFull(ctx, vista) {
   const alarma = limiteEnAlarma(limites)
   ctx.tinteMarco = alarma ? 'red' : 'dim'
 
-  const derecha = [
-    `actualizado ${fmtRelativo(num(vista.actualizadoEn) || ctx.ahora, ctx.ahora)}`,
-    '[q] salir',
-  ].join(` ${chars.separator} `)
+  // "actualizado hace Xm" vive en el PIE (abajo a la derecha), no en el
+  // header: la barra superior solo necesita "[q] salir".
+  const actualizado = `actualizado ${fmtRelativo(num(vista.actualizadoEn) || ctx.ahora, ctx.ahora)}`
 
-  const cabeza = [
-    regla(ctx, chars.frame.tl, chars.frame.tr, tituloPanel(limites, vista.cuenta), derecha, ctx.tinteMarco),
-    lineaVacia(ctx, ctx.tinteMarco),
-    ...lineasLimites(ctx, limites),
-    lineaVacia(ctx, ctx.tinteMarco),
-  ]
-  const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), '', ctx.tinteMarco)
+  // El header de barras y la linea de titulo "CUENTAS" se fusionaron con la
+  // barra superior del panel: con cuentas, la barra dice "CUENTAS" a la
+  // izquierda y "souclaude monitor" centrado (sin alias -- ese ya vive en la
+  // fila de la cuenta local, marcada con "> "); sin cuentas, se degrada a la
+  // barra normal con el titulo de siempre.
+  const hayCuentas = (vista?.cuentas?.filas?.length ?? 0) > 0
+  const barraSuperior = hayCuentas
+    ? reglaConCentro(ctx, chars.frame.tl, chars.frame.tr, 'CUENTAS', tituloPanel(limites, null), '[q] salir', ctx.tinteMarco)
+    : regla(ctx, chars.frame.tl, chars.frame.tr, tituloPanel(limites, vista.cuenta), '[q] salir', ctx.tinteMarco)
+
+  const cabeza = [barraSuperior, lineaVacia(ctx, ctx.tinteMarco)]
+  const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), actualizado, ctx.tinteMarco)
   const historico = lineasHistorico(ctx, vista.historico)
 
   const disponible = ctx.rows - cabeza.length - 1 - historico.length
-  const hayCuentas = (vista?.cuentas?.filas?.length ?? 0) > 0
   const secciones = [
     ...(hayCuentas ? [seccionCuentas(ctx, vista)] : []),
     seccionAhora(ctx, vista),
@@ -918,7 +1059,7 @@ function renderAgents(ctx, vista) {
   const cabeza = [
     regla(ctx, chars.frame.tl, chars.frame.tr, tituloPanel(limites, vista.cuenta), '[q] salir', ctx.tinteMarco),
     lineaVacia(ctx, ctx.tinteMarco),
-    ...lineasLimites(ctx, limites),
+    ...lineasLimites(ctx, limitesParaHeader(vista), { multiCuenta: (vista?.limitesPorCuenta?.length ?? 0) > 1 }),
     lineaVacia(ctx, ctx.tinteMarco),
   ]
   const pie = regla(ctx, chars.frame.bl, chars.frame.br, pieDe(vista).join(` ${chars.separator} `), '', ctx.tinteMarco)

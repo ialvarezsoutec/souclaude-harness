@@ -328,7 +328,17 @@ test('robustez: numeros extremos (0, 1e12 tokens, costo 0) no desbordan sus colu
 // ---------------------------------------------------------------------------
 
 test('contenido: un limite al 91% muestra la marca !! y el titulo muta a incluir LIMITE', () => {
-  const vista = vistaEjemplo({ limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 91 })] })
+  // El grafico de barras vive dentro de CUENTAS (seccionCuentas en
+  // panel-layout.js): sin vista.cuentas/limitesPorCuenta no hay donde pintar
+  // la marca, aunque vista.limites (que solo alimenta el titulo/alarma) siga
+  // reportando el 91%.
+  const vista = vistaEjemplo({
+    limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 91 })],
+    cuentas: { filas: [{ alias: 'dev', esLocal: true, costoUsd: 1.23 }] },
+    limitesPorCuenta: [
+      { alias: 'dev', esLocal: true, filas: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 91 })] },
+    ],
+  })
   const caps = detectCaps({ overrides: { unicode: true, color: false } })
   const lineas = renderPanel(vista, { cols: 100, rows: 24, modo: 'full', caps, color: false })
   assert.ok(lineas[0].includes('LIMITE'), `el titulo (linea 0) deberia mutar a incluir LIMITE: ${lineas[0]}`)

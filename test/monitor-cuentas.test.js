@@ -195,10 +195,12 @@ test('cuentas: la seccion CUENTAS llega al panel con local y remota', () => {
   // 20 minutos > 15: la remota se marca vieja.
   assert.equal(panel.cuentas.filas[1].vieja, true)
 
-  const texto = renderPlain(vista, { cols: 100 })
+  // "dato viejo" y la maquina/frescura ya no se pintan en la cabecera de
+  // cuenta (panel-layout.js::bloqueDeCuenta): el dato sigue vivo en el
+  // modelo (panel.cuentas.filas[1].vieja, arriba), solo dejo de mostrarse.
+  const texto = renderPlain(vista, { cols: 140 })
   assert.match(texto, /CUENTAS/)
   assert.match(texto, /dev2/)
-  assert.match(texto, /dato viejo/)
 })
 
 test('cuentas: sin datos de cuentas el panel no dibuja la seccion', () => {

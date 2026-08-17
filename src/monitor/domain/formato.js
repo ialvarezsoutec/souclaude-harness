@@ -295,6 +295,24 @@ export function fmtDuracion(ms) {
   return '99999d';
 }
 
+/** Igual que fmtDuracion pero sin segundos: 58000 -> "0m" | 102000 -> "1m" | 3920000 -> "1h05m" | días -> "3d 11h". */
+export function fmtDuracionMin(ms) {
+  const totalMin = Math.floor(Math.abs(ms || 0) / 60_000);
+  if (totalMin < 60) return `${totalMin}m`;
+
+  const totalHoras = Math.floor(totalMin / 60);
+  if (totalHoras < 24) {
+    const min = totalMin % 60;
+    return `${totalHoras}h${String(min).padStart(2, '0')}m`;
+  }
+
+  const dias = Math.floor(totalHoras / 24);
+  const horas = totalHoras % 24;
+  if (dias < 100) return `${dias}d ${horas}h`;
+  if (dias < 100000) return `${dias}d`;
+  return '99999d';
+}
+
 /** "hace 3s" | "en 1h 12m" | "ahora". `ts` y `ahora` en ms epoch, deterministas por parámetro. */
 export function fmtRelativo(ts, ahora, { prefijo = true } = {}) {
   const diffMs = ahora - ts;

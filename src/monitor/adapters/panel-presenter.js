@@ -49,7 +49,7 @@ export function presentar(vista, { ahora, top } = {}) {
 
   const totales = v.totales ?? null
   const proyectos = Array.isArray(v.proyectos) ? v.proyectos : []
-  const sesiones = aplanarSesiones(proyectos, instante)
+  const sesiones = aplanarSesiones(proyectos, instante, v.cuenta?.alias ?? null)
 
   const recortes = normalizarRecortes(v.recortes)
   const sesionesVisibles = corte != null && sesiones.length > corte ? sesiones.slice(0, corte) : sesiones
@@ -65,6 +65,11 @@ export function presentar(vista, { ahora, top } = {}) {
     cuenta: v.cuenta ? { alias: v.cuenta.alias, email: v.cuenta.email } : null,
     cuentas: seccionCuentas(v.cuentas),
     limites: filasDeLimites(v.limites),
+    // Un bloque de filas por cada cuenta con datos (SOUCLAUDE_LOCAL_ACCOUNTS +
+    // Vault), para que la seccion CUENTAS grafique todas las cuentas
+    // identificadas, no solo la local. La local trae 5h/7d/Fable/extra; las
+    // demas solo 5h/7d/extra (ver filasDeLimitesPorCuenta).
+    limitesPorCuenta: filasDeLimitesPorCuenta(v.cuentas, v.limites),
     historico: seccionHistorico(v.historico),
     agentes: seccionAgentes(v.agentesActivos, proyectos),
     consumo: seccionConsumo(v, totales),
@@ -184,6 +189,58 @@ function filasDeLimites(limites) {
 
   // El peor caso arriba, siempre. El panel vuelve a ordenar por su cuenta, pero el
   // orden es parte del contrato de esta proyeccion y no de la suya.
+  return filas.sort((a, b) => b.porcentaje - a.porcentaje)
+}
+
+// Un {alias, esLocal, costoUsd, filas} por cada cuenta en vista.cuentas
+// (dominio/cuentas.js ya la trae consolidada: local + Vault +
+// SOUCLAUDE_LOCAL_ACCOUNTS). La cuenta LOCAL reusa filasDeLimites(vista.limites)
+// -- el modelo de dominio completo, con porGrupo (de ahi sale "Fable"/semanal
+// por modelo). Las demas cuentas solo traen 5h/7d/extra: el snapshot que se
+// publica (vault-monitor-publisher.js::construirSnapshot) es una whitelist
+// deliberada que no incluye porGrupo, asi que no hay Fable que mostrar y la
+// fila se omite en vez de inventarse.
+function filasDeLimitesPorCuenta(cuentas, limitesLocal) {
+  if (!Array.isArray(cuentas)) return []
+  return cuentas
+    .map((c) => {
+      const crudas = c.esLocal ? filasDeLimites(limitesLocal) : filasReducidas(c.limites)
+      return {
+        alias: c.alias ?? (typeof c.accountUuid === 'string' ? c.accountUuid.slice(0, 8) : '?'),
+        esLocal: c.esLocal === true,
+        costoUsd: numeroONull(c.totalesDia?.costoUsd),
+        // Orden fijo para la seccion CUENTAS: 7d, 5h, Fable/semanal, Extra --
+        // a diferencia de vista.limites (que ordena por severidad, porque de
+        // ahi sale la alarma del titulo del panel), aca importa la lectura
+        // consistente entre cuentas, no cual limite esta peor.
+        filas: [...crudas].sort((a, b) => ordenLimiteCuenta(a) - ordenLimiteCuenta(b)),
+      }
+    })
+    .filter((bloque) => bloque.filas.length > 0)
+}
+
+function ordenLimiteCuenta(l) {
+  if (l.tipo === 'weekly_all') return 0 // Ventana 7d
+  if (l.tipo === 'session') return 1 // Ventana 5h
+  if (typeof l.etiqueta === 'string' && l.etiqueta.startsWith('Extra')) return 3
+  return 2 // Fable / semanal por modelo (porGrupo, sin tipo propio)
+}
+
+function filasReducidas(limites) {
+  const filas = []
+  agregarVentana(filas, limites?.cincoHoras, 'Ventana 5h', 'session')
+  agregarVentana(filas, limites?.sieteDias, 'Ventana 7d', 'weekly_all')
+
+  const extra = limites?.gastoExtra
+  const porcentajeExtra = extra && Number.isFinite(extra.utilizacion) ? extra.utilizacion : extra?.porcentaje
+  if (extra && extra.historico !== true && Number.isFinite(porcentajeExtra)) {
+    filas.push({
+      etiqueta: `Extra ${fmtDinero(extra.usadoUsd ?? 0)}/${fmtDinero(extra.limiteUsd ?? 0)}`,
+      modelo: null,
+      porcentaje: porcentajeExtra,
+      reseteaEn: null,
+    })
+  }
   return filas.sort((a, b) => b.porcentaje - a.porcentaje)
 }
 
@@ -349,7 +406,7 @@ function seccionModelos(proyectos) {
 
 // --- sesiones ---
 
-function aplanarSesiones(proyectos, ahora) {
+function aplanarSesiones(proyectos, ahora, aliasCuentaLocal) {
   const filas = []
   for (const p of proyectos) {
     for (const s of p.sesiones ?? []) {
@@ -367,10 +424,12 @@ function aplanarSesiones(proyectos, ahora) {
         // viva sin eventos nuevos en el ultimo minuto sigue "durando").
         duracionMs: duracionDeSesion(s, ahora),
         estado: s.estado ?? null,
-        // null: sesion de la cuenta principal (unica que existia antes de
-        // SOUCLAUDE_LOCAL_ACCOUNTS). Con alias, es una cuenta local adicional
-        // (ver arbol.js::materializarSesion y adapters/snapshot-source.js).
-        cuenta: s.cuentaAlias ?? null,
+        // arbol.js solo etiqueta cuentaAlias en sesiones de una cuenta local
+        // ADICIONAL (SOUCLAUDE_LOCAL_ACCOUNTS): las de la cuenta principal
+        // llegan con cuentaAlias null. Se completa aca con el alias real de
+        // la cuenta local para que la columna CUENTA siempre identifique de
+        // quien es cada sesion, nunca un generico "local".
+        cuenta: s.cuentaAlias ?? aliasCuentaLocal,
       })
     }
   }
