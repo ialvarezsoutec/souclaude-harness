@@ -29,3 +29,4 @@ Formato: `- <fecha> · <ID> · <agente o persona> · <resultado> · <referencia>
 - 2026-08-11 · vault-sync · implementer · impl_done · comando vault-sync + helper seguro (391/391 tests)
 - 2026-08-11 · vault-sync · reviewer · changes_requested · docs-only (B1 spec vs plan, B2 tasks sin marcar) -> corregido
 - 2026-08-11 · vault-sync · reviewer · APPROVED · progress/vault-sync/review.md (ronda 2, docs-only corregido)
+- 2026-08-17 · vault-milestones-y-sesiones · claude · done · rama feature/vault-milestones-y-sesiones (PR a dev pendiente de abrir)
