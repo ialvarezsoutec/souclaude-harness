@@ -54,6 +54,11 @@ export function aEventoDeUso(obj, contexto = {}) {
     effort: obj.effort ?? null,
     esSidechain: obj.isSidechain === true,
     servicio: usage.service_tier ?? null,
+    // De que cuenta local vino este evento (ver adapters/local-accounts-reader.js
+    // y snapshot-source.js): null para la cuenta principal, la unica que existia
+    // antes de SOUCLAUDE_LOCAL_ACCOUNTS.
+    cuentaUuid: contexto.cuentaUuid ?? null,
+    cuentaAlias: contexto.cuentaAlias ?? null,
     uso: {
       entrada: numero(usage.input_tokens),
       salida: numero(usage.output_tokens),

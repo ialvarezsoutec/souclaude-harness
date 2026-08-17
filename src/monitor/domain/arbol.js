@@ -228,6 +228,8 @@ function agruparSesiones({ universo, vivos, indices, ubicaciones, ahora, pasa })
       s = {
         sessionId,
         rama: null,
+        cuentaUuid: null,
+        cuentaAlias: null,
         consumo: vacio(),
         porModelo: new Map(),
         agentes: new Map(),
@@ -240,6 +242,13 @@ function agruparSesiones({ universo, vivos, indices, ubicaciones, ahora, pasa })
   for (const evento of universo) {
     const s = asegurar(evento.sessionId)
     if (evento.rama) s.rama = evento.rama
+    // Todos los eventos de una sesion vienen del mismo archivo (mismo indice
+    // por sessionId), asi que comparten cuenta: alcanza con quedarse la
+    // primera que aparezca, sin comparar entre eventos.
+    if (s.cuentaUuid == null && evento.cuentaUuid) {
+      s.cuentaUuid = evento.cuentaUuid
+      s.cuentaAlias = evento.cuentaAlias ?? null
+    }
 
     sumar(s.consumo, evento, { ahora })
 
@@ -329,6 +338,8 @@ function materializarSesion(borrador, { indices, ubicaciones, ahora }) {
     sessionId,
     titulo: indices.tituloPorSesion.get(sessionId) ?? null,
     rama: borrador.rama,
+    cuentaUuid: borrador.cuentaUuid,
+    cuentaAlias: borrador.cuentaAlias,
     cwd: ubicacion.cwd,
     inicio: borrador.consumo.primerTs ?? vivo?.startedAt ?? null,
     ultimoTs: borrador.consumo.ultimoTs,

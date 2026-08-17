@@ -49,7 +49,7 @@ export function presentar(vista, { ahora, top } = {}) {
 
   const totales = v.totales ?? null
   const proyectos = Array.isArray(v.proyectos) ? v.proyectos : []
-  const sesiones = aplanarSesiones(proyectos)
+  const sesiones = aplanarSesiones(proyectos, instante)
 
   const recortes = normalizarRecortes(v.recortes)
   const sesionesVisibles = corte != null && sesiones.length > corte ? sesiones.slice(0, corte) : sesiones
@@ -349,7 +349,7 @@ function seccionModelos(proyectos) {
 
 // --- sesiones ---
 
-function aplanarSesiones(proyectos) {
+function aplanarSesiones(proyectos, ahora) {
   const filas = []
   for (const p of proyectos) {
     for (const s of p.sesiones ?? []) {
@@ -362,7 +362,15 @@ function aplanarSesiones(proyectos) {
         tokens: tokensDe(s.consumo),
         costoUsd: numero(s.consumo?.costoUsd),
         ultimaActividad: s.ultimoTs ?? null,
+        // Cuanto lleva corriendo la sesion: del primer evento hasta el
+        // ultimo si ya termino, o hasta AHORA si sigue activa (una sesion
+        // viva sin eventos nuevos en el ultimo minuto sigue "durando").
+        duracionMs: duracionDeSesion(s, ahora),
         estado: s.estado ?? null,
+        // null: sesion de la cuenta principal (unica que existia antes de
+        // SOUCLAUDE_LOCAL_ACCOUNTS). Con alias, es una cuenta local adicional
+        // (ver arbol.js::materializarSesion y adapters/snapshot-source.js).
+        cuenta: s.cuentaAlias ?? null,
       })
     }
   }
@@ -373,6 +381,12 @@ function aplanarSesiones(proyectos) {
     const vb = esActivo(b.estado) ? 1 : 0
     return vb - va || b.tokens - a.tokens
   })
+}
+
+function duracionDeSesion(s, ahora) {
+  if (!Number.isFinite(s.inicio)) return null
+  const fin = esActivo(s.estado) && Number.isFinite(ahora) ? ahora : (s.ultimoTs ?? s.inicio)
+  return Math.max(0, fin - s.inicio)
 }
 
 function seccionSesiones(visibles, todas, recortesDominio) {

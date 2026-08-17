@@ -638,7 +638,11 @@ function seccionSesiones(ctx, vista) {
   const sep = ctx.chars.separator
   const recortadas = num(vista?.recortes?.sesiones)
 
-  const anchos = anchosSesiones(ctx.interior)
+  // La columna CUENTA solo se muestra si hay mas de una cuenta con sesiones en
+  // esta vista (SOUCLAUDE_LOCAL_ACCOUNTS): con una sola, la columna solo
+  // repetiria el mismo alias en cada fila sin aportar nada.
+  const conMultiplesCuentas = new Set(filas.map((x) => x.cuenta ?? '')).size > 1
+  const anchos = anchosSesiones(ctx.interior, conMultiplesCuentas)
 
   function cabecera() {
     return lineaCaja(
@@ -646,26 +650,26 @@ function seccionSesiones(ctx, vista) {
       [
         { texto: 'ID', ancho: anchos.id, tinte: 'dim' },
         { texto: 'TITULO', ancho: RESTO, tinte: 'dim' },
+        anchos.cuenta ? { texto: 'CUENTA', ancho: anchos.cuenta, tinte: 'dim' } : null,
         anchos.proyecto ? { texto: 'PROYECTO', ancho: anchos.proyecto, tinte: 'dim' } : null,
         anchos.rama ? { texto: 'RAMA', ancho: anchos.rama, tinte: 'dim' } : null,
         anchos.modelo ? { texto: 'MOD', ancho: anchos.modelo, tinte: 'dim' } : null,
         { texto: 'TOKENS', ancho: anchos.tokens, alinear: 'd', tinte: 'dim' },
         anchos.costo ? { texto: 'COSTO', ancho: anchos.costo, alinear: 'd', tinte: 'dim' } : null,
-        { texto: 'ACT', ancho: anchos.act, alinear: 'd', tinte: 'dim' },
+        { texto: 'DUR', ancho: anchos.dur, alinear: 'd', tinte: 'dim' },
       ],
       ctx.tinteMarco
     )
   }
 
   function filaSesion(x) {
-    const act = Number.isFinite(x.ultimaActividad)
-      ? fmtRelativo(x.ultimaActividad, ctx.ahora, { prefijo: false })
-      : '-'
+    const dur = Number.isFinite(x.duracionMs) ? fmtDuracion(x.duracionMs) : '-'
     return lineaCaja(
       ctx,
       [
         { texto: texto(x.id), ancho: anchos.id, tinte: 'cyan' },
         { texto: texto(x.titulo, '(sin titulo)'), ancho: RESTO },
+        anchos.cuenta ? { texto: texto(x.cuenta, 'local'), ancho: anchos.cuenta, tinte: 'dim' } : null,
         anchos.proyecto ? { texto: texto(x.proyecto), ancho: anchos.proyecto, tinte: 'dim' } : null,
         anchos.rama ? { texto: texto(x.rama), ancho: anchos.rama, tinte: 'dim' } : null,
         anchos.modelo ? { texto: texto(x.modelo), ancho: anchos.modelo } : null,
@@ -673,7 +677,7 @@ function seccionSesiones(ctx, vista) {
         anchos.costo
           ? { texto: fmtDinero(num(x.costoUsd)), ancho: anchos.costo, alinear: 'd' }
           : null,
-        { texto: act, ancho: anchos.act, alinear: 'd', tinte: 'dim' },
+        { texto: dur, ancho: anchos.dur, alinear: 'd', tinte: 'dim' },
       ],
       ctx.tinteMarco
     )
@@ -725,10 +729,19 @@ function seccionSesiones(ctx, vista) {
   }
 }
 
-function anchosSesiones(interior) {
-  if (interior >= 92) return { id: 4, proyecto: 11, rama: 15, modelo: 6, tokens: 7, costo: 6, act: 5 }
-  if (interior >= 72) return { id: 4, proyecto: 11, rama: 0, modelo: 6, tokens: 7, costo: 6, act: 5 }
-  return { id: 4, proyecto: 0, rama: 0, modelo: 0, tokens: 7, costo: 0, act: 5 }
+// PROYECTO y RAMA son las columnas mas utiles para distinguir sesiones y las
+// que mas sufren truncadas; en terminales anchas (pantalla completa) se les
+// da todo el espacio que sobra en vez de dejarlo sin usar en TITULO. ACT se
+// reemplazo por DUR (cuanto lleva corriendo la sesion, ver
+// panel-presenter.js::duracionDeSesion): interesa mas que "hace cuanto
+// escribio por ultima vez".
+function anchosSesiones(interior, conCuenta) {
+  const cuenta = conCuenta ? 9 : 0
+  if (interior >= 140) return { id: 4, cuenta, proyecto: 22, rama: 26, modelo: 6, tokens: 7, costo: 6, dur: 6 }
+  if (interior >= 110) return { id: 4, cuenta, proyecto: 16, rama: 20, modelo: 6, tokens: 7, costo: 6, dur: 6 }
+  if (interior >= 92) return { id: 4, cuenta, proyecto: 11, rama: 15, modelo: 6, tokens: 7, costo: 6, dur: 6 }
+  if (interior >= 72) return { id: 4, cuenta, proyecto: 11, rama: 0, modelo: 6, tokens: 7, costo: 6, dur: 6 }
+  return { id: 4, cuenta: conCuenta ? 7 : 0, proyecto: 0, rama: 0, modelo: 0, tokens: 7, costo: 0, dur: 6 }
 }
 
 function seccionProyectos(ctx, vista) {
