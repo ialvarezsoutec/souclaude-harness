@@ -22,6 +22,10 @@ con consumo de tokens.
   Amplía la excepción de telemetría del ADR 20260810 (ADR
   `20260817-milestones-planes-y-sesiones-en-vault`); la telemetría cruda sigue
   prohibida.
+- **Skill `vault-milestones`** (opcional): analiza el tablero de milestones del Vault
+  (foto, consistencia, diagnóstico) y guía su iteración — alta de milestones nuevos
+  con ID secuencial, división y re-secuencia, cierre y cambio de plan — respetando el
+  anti-solapamiento y el push inmediato del protocolo.
 
 ### Cambiado
 

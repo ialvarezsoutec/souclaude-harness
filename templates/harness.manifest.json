@@ -28,6 +28,10 @@
     {
       "id": "harness-upgrade",
       "label": "harness-upgrade — actualizar el harness desde Claude"
+    },
+    {
+      "id": "vault-milestones",
+      "label": "vault-milestones — análisis e iteración de milestones en el Vault"
     }
   ],
   "files": [
@@ -61,6 +65,8 @@
     { "id": "adr-template", "src": "base/docs/decisions/_template.md", "dest": "docs/decisions/_template.md", "policy": "managed", "skill": "adr-new" },
 
     { "id": "skill-harness-upgrade", "src": "base/claude/skills/harness-upgrade/SKILL.md", "dest": ".claude/skills/harness-upgrade/SKILL.md", "policy": "managed", "skill": "harness-upgrade" },
+
+    { "id": "skill-vault-milestones", "src": "base/claude/skills/vault-milestones/SKILL.md", "dest": ".claude/skills/vault-milestones/SKILL.md", "policy": "managed", "skill": "vault-milestones" },
 
     { "id": "progress-readme", "src": "base/progress/README.md", "dest": "progress/README.md", "policy": "managed" },
     { "id": "progress-history", "src": "base/progress/history.md", "dest": "progress/history.md", "policy": "user-owned" }

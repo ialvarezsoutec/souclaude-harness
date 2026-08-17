@@ -19,6 +19,7 @@ const SKILLS = [
   'soutec-md-a-pdf',
   'adr-new',
   'harness-upgrade',
+  'vault-milestones',
 ]
 
 test('init en repo vacio: emite el harness completo + scaffolding', async () => {
