@@ -36,7 +36,8 @@ de SOUTEC cuidan que se registre bien.**
 Estas no se negocian. Si te acuerdas solo de esto, ya evitas el 90% de los problemas.
 
 1. **Nunca commit, push ni merge directo a `main`.** Todo pasa por rama + Pull Request.
-   Los hotfixes también.
+   Los hotfixes también. `main` solo recibe merges desde `dev`: tu rama nace de `dev`
+   y tu PR apunta a `dev`; el paso `dev` → `main` es el release.
 2. **Ramas con nombre descriptivo**: `tipo/descripcion-corta`. Si el trabajo tiene un ID
    de tarea en un tracker, va como prefijo del slug — pero no inventes IDs.
 3. **Lo más simple que resuelva el problema.** Nada especulativo. Si escribiste 200
@@ -96,8 +97,8 @@ Si es la historia de una decisión → ADR. Si es un gotcha de ayer → `notes.m
 ## Git — referencia rápida
 
 ```bash
-# 1. Parte de main actualizado y ramifica
-git checkout main && git pull origin main
+# 1. Parte de dev actualizado y ramifica
+git checkout dev && git pull origin dev
 git checkout -b feature/login-usuarios
 
 # 2. Commits: tipo: descripción breve (en español, sin scope)
@@ -105,15 +106,16 @@ git commit -m "feat: agregar validación de token expirado"
 #   tipos: feat fix docs chore refactor test style build ci perf revert
 #   un hotfix se commitea como fix:
 
-# 3. Sincronizar con main (merge, NO rebase por defecto)
-git fetch origin && git merge origin/main
+# 3. Sincronizar con dev (merge, NO rebase por defecto)
+git fetch origin && git merge origin/dev
 
-# 4. Abrir el PR (completa la plantilla de verdad)
+# 4. Abrir el PR contra dev (completa la plantilla de verdad)
 git push origin feature/login-usuarios
 ```
 
 - **Nunca `git push --force`.** El squash & merge lo hace el coordinador, no tú.
-- Tú **no** apruebas PRs, no creas tags/releases, no creas repositorios.
+- Tú **no** apruebas PRs ni creas repositorios. Los tags de versión los crea el
+  agente al publicar, tras el merge de release `dev` → `main`.
 - Si te piden correcciones: push a la **misma** rama. Nunca abras un PR nuevo.
 
 El detalle completo (nombres de rama, tipos de commit, plantilla de PR, semver) está en

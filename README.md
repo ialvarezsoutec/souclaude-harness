@@ -276,8 +276,15 @@ El detalle de cada versión vive en `CHANGELOG.md`. Los hitos:
   nada, y **nunca** recibe un breaking por sorpresa. Cambiar de major es un acto
   explícito: se edita la ref y se corre `upgrade`.
 
+### Publicar
+
+`main` solo recibe merges desde `dev`: el trabajo entra a `dev` por PR de rama, y el
+release es un **PR de `dev` a `main`** (con la versión propuesta en el cuerpo). Tras
+ese merge, **el agente puede crear y pushear los tags** — no hace falta esperar al
+coordinador:
+
 ```bash
-# publicar (después del merge a main)
+git checkout main && git pull origin main
 git tag vX.Y.Z && git tag -f v3
 git push origin vX.Y.Z && git push -f origin v3
 ```

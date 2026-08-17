@@ -24,6 +24,10 @@ SOUTEC, ahora seleccionables desde el CLI.
 - `it-security-review` ya no delega en agentes: la remediación y la compilación de
   evidencia las hace el propio modelo, con el PDF vía `soutec-md-a-pdf`.
 - Ramas sin ID de hito: formato `tipo/<slug>`; el ID de tracker es opcional.
+- **Flujo de release `dev` → `main`**: las ramas de trabajo nacen de `dev` y su PR
+  apunta a `dev`; `main` solo recibe merges desde `dev` (el PR de release). Los
+  **tags de versión los puede crear el agente** tras ese merge (`vX.Y.Z` + tag móvil
+  por major); `git tag` sale de `permissions.ask` en el settings emitido.
 
 ### Agregado
 

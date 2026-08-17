@@ -124,18 +124,22 @@ función chica. **Nada de un DSL de migraciones.**
    `package.json`, se mueven juntas).
 2. Actualiza `CHANGELOG.md`.
 3. `npm test`.
-4. Commit + tags. La convención: un tag **inmutable** `vX.Y.Z` por release, y un tag
-   **móvil por major** (`v1`, `v2`, `v3`) que apunta al último release de su serie.
-   Un breaking sube el major y estrena su propio tag móvil; los tags móviles viejos
-   quedan congelados en el último release de su serie, así ningún proyecto recibe un
-   breaking sin pedirlo.
+4. Release: **`main` solo recibe merges desde `dev`**. El trabajo entra a `dev` por PR
+   de rama; el release es un PR de `dev` a `main` con la versión propuesta en el
+   cuerpo.
+5. Tags — **los puede crear el agente**, después del merge del release a `main`. La
+   convención: un tag **inmutable** `vX.Y.Z` por release, y un tag **móvil por major**
+   (`v1`, `v2`, `v3`) que apunta al último release de su serie. Un breaking sube el
+   major y estrena su propio tag móvil; los tags móviles viejos quedan congelados en
+   el último release de su serie, así ningún proyecto recibe un breaking sin pedirlo.
    ```bash
+   git checkout main && git pull origin main
    git tag vX.Y.Z
    git tag -f v3            # el tag móvil de la serie actual
    git push origin vX.Y.Z
    git push -f origin v3
    ```
-5. Los devs corren `npx github:ialvarezsoutec/souclaude-harness#v3 upgrade` y reciben la
+6. Los devs corren `npx github:ialvarezsoutec/souclaude-harness#v3 upgrade` y reciben la
    nueva versión. No hay registry ni publicación de npm. Para cambiar de major, editan
    la ref (`#v2` → `#v3`) y corren `upgrade --prune`.
 

@@ -14,8 +14,11 @@ Estas no se negocian, ni siquiera en un hotfix.
 
 - **Nunca `git push origin main`.** `main` es producción. Nadie trabaja directo sobre
   `main` — tampoco el coordinador ni los administradores.
-- **Nunca hacer merge a `main`.** El autor del cambio no mergea. El squash & merge lo
-  hace el coordinador o el aprobador suplente.
+- **`main` solo recibe merges desde `dev`.** Las ramas de trabajo nacen de `dev` y su
+  PR apunta a `dev`; el paso `dev` → `main` es el release, también por PR. Ninguna
+  rama de trabajo mergea directo a `main`.
+- **Nunca hacer merge de un PR propio.** El autor del cambio no mergea. El squash &
+  merge lo hace el coordinador o el aprobador suplente.
 - **Nunca aprobar un PR.** Nadie aprueba lo suyo.
 - **Nunca `git push --force`.** Solo `--force-with-lease`, solo sobre rama propia, y
   solo si se usó rebase. Con la política por defecto (merge) no hay force-push nunca.
@@ -24,14 +27,16 @@ Estas no se negocian, ni siquiera en un hotfix.
 - **Nunca crear una rama sin nombre descriptivo.** Formato `tipo/descripcion-corta`. Si
   el trabajo tiene un ID de tarea en un tracker, va como prefijo del slug
   (`feature/REA-123-captura-lead`); si no lo hay, el slug solo. **No inventes IDs.**
-- **Nunca crear repositorios, tags ni releases.** Eso es del coordinador.
+- **Nunca crear repositorios.** Eso es del coordinador. Los **tags de versión**
+  (`vX.Y.Z` y el tag móvil por major) sí puede crearlos el agente, únicamente al
+  publicar y después del merge de release `dev` → `main`.
 - **Un hotfix NO es un bypass.** Aun en máxima criticidad: rama + Pull Request.
 
 ## Antes de tocar código
 
 ```bash
-git checkout main
-git pull origin main          # siempre partir de main actualizado
+git checkout dev
+git pull origin dev           # siempre partir de dev actualizado
 git checkout -b tipo/descripcion-corta
 ```
 
@@ -91,13 +96,13 @@ refactor: reorganizar servicio de conexión a BD
 **Prohibidos**: `update`, `fix`, `cosas`, `ya`, `ahora sí`.
 *Git tiene memoria; no le demos material para novela de misterio.*
 
-## Sincronizar con main
+## Sincronizar con dev
 
 **Por defecto, merge.** Simple, no reescribe historia, no requiere force-push.
 
 ```bash
 git fetch origin
-git merge origin/main
+git merge origin/dev
 # resolver conflictos si los hay
 git push origin <tu-rama>
 ```
@@ -126,7 +131,7 @@ una migración, el coordinador puede optar por merge commit y lo registra en el 
 
 Después del merge (esto sí lo puedes hacer):
 ```bash
-git checkout main && git pull origin main && git branch -d <tu-rama>
+git checkout dev && git pull origin dev && git branch -d <tu-rama>
 ```
 
 ## Versionamiento
@@ -139,8 +144,10 @@ SemVer con prefijo `v`: `v1.2.3`.
 | Funcionalidad compatible | MINOR · `v1.0.1 → v1.1.0` |
 | Cambio incompatible | MAJOR · `v1.1.0 → v2.0.0` |
 
-El desarrollador **propone** la versión en el PR. El coordinador **crea** el tag y el
-release.
+El desarrollador **propone** la versión en el PR de release. Tras el merge
+`dev` → `main`, el **agente puede crear** el tag inmutable `vX.Y.Z` y mover el tag
+móvil de la serie (`v3`), y pushearlos. Los releases de GitHub siguen siendo del
+coordinador.
 
 ## Secretos
 

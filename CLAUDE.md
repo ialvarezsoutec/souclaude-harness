@@ -27,7 +27,9 @@ obligatoria y siempre está):
 protocolo — ver "Los dos repos" más abajo.
 
 **Nunca** hagas commit, push ni merge directo a `main`. Todo pasa por rama + PR. Los
-hotfixes también.
+hotfixes también. **`main` solo recibe merges desde `dev`**: las ramas de trabajo
+nacen de `dev` y su PR apunta a `dev`; el paso `dev` → `main` es el release, también
+por PR.
 
 - Ramas: `tipo/<slug>` (`feature/captura-lead`). Tipos: `feature` `fix` `hotfix`
   `docs` `chore` `refactor` `experiment`. Si hay un ID de tarea de un tracker, va
@@ -35,10 +37,11 @@ hotfixes también.
 - Commits: `tipo: descripción breve` (español, sin scope). Tipos: `feat` `fix` `docs`
   `chore` `refactor` `test` `style` `build` `ci` `perf` `revert`. Un hotfix se commitea
   como `fix:`. Prohibidos: `update`, `cosas`, `ahora sí`.
-- Sincronizar con main: `git fetch origin && git merge origin/main`. **Nunca
+- Sincronizar la rama: `git fetch origin && git merge origin/dev`. **Nunca
   `git push --force`.**
-- **Yo no mergeo, no apruebo PRs, no creo tags/releases, no creo repositorios.** Eso es
-  del coordinador.
+- **Yo no mergeo PRs, no los apruebo y no creo repositorios.** Eso es del coordinador.
+  Los **tags de versión** (`vX.Y.Z` + tag móvil por major) sí puedo crearlos, solo al
+  publicar y después del merge de release `dev` → `main`.
 - Al abrir el PR: completar `.github/pull_request_template.md` de verdad. Si piden
   correcciones, push a la **misma** rama — nunca un PR nuevo.
 
