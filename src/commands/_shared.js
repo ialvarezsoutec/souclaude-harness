@@ -71,12 +71,43 @@ export async function resolveVars({ flags, lock, detected, cwd, manifest }) {
   }
 }
 
+// Que skills se instalan. Prioridad: --skills explicito > seleccion guardada en
+// el lockfile (sticky, como las vars) > checkbox interactivo con todas marcadas.
+// Las required del catalogo (soutec-github) entran siempre, elija lo que elija.
+export async function resolveSkills({ flags, lock, manifest, yes }) {
+  const catalog = manifest.skills ?? []
+  if (!catalog.length) return undefined
+
+  if (flags.skills != null) {
+    const chosen = String(flags.skills).split(',').map((s) => s.trim()).filter(Boolean)
+    const known = new Set(catalog.map((s) => s.id))
+    const unknown = chosen.filter((id) => !known.has(id))
+    if (unknown.length) {
+      throw new Error(`--skills: skill(s) desconocida(s): ${unknown.join(', ')}. Disponibles: ${[...known].join(', ')}`)
+    }
+    return chosen
+  }
+
+  if (lock?.skills) return lock.skills
+
+  const optional = catalog.filter((s) => !s.required)
+  const requiredLabels = catalog.filter((s) => s.required).map((s) => s.id).join(', ')
+  return ui.multiselect({
+    message: `Skills a instalar (${requiredLabels} es obligatoria y se instala siempre)`,
+    options: optional.map((s) => ({ value: s.id, label: s.label ?? s.id })),
+    initialValues: optional.map((s) => s.id),
+    yes,
+  })
+}
+
 // El nucleo compartido por init y upgrade: son el mismo code path. Lo unico que
 // cambia entre "repo vacio", "repo legacy" y "migrar del harness viejo" es que
 // encuentra computePlan en disco y en el lockfile.
 export async function planAndApply({ manifest, cwd, lock, vars, detected, flags, title }) {
   const force = Boolean(flags.force)
-  const plan = computePlan({ manifest, cwd, lock, vars, detected, force })
+  const yes = Boolean(flags.yes) || ui.isCI()
+  const skills = await resolveSkills({ flags, lock, manifest, yes })
+  const plan = computePlan({ manifest, cwd, lock, vars, detected, force, skills })
 
   ui.renderPlan(plan, { verbose: Boolean(flags.verbose) })
 
@@ -93,7 +124,6 @@ export async function planAndApply({ manifest, cwd, lock, vars, detected, flags,
     return 0
   }
 
-  const yes = Boolean(flags.yes) || ui.isCI()
   const ok = await ui.confirm({ message: `${title}: aplicar ${pending.length} cambio(s)?`, initialValue: true, yes })
   if (!ok) {
     ui.cancelled()

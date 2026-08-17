@@ -10,7 +10,6 @@ import { status } from './commands/status.js'
 import { adopt } from './commands/adopt.js'
 import { verify } from './commands/verify.js'
 import { monitor } from './commands/monitor.js'
-import { mode } from './commands/mode.js'
 import { vaultSync } from './commands/vault-sync.js'
 import * as ui from './ui.js'
 
@@ -26,6 +25,9 @@ const OPTIONS = {
   type: { type: 'string' },
   stack: { type: 'string' },
   lang: { type: 'string' },
+  // Seleccion de skills sin modo interactivo: --skills adr-new,soutec-md-a-pdf
+  // (soutec-github se instala siempre, este o no en la lista).
+  skills: { type: 'string' },
   vault: { type: 'boolean', default: true },
   'vault-path': { type: 'string' },
   'vault-repo': { type: 'string' },
@@ -73,7 +75,7 @@ const OPTIONS = {
   version: { type: 'boolean' },
 }
 
-const COMMANDS = { init, upgrade, status, adopt, verify, monitor, mode, 'vault-sync': vaultSync }
+const COMMANDS = { init, upgrade, status, adopt, verify, monitor, 'vault-sync': vaultSync }
 
 export async function main(argv, cwd) {
   let parsed
@@ -132,7 +134,7 @@ function autoDetect(cwd) {
 
 function printHelp() {
   console.log(`
-${pc.bold('souclaude')} — harness de Claude Code de SOUTEC (metodologia CCEM)
+${pc.bold('souclaude')} — harness de Claude Code de SOUTEC
 
 ${pc.bold('USO')}
   npx github:ialvarezsoutec/souclaude-harness#v1 [comando] [flags]
@@ -147,10 +149,6 @@ ${pc.bold('COMANDOS')}
             rutas rotas, ids/dest duplicados, criticos faltantes. No mira ningun proyecto.
   ${pc.cyan('monitor')}   Panel de consumo de tokens de Claude Code: limites, agentes vivos,
             sesiones y proyectos. Sale 0/1/2 segun el peor limite (util en un hook).
-  ${pc.cyan('mode')}      Modo de trabajo de los agentes. Por defecto es 'auto': el flujo
-            encadena las fases sin pedir OK. 'manual' es el opt-in para revisar
-            fase por fase. Sin argumento, solo muestra el modo actual. El opt-in
-            se guarda en .claude/mode.local.json (local, gitignorado).
   ${pc.cyan('vault-sync')} Sincroniza con el Vault de forma segura. Sin flags: pull --rebase
             (con abort defensivo). Con --push -m "<msg>": add + commit + pull +
             push, jamas --force. Exit: 0 ok/sin cambios, 1 fallo, 3 sin Vault.
@@ -165,6 +163,10 @@ ${pc.bold('FLAGS')}
   --no-backup          No copia a .claude/backup-<ts>/ antes de sobrescribir.
   -v, --verbose        Muestra tambien los archivos sin cambios.
   --name, --type, --stack, --lang    Responden las preguntas sin modo interactivo.
+  --skills <a,b>       Skills a instalar, separadas por coma (sin modo interactivo).
+                       soutec-github es obligatoria: se instala siempre, este o no
+                       en la lista. Sin el flag, init pregunta con un checkbox
+                       (todas marcadas por defecto) y upgrade respeta lo elegido.
   --vault-path <ruta>  Conecta el Vault ya clonado sin preguntar (escribe .claude/vault.local.json).
   --vault-repo <url>   Repo del Vault a clonar. Por defecto, el del manifest.
   --vault-clone        Con --yes, clona el Vault si no esta conectado (por defecto,

@@ -1,14 +1,13 @@
 ---
 name: it-security-review
 version: 1.0.0
-description: Ejecuta el /security-review nativo de Claude Code, coordina la remediación SDD de hallazgos Critical/High y genera un PDF de evidencia para IT solo después de superar el gate final.
+description: Ejecuta el /security-review nativo de Claude Code, remedia los hallazgos Critical/High y genera un PDF de evidencia para IT solo después de superar el gate final.
 argument-hint: "[scope opcional: full | branch | diff | ruta-o-modulo]"
 disable-model-invocation: true
 effort: high
 allowed-tools:
   - Skill(security-review)
-  - Agent(orchestrator)
-  - Agent(security-evidence-compiler)
+  - Skill(soutec-md-a-pdf)
   - Read
   - Grep
   - Glob
@@ -36,7 +35,7 @@ No reemplaces ni sobrescribas el comando nativo `/security-review`. Debes invoca
 Producir evidencia técnica compartible con IT de que:
 
 1. se ejecutó el security review nativo de Claude Code;
-2. todo hallazgo `Critical` o `High` fue corregido mediante el proceso SDD;
+2. todo hallazgo `Critical` o `High` fue corregido con un plan de remediación trazable;
 3. se ejecutaron las pruebas aplicables;
 4. se repitió el security review después de los cambios;
 5. el reporte PDF solo fue generado después de superar el gate final.
@@ -78,7 +77,7 @@ IT-Security-Review.pdf              # solo si el gate final pasa
 SECURITY-REVIEW-BLOCKED.md          # solo si el gate no pasa
 ```
 
-La ubicación real del spec SDD puede ser otra si la metodología del repositorio ya define una convención. En ese caso, `02-remediation-spec.md` debe contener un enlace o referencia inequívoca a la ruta oficial.
+`02-remediation-spec.md` es el plan de remediación de esta ejecución. Si el repositorio ya define otra convención para documentar planes, el archivo debe contener un enlace o referencia inequívoca a la ruta oficial.
 
 ## Fase 1 — Registrar metadata
 
@@ -151,32 +150,21 @@ La existencia de cualquiera de los siguientes impide generar el PDF final:
 
 Un `Medium` abierto produce el estado `READY WITH CONDITIONS`, nunca una declaración limpia de aprobación.
 
-## Fase 3 — Remediación SDD de Critical/High
+## Fase 3 — Remediación de Critical/High
 
 Si no existen hallazgos `Critical` o `High`, omite esta fase y continúa con pruebas y review final.
 
-Si existen, invoca al agente `orchestrator` en primer plano. Entrégale el reporte inicial completo y esta misión:
+Si existen, remedia tú mismo, con este contrato:
 
-```text
-HUMAN_TRIGGER=/it-security-review
+1. Escribe primero un plan de remediación en `02-remediation-spec.md` que cubra cada hallazgo `Critical` y `High`: requisito verificable, cambio propuesto, prueba que lo valida y riesgo residual.
+2. Implementa las correcciones; no te limites a redactar el plan.
+3. Añade pruebas de regresión y controles negativos.
+4. Ejecuta las pruebas aplicables y registra comandos y resultados.
+5. No ocultes, suprimas ni rebajes hallazgos para superar el gate.
+6. No edites el reporte original del security review.
+7. Registra en `03-remediation-summary.md` archivos modificados, pruebas ejecutadas, resultados y riesgos residuales.
 
-Crear y ejecutar un plan de remediación de seguridad siguiendo la metodología SDD del repositorio.
-
-Obligaciones:
-1. Crear o actualizar un spec SDD que cubra cada hallazgo Critical y High.
-2. Mapear cada hallazgo a requisitos verificables, diseño, tareas, pruebas, observabilidad, rollout y rollback.
-3. Delegar la implementación a los subagentes apropiados.
-4. Implementar las correcciones; no limitarse a redactar el spec.
-5. Añadir pruebas de regresión y controles negativos.
-6. Ejecutar las pruebas aplicables y registrar comandos y resultados.
-7. No ocultar, suprimir ni rebajar hallazgos para superar el gate.
-8. No editar el reporte original del security review.
-9. Devolver rutas de archivos modificados, spec creado, pruebas ejecutadas, resultados y riesgos residuales.
-```
-
-Registra la ruta del spec en `02-remediation-spec.md` y el resultado del orchestrator en `03-remediation-summary.md`.
-
-Para secretos expuestos, eliminar el valor del código no basta. El orchestrator debe tratar revocación o rotación, limpieza segura, configuración correcta y prevención de recurrencia. Si la rotación requiere una acción humana o de IT no disponible, el gate permanece bloqueado.
+Para secretos expuestos, eliminar el valor del código no basta: hay que tratar revocación o rotación, limpieza segura, configuración correcta y prevención de recurrencia. Si la rotación requiere una acción humana o de IT no disponible, el gate permanece bloqueado.
 
 ## Fase 4 — Pruebas
 
@@ -230,13 +218,13 @@ Guarda la salida completa en:
 Si el review final mantiene o introduce hallazgos `Critical` o `High`:
 
 1. no generes el PDF;
-2. entrega los hallazgos al `orchestrator` para actualizar el spec e implementar la siguiente iteración;
+2. actualiza el plan de remediación e implementa la siguiente iteración;
 3. vuelve a ejecutar pruebas;
 4. vuelve a ejecutar el security review nativo.
 
 Máximo: tres ciclos de remediación en una misma ejecución.
 
-Si después de tres ciclos persisten bloqueantes, o si el orchestrator falla, crea únicamente:
+Si después de tres ciclos persisten bloqueantes, crea únicamente:
 
 ```text
 SECURITY-REVIEW-BLOCKED.md
@@ -273,29 +261,17 @@ La aprobación final de producción sigue perteneciendo a IT.
 
 ## Fase 7 — Generar evidencia y PDF
 
-Solo después de pasar el gate, invoca al agente `security-evidence-compiler` en primer plano.
+Solo después de pasar el gate, compila la evidencia tú mismo: usa como fuentes la
+metadata, el review inicial, el plan y resumen de remediación cuando existan, los
+resultados de pruebas, el review final y el estado final calculado. La estructura del
+informe es la de `report-template.md` (y el estándar `security-report-standard`, si
+está instalado).
 
-Incluye en la delegación:
-
-```text
-FINAL_SECURITY_GATE=PASSED
-```
-
-Pásale:
-
-- ruta del directorio de evidencia;
-- metadata;
-- review inicial;
-- spec y resumen de remediación cuando existan;
-- resultados de pruebas;
-- review final;
-- estado final calculado.
-
-El agente escribe `IT-Security-Review.md` con el formato de autoría de la skill
+Escribe `IT-Security-Review.md` con el formato de autoría de la skill
 `soutec-md-a-pdf` y genera el PDF invocando esa misma skill (motor `md_to_pdf.py`,
-ReportLab). No le pases ni uses un renderer embebido.
+ReportLab). No uses un renderer embebido.
 
-El agente debe generar:
+Debes generar:
 
 ```text
 IT-Security-Review.md

@@ -20,21 +20,6 @@ test('progress: todo dest del manifest sin when tiene su espejo local en el repo
   assert.deepEqual(missing, [], `Dest sin espejo local (dogfooding roto): ${missing.join(', ')}`)
 })
 
-test('progress: los templates de tasks usan IDs completos, no T1 a secas', () => {
-  const full = fs.readFileSync(
-    path.join(REPO_ROOT, 'templates', 'base', 'specs', '_templates', 'tasks-template.md'),
-    'utf8'
-  )
-  const lite = fs.readFileSync(
-    path.join(REPO_ROOT, 'templates', 'base', 'specs', '_templates', 'tasks-lite-template.md'),
-    'utf8'
-  )
-  assert.match(full, /-T001/)
-  assert.match(lite, /-T001/)
-  assert.doesNotMatch(full, /^### T1:/m)
-  assert.doesNotMatch(lite, /\*\*T1\*\*/)
-})
-
 test('progress: el README de progress conserva la doctrina del espejo al Vault', () => {
   const readme = fs.readFileSync(
     path.join(REPO_ROOT, 'templates', 'base', 'progress', 'README.md'),
@@ -61,12 +46,3 @@ test('progress: CLAUDE.md distingue el repo del proyecto del repo del Vault', ()
   assert.match(claudeMd, /Push directo a `main`/)
 })
 
-test('progress: la telemetria del router conserva los campos de costo', () => {
-  const skill = fs.readFileSync(
-    path.join(REPO_ROOT, 'templates', 'base', 'claude', 'skills', 'ccem-model-router', 'SKILL.md'),
-    'utf8'
-  )
-  for (const campo of ['costo_usd', 'medicion', 'tokens_in', 'tokens_out']) {
-    assert.ok(skill.includes(campo), `ccem-model-router perdio el campo ${campo}`)
-  }
-})

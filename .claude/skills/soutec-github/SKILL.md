@@ -21,9 +21,9 @@ Estas no se negocian, ni siquiera en un hotfix.
   solo si se usó rebase. Con la política por defecto (merge) no hay force-push nunca.
 - **Nunca commitear secretos**: `.env`, `*.pem`, `*.key`, `*.pfx`, `credentials.json`,
   `secrets.json`, tokens, contraseñas, llaves privadas.
-- **Nunca crear una rama sin ID de hito.** Toda rama nace de un hito de una roca. El ID
-  (`<PREFIJO>-H<n>`, ej. `REA-H3`) lo emite el Paso 2 de la metodología de rocas
-  (`/rock-plan`), no Planner. **Si no tienes el ID, pregunta. No lo inventes.**
+- **Nunca crear una rama sin nombre descriptivo.** Formato `tipo/descripcion-corta`. Si
+  el trabajo tiene un ID de tarea en un tracker, va como prefijo del slug
+  (`feature/REA-123-captura-lead`); si no lo hay, el slug solo. **No inventes IDs.**
 - **Nunca crear repositorios, tags ni releases.** Eso es del coordinador.
 - **Un hotfix NO es un bypass.** Aun en máxima criticidad: rama + Pull Request.
 
@@ -32,16 +32,15 @@ Estas no se negocian, ni siquiera en un hotfix.
 ```bash
 git checkout main
 git pull origin main          # siempre partir de main actualizado
-git checkout -b tipo/ID-tarea-descripcion-corta
+git checkout -b tipo/descripcion-corta
 ```
 
-Chequeo previo: ¿hay un hito con su ID (`<PREFIJO>-H<n>`)? ¿leíste el README?
-¿tienes el `.env` local configurado?
+Chequeo previo: ¿leíste el README? ¿tienes el `.env` local configurado?
 
 ## Nombre de rama
 
 ```
-tipo/ID-tarea-descripcion-corta
+tipo/descripcion-corta          # o tipo/ID-tarea-descripcion-corta si hay tracker
 ```
 
 | Tipo | Uso |
@@ -55,11 +54,11 @@ tipo/ID-tarea-descripcion-corta
 | `experiment/` | Pruebas, POC, IA o laboratorio |
 
 ```
-feature/REA-H3-captura-lead
-fix/PAC-H2-error-integracion-odoo
-hotfix/RAM-H5-correccion-produccion
-refactor/ALF-H1-mejorar-estructura-api
-experiment/PLN-H4-prueba-modelo-rag
+feature/captura-lead
+fix/error-integracion-odoo
+hotfix/correccion-produccion
+refactor/mejorar-estructura-api
+experiment/prueba-modelo-rag
 ```
 
 **Prohibidos**: `cambios`, `prueba`, `final`, `final-final`, `arreglo`, o el nombre de
@@ -114,7 +113,6 @@ Antes de pedir revisión:
 - El flujo afectado está probado.
 - No hay `.env` ni credenciales en el commit.
 - El README está actualizado si aplica.
-- El PR indica el hito (ID `<PREFIJO>-H<n>`).
 - El PR indica si requiere versión/release.
 
 **Completa `.github/pull_request_template.md` de verdad.** Checkboxes tildadas porque

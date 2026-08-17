@@ -16,13 +16,6 @@ const LOCAL_ONLY = new Set([
   '.claude/harness.json', // lockfile de este propio repo, no un template
   '.claude/scheduled_tasks.lock', // generado en runtime por el harness de Claude Code
   '.claude/settings.local.json', // config local del dev, ya ignorada por el .gitignore que emite el harness
-  // skill repo-local de identidad corporativa (PLN-003): no se distribuye por template
-  '.claude/skills/soutec-md-a-pdf/SKILL.md',
-  '.claude/skills/soutec-md-a-pdf/assets/soutec_isotipo.png',
-  '.claude/skills/soutec-md-a-pdf/assets/soutec_logo.png',
-  '.claude/skills/soutec-md-a-pdf/assets/soutec_logo_white.png',
-  '.claude/skills/soutec-md-a-pdf/references/guia-autoria-md.md',
-  '.claude/skills/soutec-md-a-pdf/scripts/md_to_pdf.py',
 ])
 
 // git ls-files, no fs.readdirSync: el disco tiene backups (.claude/backup-*/) y

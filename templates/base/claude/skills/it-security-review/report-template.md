@@ -9,7 +9,7 @@ url: www.soutec-group.com
 ---
 
 <!--
-Referencia estructural para el agente `security-evidence-compiler`. El estilo (portada con
+Referencia estructural del informe de evidencia. El estilo (portada con
 isotipo, banners cyan, índice con folios, contraportada) lo pone la skill `soutec-md-a-pdf`
 al renderizar; aquí va Markdown limpio. Reglas de autoría: la guía de esa skill
 (`references/guia-autoria-md.md`). Contenido y trazabilidad: `security-report-standard`.

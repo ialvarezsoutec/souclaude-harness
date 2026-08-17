@@ -43,6 +43,13 @@ export async function select({ message, options, initialValue, yes }) {
   return guard(await p.select({ message, options, initialValue }))
 }
 
+// Checkbox de opciones multiples. Con --yes o CI devuelve initialValues tal
+// cual (el default es "todas marcadas", igual que las demas preguntas).
+export async function multiselect({ message, options, initialValues = [], yes }) {
+  if (yes) return initialValues
+  return guard(await p.multiselect({ message, options, initialValues, required: false }))
+}
+
 export async function confirm({ message, initialValue = false, yes }) {
   if (yes) return initialValue
   return guard(await p.confirm({ message, initialValue }))
