@@ -110,8 +110,8 @@ export async function main(argv, cwd) {
   }
 
   try {
-    // _positionals viaja dentro de flags para no cambiarle la firma a los seis
-    // comandos que no lo necesitan. Hoy solo `mode <valor>` lee un positional.
+    // _positionals viaja dentro de flags para no cambiarle la firma a los
+    // comandos que no lo necesitan.
     return await COMMANDS[command]({ ...flags, _positionals: positionals }, cwd)
   } catch (err) {
     ui.log.error(err.message)
@@ -137,7 +137,7 @@ function printHelp() {
 ${pc.bold('souclaude')} — harness de Claude Code de SOUTEC
 
 ${pc.bold('USO')}
-  npx github:ialvarezsoutec/souclaude-harness#v1 [comando] [flags]
+  npx github:ialvarezsoutec/souclaude-harness#v3 [comando] [flags]
 
 ${pc.bold('COMANDOS')}
   ${pc.cyan('init')}      Instala el harness. Sirve igual en un repo vacio y en uno legacy.

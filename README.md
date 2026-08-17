@@ -8,7 +8,7 @@ Sin agentes ni flujos fijos: el modelo trabaja directo, con las skills de SOUTEC
 única capa.
 
 ```bash
-npx github:ialvarezsoutec/souclaude-harness#v1
+npx github:ialvarezsoutec/souclaude-harness#v3
 ```
 
 Sin registry, sin `.npmrc`, sin token. Solo hace falta git y Node ≥20.
@@ -252,11 +252,45 @@ con un espacio en la ruta, porque los repos de SOUTEC viven bajo OneDrive). Los 
 invariantes que atrapan casi todo: **idempotencia** (correr `init` dos veces no cambia
 nada la segunda vez) y **pureza de `--dry-run`** (el árbol queda byte-idéntico).
 
-## Publicar una versión
+## Versionado y publicación
+
+El harness y el CLI se versionan **juntos** (`harnessVersion` del manifest ==
+`version` de `package.json`; un test lo exige). SemVer con prefijo `v`:
+
+- **PATCH/MINOR** — compatibles: skills mejoradas, comandos nuevos, fixes.
+- **MAJOR** — breaking: cambia qué instala el harness o cómo se comporta el CLI.
+
+El detalle de cada versión vive en `CHANGELOG.md`. Los hitos:
+
+| Serie | Qué era |
+|---|---|
+| `1.x` | Primer harness distribuible: motor de plan/lockfile, skills CCEM, constitución. |
+| `2.x` | Capa de rocas e hitos, monitor de tokens, Vault (`vault-sync`, multi-cuenta). |
+| `3.x` | Simplificación: sin agentes ni flujo SDD/CCEM; skills SOUTEC seleccionables desde el CLI. |
+
+### Tags: uno inmutable por release, uno móvil por major
+
+- `vX.Y.Z` — inmutable, uno por release. Nunca se mueve.
+- `vN` (`v1`, `v2`, `v3`) — **móvil**, apunta al último release de esa serie. Es lo
+  que consume la organización: `#v3` recibe parches y minors de la serie 3 sin hacer
+  nada, y **nunca** recibe un breaking por sorpresa. Cambiar de major es un acto
+  explícito: se edita la ref y se corre `upgrade`.
 
 ```bash
-git tag vX.Y.Z && git tag -f v1
-git push origin vX.Y.Z && git push -f origin v1
+# publicar (después del merge a main)
+git tag vX.Y.Z && git tag -f v3
+git push origin vX.Y.Z && git push -f origin v3
 ```
 
-La organización usa `#v1` (tag móvil) y recibe los parches sin hacer nada.
+### Migrar un proyecto de 2.x a 3.0
+
+```bash
+npx github:ialvarezsoutec/souclaude-harness#v3 upgrade --dry-run   # ver el plan
+npx github:ialvarezsoutec/souclaude-harness#v3 upgrade --prune     # aplicar + limpiar
+```
+
+El upgrade marca **obsoletos** los restos del flujo viejo (agentes, `AGENTS.md`,
+skills CCEM/rocas, `docs/constitution.md` si lo emitió el harness, plantillas de
+`specs/`) y `--prune` ofrece borrarlos con doble confirmación — nada se borra solo, y
+todo lo borrado queda respaldado en `.claude/backup-<timestamp>/`. Los archivos que
+editaste tú jamás se pisan: la propuesta nueva queda al lado como `.new`.

@@ -120,19 +120,24 @@ función chica. **Nada de un DSL de migraciones.**
 
 ### 6. Publicar una versión
 
-1. Subí `harnessVersion` en `templates/harness.manifest.json` (y `version` en
+1. Sube `harnessVersion` en `templates/harness.manifest.json` (y `version` en
    `package.json`, se mueven juntas).
-2. Actualizá `CHANGELOG.md`.
+2. Actualiza `CHANGELOG.md`.
 3. `npm test`.
-4. Commit + tags:
+4. Commit + tags. La convención: un tag **inmutable** `vX.Y.Z` por release, y un tag
+   **móvil por major** (`v1`, `v2`, `v3`) que apunta al último release de su serie.
+   Un breaking sube el major y estrena su propio tag móvil; los tags móviles viejos
+   quedan congelados en el último release de su serie, así ningún proyecto recibe un
+   breaking sin pedirlo.
    ```bash
-   git tag v1.1.0
-   git tag -f v1            # el tag móvil que usa la organización
-   git push origin v1.1.0
-   git push -f origin v1
+   git tag vX.Y.Z
+   git tag -f v3            # el tag móvil de la serie actual
+   git push origin vX.Y.Z
+   git push -f origin v3
    ```
-5. Los devs corren `npx github:ialvarezsoutec/souclaude-harness#v1 upgrade` y reciben la
-   nueva versión. No hay registry ni publicación de npm.
+5. Los devs corren `npx github:ialvarezsoutec/souclaude-harness#v3 upgrade` y reciben la
+   nueva versión. No hay registry ni publicación de npm. Para cambiar de major, editan
+   la ref (`#v2` → `#v3`) y corren `upgrade --prune`.
 
 ---
 
