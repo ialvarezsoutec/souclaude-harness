@@ -104,20 +104,23 @@ test('migracion v0: el CLAUDE.md hecho a mano NO se pisa', async () => {
   assert.ok(!propuesta.includes('ls ~/.claude/skills/ccem-*'))
 })
 
-test('migracion v0: lo que faltaba se crea (skills, comandos, templates lite)', async () => {
+test('migracion v0: lo que faltaba se crea (las skills del catalogo)', async () => {
   const dir = kitV0()
   await main(['upgrade', ...YES], dir)
 
-  for (const s of ['ccem-core', 'ccem-sdd', 'ccem-research', 'ccem-stack', 'ccem-prompting']) {
+  for (const s of [
+    'soutec-github',
+    'it-security-review',
+    'security-report-standard',
+    'soutec-md-a-pdf',
+    'adr-new',
+    'harness-upgrade',
+  ]) {
     assert.ok(has(dir, `.claude/skills/${s}/SKILL.md`), `no se creo la skill ${s}`)
   }
-  for (const c of ['spec-new', 'adr-new', 'constitution-check', 'harness-upgrade']) {
-    assert.ok(has(dir, `.claude/skills/${c}/SKILL.md`), `no se creo el comando ${c}`)
-  }
-  // Los templates lite que specs/README.md prometia y nunca existieron.
-  assert.ok(has(dir, 'specs/_templates/spec-lite-template.md'))
-  assert.ok(has(dir, 'specs/_templates/plan-lite-template.md'))
-  assert.ok(has(dir, 'specs/_templates/tasks-lite-template.md'))
+  // Y nada del flujo SDD viejo.
+  assert.ok(!has(dir, '.claude/agents/orchestrator.md'))
+  assert.ok(!has(dir, 'specs/_templates/spec-template.md'))
 })
 
 test('migracion v0: backup de todo lo sobrescrito', async () => {

@@ -2,6 +2,43 @@
 
 El harness y el CLI se versionan juntos.
 
+## [3.0.0] — 2026-08-17
+
+El harness se simplifica por completo: se eliminan los agentes y el flujo SDD/CCEM
+para que el modelo trabaje sin ataduras, y quedan solo las skills personalizadas de
+SOUTEC, ahora seleccionables desde el CLI.
+
+### Cambiado (breaking)
+
+- **Sin agentes ni flujo SDD**: se eliminan `.claude/agents/` (orchestrator,
+  spec-author, implementer, reviewer, security-evidence-compiler), `AGENTS.md`,
+  `docs/constitution.md`, `specs/` (README y templates full/lite) y todas las skills
+  CCEM (`ccem-core`, `ccem-sdd`, `ccem-planner`, `ccem-research`, `ccem-stack`,
+  `ccem-prompting`, `ccem-model-router`, `ccem-rocas`, `rock-*`, `export-ninety`,
+  `spec-new`, `constitution-check`). En un upgrade quedan marcados obsoletos y
+  `--prune` ofrece borrarlos — nunca se borran solos.
+- **Catálogo de skills reducido**: `soutec-github` (obligatoria), `it-security-review`,
+  `security-report-standard`, `soutec-md-a-pdf` (nueva en el harness, antes solo
+  repo-local), `adr-new` y `harness-upgrade`.
+- **Comando `mode` eliminado**: sin flujo de agentes no hay modos `auto`/`manual`.
+- `it-security-review` ya no delega en agentes: la remediación y la compilación de
+  evidencia las hace el propio modelo, con el PDF vía `soutec-md-a-pdf`.
+- Ramas sin ID de hito: formato `tipo/<slug>`; el ID de tracker es opcional.
+- **Flujo de release `dev` → `main`**: las ramas de trabajo nacen de `dev` y su PR
+  apunta a `dev`; `main` solo recibe merges desde `dev` (el PR de release). Los
+  **tags de versión los puede crear el agente** tras ese merge (`vX.Y.Z` + tag móvil
+  por major); `git tag` sale de `permissions.ask` en el settings emitido.
+
+### Agregado
+
+- **Selección de skills en el CLI**: `init` pregunta con un checkbox qué skills
+  instalar (todas marcadas por defecto; `soutec-github` entra siempre). Sin modo
+  interactivo, `--skills a,b`. La selección se persiste en `.claude/harness.json`
+  y los upgrades la respetan; deseleccionar marca la skill obsoleta (`--prune`).
+- **Soporte de archivos binarios en el manifest** (`"binary": true`): los assets PNG
+  de `soutec-md-a-pdf` se copian y comparan byte a byte, sin normalización LF. El
+  backup también copia bytes tal cual.
+
 ## [2.4.0] — 2026-08-11
 
 `souclaude vault-sync`: la sincronización con el Vault deja de ser prosa y pasa a ser un

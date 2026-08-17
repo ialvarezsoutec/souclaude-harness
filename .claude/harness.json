@@ -1,8 +1,16 @@
 {
-  "harnessVersion": "2.3.0",
-  "cliVersion": "2.3.0",
-  "installedAt": "2026-08-11T19:23:04.335Z",
+  "harnessVersion": "3.0.0",
+  "cliVersion": "3.0.0",
+  "installedAt": "2026-08-17T19:26:07.314Z",
   "greenfield": false,
+  "skills": [
+    "adr-new",
+    "harness-upgrade",
+    "it-security-review",
+    "security-report-standard",
+    "soutec-github",
+    "soutec-md-a-pdf"
+  ],
   "vars": {
     "PROJECT_NAME": "souclaude-harness",
     "PROJECT_TYPE": "automation",
@@ -12,7 +20,7 @@
     "VAULT_REPO": "https://github.com/ialvarezsoutec/soubunker-vault.git",
     "OWNER": "Ignacio A",
     "DATE": "2026-07-14",
-    "HARNESS_VERSION": "2.3.0"
+    "HARNESS_VERSION": "3.0.0"
   },
   "detected": {
     "stacks": [
@@ -25,153 +33,68 @@
       "policy": "user-owned",
       "hash": "707b707f3f287e9e"
     },
-    "docs/constitution.md": {
-      "policy": "user-owned",
-      "hash": "99eca0925b686b76"
-    },
     "notes.md": {
       "policy": "user-owned",
       "hash": "17b688245595a577"
     },
-    "AGENTS.md": {
-      "policy": "managed",
-      "hash": "cddb536b18280d53"
-    },
     ".claude/settings.json": {
       "policy": "merge-json",
-      "hash": "d48ff7157a44291d"
+      "hash": "0fd24da98f8a6ee1"
     },
     ".github/pull_request_template.md": {
       "policy": "user-owned",
-      "hash": "734167853980f686"
+      "hash": "3e8490868a14b1f4"
     },
     ".github/CODEOWNERS": {
       "policy": "user-owned",
       "hash": "90e7a4658c60dd3a"
     },
-    ".claude/skills/ccem-core/SKILL.md": {
-      "policy": "managed",
-      "hash": "91b277690a2d3e4d"
-    },
-    ".claude/skills/ccem-sdd/SKILL.md": {
-      "policy": "managed",
-      "hash": "e063116d3b4e85c9"
-    },
-    ".claude/skills/ccem-planner/SKILL.md": {
-      "policy": "managed",
-      "hash": "c1d58ec53d3fb418"
-    },
-    ".claude/skills/ccem-research/SKILL.md": {
-      "policy": "managed",
-      "hash": "56cdcc0d8f5a5d6f"
-    },
-    ".claude/skills/ccem-stack/SKILL.md": {
-      "policy": "managed",
-      "hash": "ba83c6099fa29d98"
-    },
-    ".claude/skills/ccem-prompting/SKILL.md": {
-      "policy": "managed",
-      "hash": "337da84337b4661d"
-    },
     ".claude/skills/soutec-github/SKILL.md": {
       "policy": "managed",
-      "hash": "30c47465acf1bc9e"
-    },
-    ".claude/skills/spec-new/SKILL.md": {
-      "policy": "managed",
-      "hash": "9f4a9db17751f291"
-    },
-    ".claude/skills/adr-new/SKILL.md": {
-      "policy": "managed",
-      "hash": "080f4c9cdfee4b7e"
-    },
-    ".claude/skills/constitution-check/SKILL.md": {
-      "policy": "managed",
-      "hash": "7d598822a08e486f"
-    },
-    ".claude/skills/harness-upgrade/SKILL.md": {
-      "policy": "managed",
-      "hash": "ea0e7212b0fd96ab"
-    },
-    ".claude/skills/ccem-rocas/SKILL.md": {
-      "policy": "managed",
-      "hash": "0ab1e59647003dc4"
-    },
-    ".claude/skills/rock-plan/SKILL.md": {
-      "policy": "managed",
-      "hash": "376728bc61bef977"
-    },
-    ".claude/skills/rock-status/SKILL.md": {
-      "policy": "managed",
-      "hash": "67819f6895eb657b"
-    },
-    ".claude/skills/rock-close/SKILL.md": {
-      "policy": "managed",
-      "hash": "31bacbd931f24714"
-    },
-    ".claude/skills/export-ninety/SKILL.md": {
-      "policy": "managed",
-      "hash": "3fe9608434a8d6aa"
-    },
-    ".claude/agents/orchestrator.md": {
-      "policy": "managed",
-      "hash": "4e475b0429ecb34e"
-    },
-    ".claude/agents/spec-author.md": {
-      "policy": "managed",
-      "hash": "8e0c3abbb37758e4"
-    },
-    ".claude/agents/implementer.md": {
-      "policy": "managed",
-      "hash": "375bd6ea52dd23c1"
-    },
-    ".claude/agents/reviewer.md": {
-      "policy": "managed",
-      "hash": "6810fae4ebb09de7"
-    },
-    ".claude/agents/security-evidence-compiler.md": {
-      "policy": "managed",
-      "hash": "9d64bb4f4cd80803"
+      "hash": "41e096a1bc5763ca"
     },
     ".claude/skills/it-security-review/SKILL.md": {
       "policy": "managed",
-      "hash": "8b752e68319708e4"
+      "hash": "93744b4d27368a74"
     },
     ".claude/skills/it-security-review/report-template.md": {
       "policy": "managed",
-      "hash": "db63f29aacc79de3"
+      "hash": "cb7e7cbe260ac42b"
     },
     ".claude/skills/security-report-standard/SKILL.md": {
       "policy": "managed",
       "hash": "cd8fd977a1d3c600"
     },
-    "specs/README.md": {
+    ".claude/skills/soutec-md-a-pdf/SKILL.md": {
       "policy": "managed",
-      "hash": "e12fe23814c39fdc"
+      "hash": "368d1c37d15b6cbe"
     },
-    "specs/_templates/spec-template.md": {
+    ".claude/skills/soutec-md-a-pdf/references/guia-autoria-md.md": {
       "policy": "managed",
-      "hash": "845246c777884931"
+      "hash": "d91f52d96d442c05"
     },
-    "specs/_templates/plan-template.md": {
+    ".claude/skills/soutec-md-a-pdf/scripts/md_to_pdf.py": {
       "policy": "managed",
-      "hash": "44145a05810943d9"
+      "hash": "1cf50a73358e97ed"
     },
-    "specs/_templates/tasks-template.md": {
+    ".claude/skills/soutec-md-a-pdf/assets/soutec_isotipo.png": {
       "policy": "managed",
-      "hash": "bb65f2b98bbbf4b7"
+      "hash": "397255ac8d9e24bb",
+      "binary": true
     },
-    "specs/_templates/spec-lite-template.md": {
+    ".claude/skills/soutec-md-a-pdf/assets/soutec_logo.png": {
       "policy": "managed",
-      "hash": "07f3b2148c961f73"
+      "hash": "b775b156d010c1b2",
+      "binary": true
     },
-    "specs/_templates/plan-lite-template.md": {
+    ".claude/skills/soutec-md-a-pdf/assets/soutec_logo_white.png": {
       "policy": "managed",
-      "hash": "014dbb1ba77c156d"
+      "hash": "9103aac243aba15b",
+      "binary": true
     },
-    "specs/_templates/tasks-lite-template.md": {
+    ".claude/skills/adr-new/SKILL.md": {
       "policy": "managed",
-      "hash": "89f2fe4a9b566112"
+      "hash": "080f4c9cdfee4b7e"
     },
     "docs/decisions/README.md": {
       "policy": "managed",
@@ -180,11 +103,19 @@
     "docs/decisions/_template.md": {
       "policy": "managed",
       "hash": "6e38a96a3255f3f4"
+    },
+    ".claude/skills/harness-upgrade/SKILL.md": {
+      "policy": "managed",
+      "hash": "ea0e7212b0fd96ab"
+    },
+    "progress/README.md": {
+      "policy": "managed",
+      "hash": "c84c00705294bcc9"
     }
   },
   "blocks": {
     ".gitignore": {
-      "hash": "6c0717ce70f6bf29"
+      "hash": "ae8edd6b56c2d2c6"
     }
   }
 }

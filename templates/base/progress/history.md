@@ -3,9 +3,9 @@
 Una línea por task o sesión cerrada, **siempre al final**. No edites líneas existentes.
 Al resolver un conflicto de merge: conserva ambas líneas y ordena por fecha.
 
-Formato: `- <fecha> · <ID> · <agente o persona> · <resultado> · <referencia>`
+Formato: `- <fecha> · <tarea o rama> · <quién> · <resultado> · <referencia>`
 
 <!-- Ejemplo:
-- 2026-07-27 · TNP-H1-T003 · implementer · done · progress/TNP-H1-tienda/impl_summary.md
-- 2026-07-27 · TNP-H1-T003 · reviewer · APPROVED · progress/TNP-H1-tienda/review.md
+- 2026-08-17 · captura-lead · @nacho · done · PR #12
+- 2026-08-17 · error-integracion-odoo · claude · done · PR #13
 -->

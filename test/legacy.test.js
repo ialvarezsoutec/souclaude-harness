@@ -35,7 +35,7 @@ test('legacy node: no se crea src/.gitkeep sobre un proyecto que ya tiene codigo
 
   // Pero la superficie Claude sí se emite.
   assert.ok(has(dir, 'CLAUDE.md'))
-  assert.ok(has(dir, '.claude/skills/ccem-core/SKILL.md'))
+  assert.ok(has(dir, '.claude/skills/soutec-github/SKILL.md'))
 
   // Y el nombre y el stack salen del package.json.
   const claudeMd = read(dir, 'CLAUDE.md')
@@ -90,7 +90,7 @@ test('NUNCA SE PISA: un CLAUDE.md escrito a mano sobrevive; la propuesta va a .n
 
   // La propuesta del harness, al lado.
   assert.ok(has(dir, 'CLAUDE.md.new'))
-  assert.ok(read(dir, 'CLAUDE.md.new').includes('Metodología CCEM'))
+  assert.ok(read(dir, 'CLAUDE.md.new').includes('## Harness'))
 
   // Y el lockfile NO reclama el CLAUDE.md del usuario: si lo reclamara, el proximo
   // upgrade lo creeria output intacto del harness y lo pisaria.
@@ -116,7 +116,7 @@ test('una skill editada por el usuario no se revierte en el upgrade', async () =
   const dir = mkRepo({ 'README.md': '' })
   await main(['init', ...YES], dir)
 
-  const skill = '.claude/skills/ccem-core/SKILL.md'
+  const skill = '.claude/skills/soutec-github/SKILL.md'
   const editada = read(dir, skill) + '\n## Regla nuestra\n- Nunca deployar un viernes.\n'
   write(dir, skill, editada)
 
@@ -137,11 +137,11 @@ test('el usuario borro un archivo del harness: se restaura', async () => {
 
   const fs = await import('node:fs')
   const path = await import('node:path')
-  fs.rmSync(path.join(dir, '.claude', 'skills', 'ccem-sdd', 'SKILL.md'))
-  assert.ok(!has(dir, '.claude/skills/ccem-sdd/SKILL.md'))
+  fs.rmSync(path.join(dir, '.claude', 'skills', 'adr-new', 'SKILL.md'))
+  assert.ok(!has(dir, '.claude/skills/adr-new/SKILL.md'))
 
   await main(['upgrade', ...YES], dir)
-  assert.ok(has(dir, '.claude/skills/ccem-sdd/SKILL.md'))
+  assert.ok(has(dir, '.claude/skills/adr-new/SKILL.md'))
 })
 
 // Regresion: DATE se recalculaba en cada corrida. Un CLAUDE.md/constitution.md
@@ -181,20 +181,15 @@ test('DATE no drifea entre corridas reales sucesivas de upgrade', async () => {
   await main(['upgrade', ...YES], dir)
 
   // Sin tocar nada, dos corridas reales seguidas. Antes del fix, alcanzaba con que
-  // el reloj cruzara la medianoche entre una corrida y otra para que CLAUDE.md y la
-  // constitucion aparecieran como "conflict" -> .new, sin que nadie los tocara.
+  // el reloj cruzara la medianoche entre una corrida y otra para que un archivo
+  // user-owned apareciera como "conflict" -> .new, sin que nadie lo tocara.
   const plan = replan(dir)
   const claudeMd = plan.actions.find((a) => a.dest === 'CLAUDE.md')
-  const constitution = plan.actions.find((a) => a.dest === 'docs/constitution.md')
 
   assert.equal(claudeMd.verdict, NOOP, `CLAUDE.md deberia ser NOOP, fue ${claudeMd.verdict}`)
-  assert.equal(constitution.verdict, NOOP, `constitution.md deberia ser NOOP, fue ${constitution.verdict}`)
 
   const lock = JSON.parse(fs.readFileSync(path.join(dir, '.claude', 'harness.json'), 'utf8'))
-  assert.ok(
-    read(dir, 'docs/constitution.md').includes(lock.vars.DATE),
-    'la fecha sembrada no coincide con la que quedo en el archivo'
-  )
+  assert.ok(lock.vars.DATE, 'DATE no quedo sembrada en el lockfile')
 })
 
 test('autodeteccion de comando: lockfile -> upgrade, estructura previa -> adopt, limpio -> init', async () => {

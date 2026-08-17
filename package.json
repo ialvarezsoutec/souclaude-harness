@@ -1,7 +1,7 @@
 {
   "name": "souclaude-harness",
-  "version": "2.4.0",
-  "description": "CLI para inicializar y migrar el harness de Claude Code de SOUTEC (metodologia CCEM)",
+  "version": "3.0.0",
+  "description": "CLI para inicializar y migrar el harness de Claude Code de SOUTEC",
   "type": "module",
   "bin": {
     "souclaude": "bin/cli.mjs"

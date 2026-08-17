@@ -1,13 +1,14 @@
 # souclaude-harness
 
-**v1.1.0**
+**v3.0.0**
 
-CLI para instalar y migrar el harness de Claude Code de SOUTEC (metodología CCEM) en
-cualquier repo: uno nuevo, uno legacy de cinco años, o uno que ya tiene una versión
-vieja del harness.
+CLI para instalar y migrar el harness de Claude Code de SOUTEC en cualquier repo: uno
+nuevo, uno legacy de cinco años, o uno que ya tiene una versión vieja del harness.
+Sin agentes ni flujos fijos: el modelo trabaja directo, con las skills de SOUTEC como
+única capa.
 
 ```bash
-npx github:ialvarezsoutec/souclaude-harness#v1
+npx github:ialvarezsoutec/souclaude-harness#v3
 ```
 
 Sin registry, sin `.npmrc`, sin token. Solo hace falta git y Node ≥20.
@@ -16,23 +17,27 @@ Sin registry, sin `.npmrc`, sin token. Solo hace falta git y Node ≥20.
 
 ```
 CLAUDE.md                     contexto del proyecto para Claude
-AGENTS.md                     mapa de navegación para agentes de IA
-docs/constitution.md          principios no-negociables P1-P10
-docs/decisions/               ADRs + su template
-specs/                        Spec-Driven Development (templates full y lite)
+docs/decisions/               ADRs + su template (skill adr-new)
 notes.md                      scratchpad persistente
+progress/                     progreso del proyecto y protocolo del Vault
 .claude/
   settings.json               permisos y effort (schema-correcto)
-  harness.json                lockfile: versión + hash de cada archivo
-  agents/
-    orchestrator, spec-author, implementer, reviewer   orquestación multi-agente opcional del flujo SDD
-    security-evidence-compiler                    compila evidencia de security review para IT
-  skills/
-    ccem-core, ccem-sdd, ccem-planner, ccem-research, ccem-stack, ccem-prompting
-    spec-new, adr-new, constitution-check, harness-upgrade, soutec-github
-    it-security-review, security-report-standard
+  harness.json                lockfile: versión + hash + skills elegidas
+  skills/                     las que elijas en el checkbox de init
+    soutec-github             flujo Git/GitHub (obligatoria, se instala siempre)
+    it-security-review        security review para IT
+    security-report-standard  estándar de informes de seguridad
+    soutec-md-a-pdf           Markdown a PDF con identidad Soutec
+    adr-new                   documentar decisiones con ADRs
+    harness-upgrade           actualizar el harness desde Claude
 .gitignore                    bloque gestionado, tus líneas intactas
 ```
+
+Las skills se eligen al instalar: `init` muestra un checkbox con todas marcadas
+(`soutec-github` no es opcional: entra siempre). Sin modo interactivo,
+`--skills adr-new,soutec-md-a-pdf`. La selección queda en el lockfile y los upgrades
+la respetan; deseleccionar una skill instalada la marca obsoleta y `--prune` ofrece
+borrarla.
 
 Las skills son **project-local**: se commitean con el repo. Quien clona, las tiene.
 No hay instalación global por dev ni por máquina, y el `upgrade` puede mantenerlas al
@@ -117,7 +122,7 @@ sin ella, el monitor sigue igual que siempre. El detalle del contrato está en e
 `docs/decisions/20260810-monitor-snapshots-en-vault.md`.
 
 Las líneas de `--emit-router` también llevan `cuenta`, `cuenta_uuid` y `maquina`,
-así `/rock-close` puede reportar el gasto medido por cuenta.
+para poder reportar el gasto medido por cuenta.
 
 ### Exit codes
 
@@ -129,7 +134,7 @@ panel.
 
 ### `--emit-router`
 
-Puente entre `monitor` y la telemetría de `ccem-model-router`: activa un modo
+Puente entre `monitor` y la telemetría de ruteo de modelos: activa un modo
 aparte que no dibuja panel, sino que escribe una línea en
 `progress/model-router.jsonl` con el costo **medido** de una tarea ya cerrada
 (reemplaza el estimado que el router anota al lanzar el subagente).
@@ -226,8 +231,8 @@ Por eso init, adopción de un repo legacy y migración de versión **son el mism
 path**. No hay tres flujos: hay una tabla.
 
 Además: backup de todo lo sobrescrito en `.claude/backup-<timestamp>/`, `--prune` exige
-tipear `BORRAR`, y `--force` exige tipear `FORCE`. La herramienta obedece la misma
-constitución que instala (P5 y P8).
+tipear `BORRAR`, y `--force` exige tipear `FORCE`. Nada destructivo ocurre sin
+confirmación explícita.
 
 Para los dos archivos que el harness no posee del todo:
 - `.gitignore` — solo es dueño de un bloque delimitado. Tus líneas nunca se tocan.
@@ -247,11 +252,52 @@ con un espacio en la ruta, porque los repos de SOUTEC viven bajo OneDrive). Los 
 invariantes que atrapan casi todo: **idempotencia** (correr `init` dos veces no cambia
 nada la segunda vez) y **pureza de `--dry-run`** (el árbol queda byte-idéntico).
 
-## Publicar una versión
+## Versionado y publicación
+
+El harness y el CLI se versionan **juntos** (`harnessVersion` del manifest ==
+`version` de `package.json`; un test lo exige). SemVer con prefijo `v`:
+
+- **PATCH/MINOR** — compatibles: skills mejoradas, comandos nuevos, fixes.
+- **MAJOR** — breaking: cambia qué instala el harness o cómo se comporta el CLI.
+
+El detalle de cada versión vive en `CHANGELOG.md`. Los hitos:
+
+| Serie | Qué era |
+|---|---|
+| `1.x` | Primer harness distribuible: motor de plan/lockfile, skills CCEM, constitución. |
+| `2.x` | Capa de rocas e hitos, monitor de tokens, Vault (`vault-sync`, multi-cuenta). |
+| `3.x` | Simplificación: sin agentes ni flujo SDD/CCEM; skills SOUTEC seleccionables desde el CLI. |
+
+### Tags: uno inmutable por release, uno móvil por major
+
+- `vX.Y.Z` — inmutable, uno por release. Nunca se mueve.
+- `vN` (`v1`, `v2`, `v3`) — **móvil**, apunta al último release de esa serie. Es lo
+  que consume la organización: `#v3` recibe parches y minors de la serie 3 sin hacer
+  nada, y **nunca** recibe un breaking por sorpresa. Cambiar de major es un acto
+  explícito: se edita la ref y se corre `upgrade`.
+
+### Publicar
+
+`main` solo recibe merges desde `dev`: el trabajo entra a `dev` por PR de rama, y el
+release es un **PR de `dev` a `main`** (con la versión propuesta en el cuerpo). Tras
+ese merge, **el agente puede crear y pushear los tags** — no hace falta esperar al
+coordinador:
 
 ```bash
-git tag vX.Y.Z && git tag -f v1
-git push origin vX.Y.Z && git push -f origin v1
+git checkout main && git pull origin main
+git tag vX.Y.Z && git tag -f v3
+git push origin vX.Y.Z && git push -f origin v3
 ```
 
-La organización usa `#v1` (tag móvil) y recibe los parches sin hacer nada.
+### Migrar un proyecto de 2.x a 3.0
+
+```bash
+npx github:ialvarezsoutec/souclaude-harness#v3 upgrade --dry-run   # ver el plan
+npx github:ialvarezsoutec/souclaude-harness#v3 upgrade --prune     # aplicar + limpiar
+```
+
+El upgrade marca **obsoletos** los restos del flujo viejo (agentes, `AGENTS.md`,
+skills CCEM/rocas, `docs/constitution.md` si lo emitió el harness, plantillas de
+`specs/`) y `--prune` ofrece borrarlos con doble confirmación — nada se borra solo, y
+todo lo borrado queda respaldado en `.claude/backup-<timestamp>/`. Los archivos que
+editaste tú jamás se pisan: la propuesta nueva queda al lado como `.new`.

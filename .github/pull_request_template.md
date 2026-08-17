@@ -1,9 +1,8 @@
 ## Descripción del cambio
 Explica brevemente qué se cambió y por qué.
 
-## Hito relacionado
-- ID del hito (`<PREFIJO>-H<n>`):
-- Roca / trimestre:
+## Tarea relacionada
+- ID de tarea o tarjeta del kanban (si aplica):
 
 ## Tipo de cambio
 - [ ] Nueva funcionalidad

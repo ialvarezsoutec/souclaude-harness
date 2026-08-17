@@ -19,24 +19,16 @@ src/          código
 tests/        tests
 scripts/      utilidades de desarrollo
 docs/         documentación técnica
-  constitution.md   principios no-negociables del proyecto
-  decisions/        ADRs
-specs/        especificaciones de features (Spec-Driven Development)
+  decisions/        ADRs (si la skill adr-new está instalada)
+progress/     progreso del proyecto y protocolo del Vault
 CLAUDE.md     contexto para Claude Code
 notes.md      scratchpad persistente
 ```
 
 ## Trabajar con Claude Code
 
-Este repo tiene el harness de SOUTEC (CCEM) instalado. Las skills y comandos viven
-en `.claude/skills/` y están versionados junto al código.
-
-```
-/spec-new <slug>        arranca una feature nueva (spec + plan + tasks)
-/adr-new <título>       registra una decisión arquitectónica
-/constitution-check     audita el diff actual contra los principios P1-P8
-/harness-upgrade        actualiza el harness a la última versión
-```
-
-Antes de tocar nada, Claude lee `docs/constitution.md`. Si un plan contradice un
-principio, se corrige el plan — no la constitución.
+Este repo tiene el harness de SOUTEC instalado. Las skills viven en
+`.claude/skills/`, versionadas junto al código, y se eligen al instalar con
+`npx souclaude` (`soutec-github` es obligatoria y siempre está). No hay agentes
+ni flujos fijos: el modelo trabaja directo, con el flujo Git de SOUTEC como
+única regla dura.
