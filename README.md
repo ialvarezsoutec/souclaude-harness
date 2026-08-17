@@ -1,10 +1,11 @@
 # souclaude-harness
 
-**v1.1.0**
+**v3.0.0**
 
-CLI para instalar y migrar el harness de Claude Code de SOUTEC (metodología CCEM) en
-cualquier repo: uno nuevo, uno legacy de cinco años, o uno que ya tiene una versión
-vieja del harness.
+CLI para instalar y migrar el harness de Claude Code de SOUTEC en cualquier repo: uno
+nuevo, uno legacy de cinco años, o uno que ya tiene una versión vieja del harness.
+Sin agentes ni flujos fijos: el modelo trabaja directo, con las skills de SOUTEC como
+única capa.
 
 ```bash
 npx github:ialvarezsoutec/souclaude-harness#v1
@@ -16,23 +17,27 @@ Sin registry, sin `.npmrc`, sin token. Solo hace falta git y Node ≥20.
 
 ```
 CLAUDE.md                     contexto del proyecto para Claude
-AGENTS.md                     mapa de navegación para agentes de IA
-docs/constitution.md          principios no-negociables P1-P10
-docs/decisions/               ADRs + su template
-specs/                        Spec-Driven Development (templates full y lite)
+docs/decisions/               ADRs + su template (skill adr-new)
 notes.md                      scratchpad persistente
+progress/                     progreso del proyecto y protocolo del Vault
 .claude/
   settings.json               permisos y effort (schema-correcto)
-  harness.json                lockfile: versión + hash de cada archivo
-  agents/
-    orchestrator, spec-author, implementer, reviewer   orquestación multi-agente opcional del flujo SDD
-    security-evidence-compiler                    compila evidencia de security review para IT
-  skills/
-    ccem-core, ccem-sdd, ccem-planner, ccem-research, ccem-stack, ccem-prompting
-    spec-new, adr-new, constitution-check, harness-upgrade, soutec-github
-    it-security-review, security-report-standard
+  harness.json                lockfile: versión + hash + skills elegidas
+  skills/                     las que elijas en el checkbox de init
+    soutec-github             flujo Git/GitHub (obligatoria, se instala siempre)
+    it-security-review        security review para IT
+    security-report-standard  estándar de informes de seguridad
+    soutec-md-a-pdf           Markdown a PDF con identidad Soutec
+    adr-new                   documentar decisiones con ADRs
+    harness-upgrade           actualizar el harness desde Claude
 .gitignore                    bloque gestionado, tus líneas intactas
 ```
+
+Las skills se eligen al instalar: `init` muestra un checkbox con todas marcadas
+(`soutec-github` no es opcional: entra siempre). Sin modo interactivo,
+`--skills adr-new,soutec-md-a-pdf`. La selección queda en el lockfile y los upgrades
+la respetan; deseleccionar una skill instalada la marca obsoleta y `--prune` ofrece
+borrarla.
 
 Las skills son **project-local**: se commitean con el repo. Quien clona, las tiene.
 No hay instalación global por dev ni por máquina, y el `upgrade` puede mantenerlas al
@@ -117,7 +122,7 @@ sin ella, el monitor sigue igual que siempre. El detalle del contrato está en e
 `docs/decisions/20260810-monitor-snapshots-en-vault.md`.
 
 Las líneas de `--emit-router` también llevan `cuenta`, `cuenta_uuid` y `maquina`,
-así `/rock-close` puede reportar el gasto medido por cuenta.
+para poder reportar el gasto medido por cuenta.
 
 ### Exit codes
 
@@ -129,7 +134,7 @@ panel.
 
 ### `--emit-router`
 
-Puente entre `monitor` y la telemetría de `ccem-model-router`: activa un modo
+Puente entre `monitor` y la telemetría de ruteo de modelos: activa un modo
 aparte que no dibuja panel, sino que escribe una línea en
 `progress/model-router.jsonl` con el costo **medido** de una tarea ya cerrada
 (reemplaza el estimado que el router anota al lanzar el subagente).
@@ -226,8 +231,8 @@ Por eso init, adopción de un repo legacy y migración de versión **son el mism
 path**. No hay tres flujos: hay una tabla.
 
 Además: backup de todo lo sobrescrito en `.claude/backup-<timestamp>/`, `--prune` exige
-tipear `BORRAR`, y `--force` exige tipear `FORCE`. La herramienta obedece la misma
-constitución que instala (P5 y P8).
+tipear `BORRAR`, y `--force` exige tipear `FORCE`. Nada destructivo ocurre sin
+confirmación explícita.
 
 Para los dos archivos que el harness no posee del todo:
 - `.gitignore` — solo es dueño de un bloque delimitado. Tus líneas nunca se tocan.
