@@ -45,6 +45,7 @@ export function consolidarCuentas({ local = null, remotas = [], ahora } = {}) {
       totalesDia: totalesDia(local.totales),
       generadoEn: ahora,
       frescuraMs: 0,
+      hayActividad: local.hayActividad === true,
     })
   }
 
@@ -79,6 +80,10 @@ function filaRemota(snapshot, ahora) {
     totalesDia: snapshot.totalesDia ?? null,
     generadoEn,
     frescuraMs: ahora - generadoEn,
+    // Solo las cuentas de SOUCLAUDE_LOCAL_ACCOUNTS lo traen (misma maquina,
+    // medido en vivo); un snapshot del Vault no tiene forma de saber si otra
+    // maquina tiene una sesion abierta ahora mismo, asi que queda false.
+    hayActividad: snapshot.hayActividad === true,
   }
 }
 

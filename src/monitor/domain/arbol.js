@@ -64,13 +64,21 @@ export function construirVista(snapshot = {}, opciones = {}) {
   // agentes corriendo, eso es la noticia. Quien decide colapsar es el renderer.
   const agentesActivos = aplanarActivos(proyectos)
 
+  // Para la seccion CUENTAS: si HAY una sesion abierta con esta cuenta ahora
+  // mismo, sin importar el orden/top/recorte que se aplique despues (por eso
+  // se mide sobre el arbol completo, igual que agentesActivos). Es sobre
+  // SESIONES (proceso raiz), no sobre agentesActivos (subagentes): una sesion
+  // en EN_DUDA (pid vivo, sin escritura reciente) sigue siendo "en uso" para
+  // quien decide si esa cuenta esta libre o no.
+  const hayActividad = proyectos.some((p) => p.sesiones.some((s) => esActivo(s.estado)))
+
   const { visibles, recortes } = recortarArbol(proyectos, { orden, top })
 
   const { limites, historico } = conHistoricoDeExtra(snapshot.limites ?? null, snapshot.registroExtra, ahora)
   // Seccion CUENTAS: la cuenta local (con los limites y totales de ESTA vista)
   // + los snapshots que el resto del equipo publico en el Vault.
   const consolidado = consolidarCuentas({
-    local: { cuenta: snapshot.cuenta, limites: snapshot.limites ?? null, totales },
+    local: { cuenta: snapshot.cuenta, limites: snapshot.limites ?? null, totales, hayActividad },
     remotas: snapshot.cuentasRemotas ?? [],
     ahora,
   })
@@ -228,6 +236,8 @@ function agruparSesiones({ universo, vivos, indices, ubicaciones, ahora, pasa })
       s = {
         sessionId,
         rama: null,
+        cuentaUuid: null,
+        cuentaAlias: null,
         consumo: vacio(),
         porModelo: new Map(),
         agentes: new Map(),
@@ -240,6 +250,13 @@ function agruparSesiones({ universo, vivos, indices, ubicaciones, ahora, pasa })
   for (const evento of universo) {
     const s = asegurar(evento.sessionId)
     if (evento.rama) s.rama = evento.rama
+    // Todos los eventos de una sesion vienen del mismo archivo (mismo indice
+    // por sessionId), asi que comparten cuenta: alcanza con quedarse la
+    // primera que aparezca, sin comparar entre eventos.
+    if (s.cuentaUuid == null && evento.cuentaUuid) {
+      s.cuentaUuid = evento.cuentaUuid
+      s.cuentaAlias = evento.cuentaAlias ?? null
+    }
 
     sumar(s.consumo, evento, { ahora })
 
@@ -329,6 +346,8 @@ function materializarSesion(borrador, { indices, ubicaciones, ahora }) {
     sessionId,
     titulo: indices.tituloPorSesion.get(sessionId) ?? null,
     rama: borrador.rama,
+    cuentaUuid: borrador.cuentaUuid,
+    cuentaAlias: borrador.cuentaAlias,
     cwd: ubicacion.cwd,
     inicio: borrador.consumo.primerTs ?? vivo?.startedAt ?? null,
     ultimoTs: borrador.consumo.ultimoTs,

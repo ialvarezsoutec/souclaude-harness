@@ -15,6 +15,12 @@ import { renderJson, renderPlain } from '../monitor/adapters/plain-renderer.js'
 import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writer.js'
 import { createVaultPublisher } from '../monitor/adapters/vault-monitor-publisher.js'
 import { createVaultAccountsReader, gitAsync } from '../monitor/adapters/vault-accounts-reader.js'
+import {
+  createLocalAccountsReader,
+  createCombinedAccountsReader,
+  parseLocalAccountsEnv,
+  pathsDeConfigDir,
+} from '../monitor/adapters/local-accounts-reader.js'
 import { readVaultConfig } from '../core/vault.js'
 
 // El caché de limites de ~/.claude.json solo se reescribe cuando el humano corre
@@ -140,6 +146,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     usageHistory,
     usageFetcher,
     accountsReader,
+    cuentasLocales: crearCuentasLocales(),
   })
   const clock = { now: () => Date.now() }
 
@@ -183,12 +190,32 @@ export function crearPublisher(flags, cwd) {
   return createVaultPublisher({ vaultPath: config.path })
 }
 
-// Lector de los snapshots que publico el resto del equipo. Sin Vault, null:
-// la seccion CUENTAS muestra solo la cuenta local.
+// Lector de los snapshots que publico el resto del equipo (Vault) combinado
+// con las cuentas locales adicionales (SOUCLAUDE_LOCAL_ACCOUNTS, ej. las
+// carpetas ~/.claude1 y ~/.claude2 de claude1/claude2 en el perfil de
+// PowerShell). Sin Vault ni cuentas locales, null: la seccion CUENTAS muestra
+// solo la cuenta local principal.
 function crearAccountsReader(cwd, { conPull }) {
   const config = readVaultConfig(cwd)
-  if (!config?.path) return null
-  return createVaultAccountsReader({ vaultPath: config.path, git: conPull ? gitAsync : null })
+  const vaultReader = config?.path
+    ? createVaultAccountsReader({ vaultPath: config.path, git: conPull ? gitAsync : null })
+    : null
+
+  const homesLocales = parseLocalAccountsEnv(process.env.SOUCLAUDE_LOCAL_ACCOUNTS)
+  const localReader = homesLocales.length > 0 ? createLocalAccountsReader({ homes: homesLocales }) : null
+
+  if (vaultReader && localReader) return createCombinedAccountsReader([vaultReader, localReader])
+  return vaultReader ?? localReader
+}
+
+// {paths} de cada cuenta local (SOUCLAUDE_LOCAL_ACCOUNTS) para que
+// createSnapshotSource mezcle sus SESIONES/PROYECTOS en el mismo arbol,
+// etiquetadas con su propia identidad de cuenta. Complementa crearAccountsReader
+// (que solo aporta el AGREGADO de la fila CUENTAS): las mismas carpetas
+// alimentan las dos rutas por separado, cada una con el detalle que necesita.
+function crearCuentasLocales() {
+  const homesLocales = parseLocalAccountsEnv(process.env.SOUCLAUDE_LOCAL_ACCOUNTS)
+  return homesLocales.map((homeOverride) => ({ paths: pathsDeConfigDir(homeOverride) }))
 }
 
 // --- panel en vivo ---

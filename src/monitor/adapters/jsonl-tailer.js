@@ -35,6 +35,8 @@ function contextFor(file, ctx) {
     sessionId: file.sessionId ?? null,
     agentId: file.agentId ?? null,
     esSubagente: file.kind === 'subagent',
+    cuentaUuid: file.cuentaUuid ?? null,
+    cuentaAlias: file.cuentaAlias ?? null,
   }
 }
 
