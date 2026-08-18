@@ -149,7 +149,10 @@ function evaluaMergeable(pr) {
 }
 
 function extraeSeccion(cuerpo, titulo) {
-  const regex = new RegExp(`^## ${titulo}\\s*\\n([\\s\\S]*?)(?=\\n## |$)`, 'm')
+  // El lookahead (?=\n## |$) se combina con el flag 'm' del anchor ^, y ahi
+  // $ significa fin-de-linea (no fin-de-string): corta la seccion en su
+  // primera linea. (?![\s\S]) fuerza fin-de-string real.
+  const regex = new RegExp(`^## ${titulo}\\s*\\n([\\s\\S]*?)(?=\\n## |(?![\\s\\S]))`, 'm')
   const m = cuerpo.match(regex)
   return m ? m[1].trim() : null
 }
