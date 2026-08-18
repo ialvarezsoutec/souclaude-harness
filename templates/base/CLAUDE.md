@@ -19,6 +19,7 @@ es obligatoria y siempre está):
 - `adr-new` — documentar decisiones con ADRs (si está instalada).
 - `harness-upgrade` — actualizar el harness (si está instalada).
 - `vault-milestones` — análisis e iteración de milestones en el Vault (si está instalada).
+- `jira-sync` — espejo del tablero del Vault en Jira vía MCP (si está instalada).
 
 ## Git — reglas duras
 
@@ -59,6 +60,11 @@ Antes de tocar código, declara al usuario sobre qué milestone vas a trabajar; 
 pedido no corresponde a ningún milestone existente, da de alta uno en el Backlog
 (skill `vault-milestones`) **antes** de empezar. Trabajo sin milestone declarado es
 una violación del protocolo, no una omisión menor.
+
+**Espejo en Jira** (si la skill `jira-sync` está instalada): cada movimiento de
+tarjeta en el Vault se refleja en Jira **en el mismo momento** — Vault primero,
+Jira inmediatamente después. Si el conector no está autorizado, se reporta y el
+trabajo local sigue.
 
 La ruta local del Vault está en `.claude/vault.local.json` (la escribe `npx souclaude`).
 Antes de empezar a trabajar: `git -C "<vault>" pull --rebase` y lee

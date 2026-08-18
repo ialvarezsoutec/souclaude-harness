@@ -1,5 +1,5 @@
 {
-  "harnessVersion": "3.2.0",
+  "harnessVersion": "3.3.0",
   "vault": {
     "repo": "https://github.com/ialvarezsoutec/soubunker-vault.git"
   },
@@ -32,6 +32,10 @@
     {
       "id": "vault-milestones",
       "label": "vault-milestones — análisis e iteración de milestones en el Vault"
+    },
+    {
+      "id": "jira-sync",
+      "label": "jira-sync — espejo del tablero del Vault en Jira vía MCP de Atlassian"
     }
   ],
   "files": [
@@ -71,6 +75,10 @@
     { "id": "skill-harness-upgrade", "src": "base/claude/skills/harness-upgrade/SKILL.md", "dest": ".claude/skills/harness-upgrade/SKILL.md", "policy": "managed", "skill": "harness-upgrade" },
 
     { "id": "skill-vault-milestones", "src": "base/claude/skills/vault-milestones/SKILL.md", "dest": ".claude/skills/vault-milestones/SKILL.md", "policy": "managed", "skill": "vault-milestones" },
+
+    { "id": "skill-jira-sync", "src": "base/claude/skills/jira-sync/SKILL.md", "dest": ".claude/skills/jira-sync/SKILL.md", "policy": "managed", "skill": "jira-sync" },
+    { "id": "jira-config", "src": "base/claude/jira.json", "dest": ".claude/jira.json", "policy": "user-owned", "skill": "jira-sync" },
+    { "id": "mcp-config", "src": "base/mcp.json", "dest": ".mcp.json", "policy": "merge-json", "skill": "jira-sync" },
 
     { "id": "progress-readme", "src": "base/progress/README.md", "dest": "progress/README.md", "policy": "managed" },
     { "id": "progress-history", "src": "base/progress/history.md", "dest": "progress/history.md", "policy": "user-owned" }

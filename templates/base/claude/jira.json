@@ -1,0 +1,5 @@
+{
+  "_comentario": "Proyecto Jira destino del espejo del Vault (skill jira-sync). No es secreto: se commitea.",
+  "url": "https://<org>.atlassian.net",
+  "projectKey": "<CLAVE>"
+}
