@@ -1,7 +1,7 @@
 {
-  "harnessVersion": "3.0.0",
-  "cliVersion": "3.0.0",
-  "installedAt": "2026-08-17T19:26:07.314Z",
+  "harnessVersion": "3.1.0",
+  "cliVersion": "3.1.0",
+  "installedAt": "2026-08-17T20:09:27.751Z",
   "greenfield": false,
   "skills": [
     "adr-new",
@@ -20,7 +20,7 @@
     "VAULT_REPO": "https://github.com/ialvarezsoutec/soubunker-vault.git",
     "OWNER": "Ignacio A",
     "DATE": "2026-07-14",
-    "HARNESS_VERSION": "3.0.0"
+    "HARNESS_VERSION": "3.1.0"
   },
   "detected": {
     "stacks": [
@@ -39,7 +39,7 @@
     },
     ".claude/settings.json": {
       "policy": "merge-json",
-      "hash": "0fd24da98f8a6ee1"
+      "hash": "ca1ade6f92d89211"
     },
     ".github/pull_request_template.md": {
       "policy": "user-owned",
@@ -51,7 +51,7 @@
     },
     ".claude/skills/soutec-github/SKILL.md": {
       "policy": "managed",
-      "hash": "41e096a1bc5763ca"
+      "hash": "89c8db550b4b0527"
     },
     ".claude/skills/it-security-review/SKILL.md": {
       "policy": "managed",
@@ -106,16 +106,16 @@
     },
     ".claude/skills/harness-upgrade/SKILL.md": {
       "policy": "managed",
-      "hash": "ea0e7212b0fd96ab"
+      "hash": "304b139818f4fe51"
     },
     "progress/README.md": {
       "policy": "managed",
-      "hash": "c84c00705294bcc9"
+      "hash": "618b6094de481cb9"
     }
   },
   "blocks": {
     ".gitignore": {
-      "hash": "ae8edd6b56c2d2c6"
+      "hash": "6970eee05ca8ffb1"
     }
   }
 }

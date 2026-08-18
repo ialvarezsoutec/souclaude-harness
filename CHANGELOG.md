@@ -2,6 +2,36 @@
 
 El harness y el CLI se versionan juntos.
 
+## [3.1.0] — 2026-08-17
+
+El Vault pasa de tablero de tareas a estado vivo de tres niveles por proyecto:
+milestones (con claim entre máquinas), planes por milestone y registro de sesiones
+con consumo de tokens.
+
+### Agregado
+
+- **`Project-<PREFIJO>/milestones.md`**: tablero Kanban de milestones
+  (`<PREFIJO>-M<n>`). La tarjeta En curso lleva dueño **y máquina**; es la unidad de
+  anti-solapamiento — un agente que encuentra el milestone En curso con otro
+  dueño/máquina para y pregunta, antes incluso de mirar el kanban de tareas.
+- **`Project-<PREFIJO>/plans/`**: un archivo por plan (`<PREFIJO>-M<n>-P<n>-<slug>.md`),
+  espejado al adoptarlo. Los planes descartados no se borran: la tarjeta del milestone
+  apunta al vigente.
+- **`Project-<PREFIJO>/sessions.md`**: append-only, una línea por sesión al cerrarla —
+  fecha, rama/sesión, milestone, quién, máquina, tokens entrada/salida y resultado.
+  Amplía la excepción de telemetría del ADR 20260810 (ADR
+  `20260817-milestones-planes-y-sesiones-en-vault`); la telemetría cruda sigue
+  prohibida.
+
+### Cambiado
+
+- `progress/README.md` (managed) reescribe el protocolo del Vault con los tres niveles
+  y el claim en dos pasos (milestone → tarea); `templates/base/CLAUDE.md` resume el
+  flujo nuevo en "Los dos repos".
+- `docs/vault-guide.md` se reescribe para el harness 3.x: se elimina la deriva del
+  flujo SDD/rocas (agentes y comandos `/rock-*` que ya no existen) y se documentan los
+  dos canales de consumo (sesiones por proyecto + snapshots del monitor por cuenta).
+
 ## [3.0.0] — 2026-08-17
 
 El harness se simplifica por completo: se eliminan los agentes y el flujo SDD/CCEM

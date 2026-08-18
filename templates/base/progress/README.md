@@ -26,15 +26,30 @@ Campos: fecha · tarea o rama · quién · resultado · referencia (PR, commit, 
 Al resolver un conflicto de merge aquí: **conserva ambas líneas y ordena por fecha** —
 dos appends nunca se contradicen.
 
-## Estado vivo: el kanban del Vault
+## Estado vivo: el proyecto en el Vault
 
 El Vault (repo aparte) es el centro de información de todos los proyectos. Vive
 **fuera** del repo del proyecto a propósito: ahí se acumula la visibilidad sin
-ensuciar este repo. El estado vivo del trabajo se refleja en
-`Project-<PREFIJO>/kanban.md` del Vault: cuando **empiezas** una tarjeta, la mueves
-**en ese momento** — no en un push final. El tablero debe reflejar el ahora.
+ensuciar este repo. Cada proyecto tiene su carpeta `Project-<PREFIJO>/` con **tres
+niveles** de información, del más alto al más fino:
 
-**Formato del kanban** (compatible con el plugin Kanban de Obsidian):
+```
+Project-<PREFIJO>/
+├── milestones.md          # tablero de MILESTONES — el claim de nivel alto
+├── plans/                 # un plan por archivo: <PREFIJO>-M<n>-P<n>-<slug>.md
+├── kanban.md              # tablero de TAREAS del milestone en curso
+├── sessions.md            # append-only: una línea por sesión (quién, qué, tokens)
+└── progress/
+    └── history.md         # espejo del history.md del repo
+```
+
+**Jerarquía**: un proyecto tiene una lista de **milestones** (`<PREFIJO>-M<n>`); cada
+milestone puede tener uno o más **planes** (`<PREFIJO>-M<n>-P<n>`) para llegar al
+objetivo; cada plan se ejecuta como **tareas** en el kanban. El milestone es la unidad
+de anti-solapamiento entre máquinas; la tarea es la unidad de trabajo del día.
+
+**Formato de los tableros** (`milestones.md` y `kanban.md`, compatible con el plugin
+Kanban de Obsidian — una tarjeta = una línea):
 
 ```markdown
 ---
@@ -43,16 +58,27 @@ kanban-plugin: board
 
 ## Backlog
 
-- [ ] validar formulario · @pendiente
+- [ ] TNP-M3 · portal de clientes · @pendiente
 
 ## En curso
 
-- [ ] capturar lead al cierre · @nacho
+- [ ] TNP-M2 · integración Odoo · @nacho · PC01 · plan P1
 
 ## Hecho
 
-- [x] esqueleto del dominio · @nacho
+- [x] TNP-M1 · esqueleto del dominio · @nacho
 ```
+
+En `milestones.md` la tarjeta lleva **dueño y máquina** (`@quién · <máquina>`) y el
+plan activo si lo hay. En `kanban.md` las tarjetas son tareas
+(`TNP-M2-T004 · qué · @quién`) y usan las columnas Backlog / En curso / En review /
+Hecho.
+
+**Los planes** se espejan a `plans/` como archivos Markdown al momento de adoptarlos
+(qué se va a hacer, en qué orden, con qué criterio de éxito). No se editan en el
+Vault: se corrige en el repo o en la sesión y se re-espeja. Un milestone puede cambiar
+de plan (P1 fracasó → P2): el plan viejo **no se borra**, la tarjeta del milestone
+apunta al nuevo.
 
 **Ruta**: la ruta local del Vault se lee de `.claude/vault.local.json` (la escribe el
 instalador: `npx souclaude init` o `--vault-path`). Respaldo: la variable de entorno
@@ -68,37 +94,68 @@ propio remoto. Trabajas contra **dos repos a la vez** y no se parecen en nada:
 
 | | Repo del proyecto | Repo del Vault |
 |---|---|---|
-| Qué va | Código, tests, progreso | Kanban, espejos, evidencia |
+| Qué va | Código, tests, progreso | Milestones, planes, kanban, sesiones |
 | Cómo se escribe | Rama + PR. **Nunca** push directo a `main` | **Push directo a `main`**, sin PR |
 | Por qué | Todo cambio se revisa | El tablero refleja el ahora, no el último merge |
 
 Nunca se cruzan: código, diffs y tests jamás van al Vault; los artefactos del Vault
 jamás se commitean en el repo del proyecto.
 
-**Antes de tomar una tarjeta** (obligatorio — es el anti-solapamiento entre máquinas):
+## Protocolo anti-solapamiento (obligatorio)
+
+**Antes de empezar a trabajar** — siempre, en este orden:
 
 ```bash
-git -C "<vault>" pull --rebase
+git -C "<vault>" pull --rebase        # o: npx souclaude vault-sync
 ```
 
-Luego lee `Project-<PREFIJO>/kanban.md`. Si la tarjeta ya está en **En curso** con otro
-dueño, otra máquina u otra persona la está trabajando: **paras y preguntas al humano**.
-No la tomas, no la mueves, no saltas a otra por tu cuenta.
+1. Lee `Project-<PREFIJO>/milestones.md`. Si el milestone que vas a trabajar ya está
+   en **En curso** con **otro dueño u otra máquina**, lo está trabajando otro agente:
+   **paras y preguntas al humano**. No lo tomas, no lo mueves, no saltas a otro por tu
+   cuenta.
+2. Si el milestone está libre (Backlog, o En curso contigo mismo), lee `kanban.md` y
+   aplica la misma regla a la **tarea**: En curso o En review con otro dueño → parar y
+   preguntar.
 
-**Al tomarla**, la mueves y pusheas en ese momento — no al final:
+**Al tomar un milestone o una tarea**, mueves la tarjeta y pusheas **en ese momento**
+— no en un push final. El tablero debe reflejar el ahora:
 
 ```bash
 git -C "<vault>" add Project-<PREFIJO>
-git -C "<vault>" commit -m "chore: <tarjeta> a En curso (@<dueño>)"
+git -C "<vault>" commit -m "chore: <ID> a En curso (@<dueño> · <máquina>)"
 git -C "<vault>" pull --rebase && git -C "<vault>" push
 ```
 
-Convención de commits del Vault: `chore:` para movimientos de kanban, `docs:` para
-espejos de artefactos. **Nunca `git push --force`**, en ninguno de los dos repos.
-`npx souclaude vault-sync` hace el pull/push seguro desde el CLI.
+`npx souclaude vault-sync --push -m "<msg>"` hace el ciclo completo (add → commit →
+pull → push) de forma segura desde el CLI.
 
-**Conflictos en `kanban.md`**: una tarjeta = una línea, así que dos personas nunca se
-contradicen — conserva **ambas** tarjetas y nunca borres la de otro (misma lógica que
-`history.md`). Si el `pull --rebase` falla dos veces seguidas, no insistas: anota
-`vault_skip · motivo` en `history.md` del repo y repórtalo. El trabajo local nunca se
-bloquea por el Vault.
+**Durante el trabajo**, el flujo constante es: adoptar un plan → espejarlo a `plans/`
+y anotarlo en la tarjeta del milestone → mover tareas en `kanban.md` a medida que
+cambian de estado. Cada movimiento se pushea al momento. Convención de commits del
+Vault: `chore:` para movimientos de tableros, `docs:` para planes y espejos.
+**Nunca `git push --force`**, en ninguno de los dos repos.
+
+## sessions.md — el consumo de cada sesión
+
+**Al cerrar cada sesión de trabajo** (o al cerrar la tarea del día), se agrega **una
+línea al final** de `Project-<PREFIJO>/sessions.md`, append-only como `history.md`:
+
+```
+- 2026-08-17 · feature/captura-lead · TNP-M2 · @nacho · PC01 · in 142k / out 9k · T003 y T004 cerradas
+```
+
+Campos: fecha · rama o sesión · milestone · quién · máquina · tokens (entrada/salida)
+· resultado en pocas palabras. Los tokens salen del monitor local (`npx souclaude
+monitor` muestra el consumo por sesión); si no hay dato disponible, `tokens n/d` — la
+línea se escribe igual: el registro de **que la sesión existió y qué tocó** vale por
+sí solo. Los números agregados y fiables por cuenta y máquina los publica el monitor
+automáticamente en `00-System/monitor/` del Vault.
+
+## Conflictos y fallos
+
+- **Conflictos en los tableros y en `sessions.md`**: una tarjeta/línea = una línea de
+  archivo, así que dos escritores nunca se contradicen — conserva **ambas** y nunca
+  borres la de otro (misma lógica que `history.md`).
+- Si el `pull --rebase` falla dos veces seguidas, no insistas: anota
+  `vault_skip · motivo` en `history.md` del repo y repórtalo. El trabajo local nunca
+  se bloquea por el Vault.
