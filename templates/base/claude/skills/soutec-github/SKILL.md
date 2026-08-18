@@ -128,7 +128,8 @@ remediar salvo que el usuario decida explícitamente continuar así — en ese c
 dejarlo registrado en el PR.
 
 **Completa `.github/pull_request_template.md` de verdad.** Checkboxes tildadas porque
-se hizo, no por rellenar. Nada de "N/A" genéricos.
+se hizo, no por rellenar. Nada de "N/A" genéricos: si una sección no aplica, se
+**omite entera** (título incluido), no se deja con "N/A" ni vacía.
 
 Si piden correcciones: **pushear a la misma rama.** El PR se actualiza solo. Crear un
 PR nuevo por cada corrección rompe la trazabilidad y duplica el ruido.
