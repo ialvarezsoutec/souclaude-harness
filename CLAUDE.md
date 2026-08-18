@@ -56,6 +56,12 @@ Trabajas contra **dos repos a la vez**, con reglas opuestas a propósito:
 | Cómo se escribe | Rama + PR. **Nunca** directo a `main` | **Push directo a `main`**, sin PR |
 | Por qué | Todo cambio se revisa | El tablero refleja el ahora, no el último merge |
 
+**Trazabilidad obligatoria**: todo trabajo pertenece a un **milestone del Vault**.
+Antes de tocar código, declara al usuario sobre qué milestone vas a trabajar; si el
+pedido no corresponde a ningún milestone existente, da de alta uno en el Backlog
+(skill `vault-milestones`) **antes** de empezar. Trabajo sin milestone declarado es
+una violación del protocolo, no una omisión menor.
+
 La ruta local del Vault está en `.claude/vault.local.json` (la escribe `npx souclaude`).
 Antes de empezar a trabajar: `git -C "<vault>" pull --rebase` y lee
 `Project-<PREFIJO>/milestones.md` y `kanban.md`. Si el milestone o la tarea ya está

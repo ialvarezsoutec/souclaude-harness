@@ -23,5 +23,17 @@
       "Bash(gh pr merge:*)",
       "Bash(gh release:*)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/declarar-milestone.mjs"
+          }
+        ]
+      }
+    ]
   }
 }
