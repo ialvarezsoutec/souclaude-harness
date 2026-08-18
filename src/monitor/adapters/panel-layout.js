@@ -583,15 +583,21 @@ function seccionCuentas(ctx, vista) {
 // el `ancho` de esa mitad.
 function bloqueDeCuenta(ctx, f, filasLimite, ancho, soloRest = false) {
   const apagado = f.vieja ? 'dim' : null
-  // La cuenta local (esLocal) es la que corre ESTE monitor ahora mismo: se
-  // marca con "> " antepuesto al alias en vez de un texto generico "local".
-  const marcaActiva = f.esLocal ? '> ' : '  '
-  const anchoRellenoCabecera = soloRest ? RESTO : Math.max(0, ancho - 16 - 1 - 8 - 1)
+  // El offset de textoReset en celdasLimiteDeCuenta (etiqueta + barra + 5 + 2,
+  // mas separadores entre celdas) para que "en uso" quede alineado justo
+  // arriba de "en 3d 12h" en vez de pegado al alias. Sin margen inicial: el
+  // alias y "Ventana 7d" arrancan las dos en la misma columna 0.
+  const anchoEtiqueta = Math.max(9, Math.min(16, Math.floor(ancho * 0.22)))
+  const anchoBarra = Math.max(4, Math.min(28, Math.floor(ancho * 0.32)))
+  const offsetReset = anchoEtiqueta + anchoBarra + 5 + 2 + 3
+  const anchoRellenoCabecera = Math.max(0, offsetReset - (16 + 1 + 20 + 1))
+  const anchoFinCabecera = soloRest ? RESTO : Math.max(0, ancho - offsetReset)
 
   const cabecera = [
-    { texto: `${marcaActiva}${texto(f.alias, '?')}`, ancho: 16, tinte: apagado ?? (f.esLocal ? 'bold' : null) },
-    { texto: f.costoUsd != null ? fmtDinero(f.costoUsd) : '', ancho: 8, alinear: 'd', tinte: apagado },
+    { texto: texto(f.alias, '?'), ancho: 16, tinte: apagado ?? (f.esLocal ? 'bold' : null) },
+    { texto: f.hayActividad ? 'en uso' : '', ancho: 20, alinear: 'd', tinte: apagado ?? 'cyan' },
     { texto: '', ancho: anchoRellenoCabecera },
+    { texto: f.costoUsd != null ? fmtDinero(f.costoUsd) : '', ancho: anchoFinCabecera, alinear: 'i', tinte: apagado },
   ]
 
   const filas = filasLimite.map((l) => celdasLimiteDeCuenta(ctx, l, apagado, ancho, soloRest))
@@ -603,17 +609,18 @@ function bloqueDeCuenta(ctx, f, filasLimite, ancho, soloRest = false) {
 // completo o mitad, segun si la cuenta comparte fila con otra). El texto de
 // reset (`textoReset`) recibe ancho FIJO cuando `soloRest` es false, por la
 // misma razon que la celda de relleno de la cabecera (ver bloqueDeCuenta).
+// Sin margen inicial: la etiqueta arranca en la columna 0, alineada con el
+// alias de la cabecera (a la izquierda, sin indentacion).
 function celdasLimiteDeCuenta(ctx, l, apagadoForzado, ancho, soloRest) {
   const sev = severidad(l.porcentaje)
   const tinte = apagadoForzado ?? tinteDeNivel(sev.nivel)
   const anchoEtiqueta = Math.max(9, Math.min(16, Math.floor(ancho * 0.22)))
   const anchoBarra = Math.max(4, Math.min(28, Math.floor(ancho * 0.32)))
   const b = barra(l.porcentaje, anchoBarra, { lleno: ctx.chars.bar.full, vacio: ctx.chars.bar.empty })
-  const anchoFijos = 2 + anchoEtiqueta + anchoBarra + 5 + 2 + 4 // 4 separadores entre 5 celdas + la de reset
+  const anchoFijos = anchoEtiqueta + anchoBarra + 5 + 2 + 3 // 3 separadores entre 4 celdas + la de reset
   const anchoReset = soloRest ? RESTO : Math.max(0, ancho - anchoFijos)
 
   return [
-    { texto: '', ancho: 2 },
     { texto: texto(l.etiqueta, texto(l.modelo, 'limite')), ancho: anchoEtiqueta, tinte: apagadoForzado ?? 'dim' },
     { texto: b, ancho: anchoBarra, tinte },
     { texto: pctTexto(l.porcentaje), ancho: 5, alinear: 'd', tinte },
@@ -875,7 +882,9 @@ function seccionSesiones(ctx, vista) {
 // escribio por ultima vez".
 function anchosSesiones(interior, conCuenta) {
   const cuenta = conCuenta ? 9 : 0
-  if (interior >= 140) return { id: 4, cuenta, proyecto: 22, rama: 26, modelo: 6, tokens: 7, costo: 6, dur: 6 }
+  // En pantalla ancha sobra espacio: CUENTA crece a 12 para que alias como
+  // "dev_claude" (10) no se corten en "dev_cl...".
+  if (interior >= 140) return { id: 4, cuenta: conCuenta ? 12 : 0, proyecto: 22, rama: 26, modelo: 6, tokens: 7, costo: 6, dur: 6 }
   if (interior >= 110) return { id: 4, cuenta, proyecto: 16, rama: 20, modelo: 6, tokens: 7, costo: 6, dur: 6 }
   if (interior >= 92) return { id: 4, cuenta, proyecto: 11, rama: 15, modelo: 6, tokens: 7, costo: 6, dur: 6 }
   if (interior >= 72) return { id: 4, cuenta, proyecto: 11, rama: 0, modelo: 6, tokens: 7, costo: 6, dur: 6 }
@@ -1018,8 +1027,8 @@ function renderFull(ctx, vista) {
   // El header de barras y la linea de titulo "CUENTAS" se fusionaron con la
   // barra superior del panel: con cuentas, la barra dice "CUENTAS" a la
   // izquierda y "souclaude monitor" centrado (sin alias -- ese ya vive en la
-  // fila de la cuenta local, marcada con "> "); sin cuentas, se degrada a la
-  // barra normal con el titulo de siempre.
+  // propia fila de cada cuenta); sin cuentas, se degrada a la barra normal
+  // con el titulo de siempre.
   const hayCuentas = (vista?.cuentas?.filas?.length ?? 0) > 0
   const barraSuperior = hayCuentas
     ? reglaConCentro(ctx, chars.frame.tl, chars.frame.tr, 'CUENTAS', tituloPanel(limites, null), '[q] salir', ctx.tinteMarco)
@@ -1045,9 +1054,19 @@ function renderFull(ctx, vista) {
   incluidas.forEach((s, i) => {
     const lineas = s.build(asignado.get(s.id)).slice(0, asignado.get(s.id))
     cuerpo.push(...lineas)
-    if (i < incluidas.length - 1) cuerpo.push(lineaVacia(ctx, ctx.tinteMarco))
+    cuerpo.push(lineaVacia(ctx, ctx.tinteMarco))
   })
 
+  // Con CUENTAS, se omite la linea en blanco de `cabeza` (entre la barra
+  // superior y el contenido): CUENTAS queda pegada a su propia barra. El
+  // separador entre CUENTAS y la siguiente seccion (AHORA) ya lo pone el
+  // forEach de arriba, asi que no hace falta reponerlo aca. El presupuesto de
+  // `disponible` (y por lo tanto el reparto de repartirAltura) sigue
+  // calculado con `cabeza.length` == 2: solo se recorta la SALIDA final, no
+  // el numero de filas que las secciones creen tener disponibles.
+  if (hayCuentas) {
+    return [cabeza[0], ...cuerpo, ...historico, pie]
+  }
   return [...cabeza, ...cuerpo, ...historico, pie]
 }
 

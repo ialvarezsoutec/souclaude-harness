@@ -120,6 +120,7 @@ function seccionCuentas(cuentas) {
       costoUsd: numeroONull(c.totalesDia?.costoUsd),
       frescuraMs: numeroONull(c.frescuraMs),
       vieja: !c.esLocal && Number.isFinite(c.frescuraMs) && c.frescuraMs > FRESCURA_VIEJA_MS,
+      hayActividad: c.hayActividad === true,
     })),
   }
 }
@@ -195,16 +196,19 @@ function filasDeLimites(limites) {
 // Un {alias, esLocal, costoUsd, filas} por cada cuenta en vista.cuentas
 // (dominio/cuentas.js ya la trae consolidada: local + Vault +
 // SOUCLAUDE_LOCAL_ACCOUNTS). La cuenta LOCAL reusa filasDeLimites(vista.limites)
-// -- el modelo de dominio completo, con porGrupo (de ahi sale "Fable"/semanal
-// por modelo). Las demas cuentas solo traen 5h/7d/extra: el snapshot que se
-// publica (vault-monitor-publisher.js::construirSnapshot) es una whitelist
-// deliberada que no incluye porGrupo, asi que no hay Fable que mostrar y la
-// fila se omite en vez de inventarse.
+// -- el modelo de dominio completo. Las demas cuentas usan su propio
+// c.limites con el mismo filasDeLimites: las de SOUCLAUDE_LOCAL_ACCOUNTS
+// (local-accounts-reader.js::construirSnapshotLocal) traen porGrupo completo
+// -- nunca salen de la maquina -- y muestran Fable igual que la local. Las
+// del Vault solo traen 5h/7d/extra: el snapshot que se publica
+// (vault-monitor-publisher.js::construirSnapshot) es una whitelist
+// deliberada que no incluye porGrupo, asi que filasDeLimites no encuentra
+// nada en limites.porGrupo y la fila Fable se omite sola, sin caso especial.
 function filasDeLimitesPorCuenta(cuentas, limitesLocal) {
   if (!Array.isArray(cuentas)) return []
   return cuentas
     .map((c) => {
-      const crudas = c.esLocal ? filasDeLimites(limitesLocal) : filasReducidas(c.limites)
+      const crudas = c.esLocal ? filasDeLimites(limitesLocal) : filasDeLimites(c.limites)
       return {
         alias: c.alias ?? (typeof c.accountUuid === 'string' ? c.accountUuid.slice(0, 8) : '?'),
         esLocal: c.esLocal === true,
@@ -224,24 +228,6 @@ function ordenLimiteCuenta(l) {
   if (l.tipo === 'session') return 1 // Ventana 5h
   if (typeof l.etiqueta === 'string' && l.etiqueta.startsWith('Extra')) return 3
   return 2 // Fable / semanal por modelo (porGrupo, sin tipo propio)
-}
-
-function filasReducidas(limites) {
-  const filas = []
-  agregarVentana(filas, limites?.cincoHoras, 'Ventana 5h', 'session')
-  agregarVentana(filas, limites?.sieteDias, 'Ventana 7d', 'weekly_all')
-
-  const extra = limites?.gastoExtra
-  const porcentajeExtra = extra && Number.isFinite(extra.utilizacion) ? extra.utilizacion : extra?.porcentaje
-  if (extra && extra.historico !== true && Number.isFinite(porcentajeExtra)) {
-    filas.push({
-      etiqueta: `Extra ${fmtDinero(extra.usadoUsd ?? 0)}/${fmtDinero(extra.limiteUsd ?? 0)}`,
-      modelo: null,
-      porcentaje: porcentajeExtra,
-      reseteaEn: null,
-    })
-  }
-  return filas.sort((a, b) => b.porcentaje - a.porcentaje)
 }
 
 function agregarVentana(filas, ventana, etiqueta, tipo) {

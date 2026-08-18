@@ -3,7 +3,7 @@ import path from 'node:path'
 import { createSnapshotSource } from './snapshot-source.js'
 import { construirVentana } from '../domain/ventanas.js'
 import { construirVista } from '../domain/arbol.js'
-import { construirSnapshot } from './vault-monitor-publisher.js'
+import { normalizarCuenta } from '../domain/cuentas.js'
 
 // Lee otras cuentas de Claude Code EN ESTA MISMA MAQUINA (ej. claude1/claude2
 // del perfil de PowerShell, cada una con su propio CLAUDE_CONFIG_DIR), para
@@ -11,8 +11,11 @@ import { construirSnapshot } from './vault-monitor-publisher.js'
 // local y a las remotas del Vault. A diferencia de vault-accounts-reader.js
 // (que lee snapshots ya publicados por otras maquinas), aca no hay archivo:
 // cada home local se indexa igual que la cuenta principal y se le da la
-// MISMA forma de snapshot (construirSnapshot) para que consolidarCuentas no
-// tenga que distinguir el origen.
+// MISMA FORMA que un snapshot del Vault (construirSnapshotLocal, mas abajo)
+// para que consolidarCuentas no tenga que distinguir el origen -- pero, a
+// diferencia de construirSnapshot() del publisher, SIN el whitelist: estas
+// cuentas nunca salen de la maquina, asi que `limites` viaja completo
+// (incluido porGrupo, de donde sale Fable/semanal por modelo).
 //
 // SOUCLAUDE_LOCAL_ACCOUNTS: lista de carpetas separadas por path.delimiter
 // (";" en Windows, ":" en POSIX), igual convencion que PATH. Cada carpeta es
@@ -56,7 +59,7 @@ export function createLocalAccountsReader({ homes = [], hostname = null } = {}) 
 
       if (!vista?.cuenta?.accountUuid) continue // home sin sesion iniciada: nada que mostrar
 
-      const construido = construirSnapshot(vista, { ahora: instante, hostname: host })
+      const construido = construirSnapshotLocal(vista, { ahora: instante, hostname: host })
       if (construido) cuentas.push(construido)
       avisos.push(...(vista.avisos ?? []))
     }
@@ -80,6 +83,44 @@ export function pathsDeConfigDir(configDir) {
     projectsDir: path.join(configDir, 'projects'),
     sessionsDir: path.join(configDir, 'sessions'),
     configFile: path.join(configDir, '.claude.json'),
+  }
+}
+
+// A diferencia de construirSnapshot() (vault-monitor-publisher.js), que
+// aplica un whitelist porque su salida se escribe en el Vault (repo
+// compartido: el ADR 20260810 prohibe telemetria por-modelo ahi), esta cuenta
+// nunca sale de la maquina -- mismo trato que la cuenta local principal, asi
+// que `limites` viaja completo (incluido porGrupo, de donde sale la fila
+// Fable/semanal por modelo en el panel; ver panel-presenter.js).
+function construirSnapshotLocal(vista, { ahora, hostname }) {
+  const cuenta = normalizarCuenta(vista?.cuenta)
+  if (!cuenta) return null
+
+  // construirVista ya calculo hayActividad para esta cuenta (aca ES la
+  // local, aunque el proceso del monitor haya arrancado con otra) y lo dejo
+  // en la fila esLocal:true de su propio vista.cuentas -- se reusa ese
+  // calculo en vez de repetir la logica de sesiones activas.
+  const filaLocal = Array.isArray(vista?.cuentas) ? vista.cuentas.find((c) => c.esLocal) : null
+
+  return {
+    version: 1,
+    generadoEn: new Date(ahora).toISOString(),
+    cuenta,
+    maquina: { machineID: cuenta.machineID, hostname },
+    limites: vista?.limites ?? null,
+    totalesDia: totalesDia(vista?.totales),
+    hayActividad: filaLocal?.hayActividad === true,
+  }
+}
+
+// Mismo criterio que vault-monitor-publisher.js: tokensIn incluye ambos caches.
+function totalesDia(totales) {
+  if (!totales) return null
+  return {
+    tokensIn: (totales.entrada ?? 0) + (totales.cacheCreacion ?? 0) + (totales.cacheLectura ?? 0),
+    tokensOut: totales.salida ?? 0,
+    costoUsd: totales.costoUsd ?? 0,
+    llamadas: totales.llamadas ?? 0,
   }
 }
 

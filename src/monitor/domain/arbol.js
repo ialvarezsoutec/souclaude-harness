@@ -64,13 +64,21 @@ export function construirVista(snapshot = {}, opciones = {}) {
   // agentes corriendo, eso es la noticia. Quien decide colapsar es el renderer.
   const agentesActivos = aplanarActivos(proyectos)
 
+  // Para la seccion CUENTAS: si HAY una sesion abierta con esta cuenta ahora
+  // mismo, sin importar el orden/top/recorte que se aplique despues (por eso
+  // se mide sobre el arbol completo, igual que agentesActivos). Es sobre
+  // SESIONES (proceso raiz), no sobre agentesActivos (subagentes): una sesion
+  // en EN_DUDA (pid vivo, sin escritura reciente) sigue siendo "en uso" para
+  // quien decide si esa cuenta esta libre o no.
+  const hayActividad = proyectos.some((p) => p.sesiones.some((s) => esActivo(s.estado)))
+
   const { visibles, recortes } = recortarArbol(proyectos, { orden, top })
 
   const { limites, historico } = conHistoricoDeExtra(snapshot.limites ?? null, snapshot.registroExtra, ahora)
   // Seccion CUENTAS: la cuenta local (con los limites y totales de ESTA vista)
   // + los snapshots que el resto del equipo publico en el Vault.
   const consolidado = consolidarCuentas({
-    local: { cuenta: snapshot.cuenta, limites: snapshot.limites ?? null, totales },
+    local: { cuenta: snapshot.cuenta, limites: snapshot.limites ?? null, totales, hayActividad },
     remotas: snapshot.cuentasRemotas ?? [],
     ahora,
   })
