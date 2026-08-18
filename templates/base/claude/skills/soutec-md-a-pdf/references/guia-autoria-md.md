@@ -1,9 +1,11 @@
-# Guía de autoría del `.md` para el PDF corporativo Soutec
+# Guía de autoría del `.md` para los documentos corporativos Soutec
 
-Instrucciones para que un agente (o persona) escriba un Markdown que el script
-`md_to_pdf.py` renderice correctamente con la identidad Soutec. Escribe Markdown
-**limpio y estándar**: el estilo (sangrías, justificado, colores, banners) lo
-aplica el script. No metas formato manual.
+Instrucciones para que un agente (o persona) escriba un Markdown que los scripts
+de la skill rendericen correctamente con la identidad Soutec, **tanto en PDF
+como en Word (.docx)**. El mismo `.md` produce ambos formatos con idéntica
+estructura y numeración, así que no hay que escribirlo distinto según el
+destino. Escribe Markdown **limpio y estándar**: el estilo (sangrías,
+justificado, colores, franjas) lo aplica el script. No metas formato manual.
 
 ## 1. Front-matter (placeholders del documento)
 
@@ -17,7 +19,7 @@ header: Revisión de Seguridad – IT                 # texto del banner corrido
 subtitle: souclaude-harness                        # subtítulo en portada
 date: 21 de julio de 2026                          # default: fecha de hoy en español
 author: Innovación y Desarrollo                    # línea de autor/área en portada
-confidential: true                                 # muestra el sello CONFIDENCIAL
+client_logo: logo_cliente.png                      # logo del cliente en portada (opcional)
 url: www.soutec-group.com                          # URL de la contraportada
 ---
 ```
@@ -29,20 +31,24 @@ Reglas:
 
 ## 2. Estructura de secciones (lo más importante)
 
-El nivel de encabezado define el estilo:
+El nivel de encabezado define el estilo (formato 2026):
 
-- `#` (H1) → **franja cyan numerada** que sangra al borde izquierdo (1, 2, 3…).
+- `#` (H1) → **franja azul numerada** que sangra al borde izquierdo (1, 2, 3…).
   Úsalo para las secciones principales del documento.
-- `##` (H2) → subtítulo azul en negrita.
-- `###` (H3) → sub-subtítulo azul, más pequeño.
-- `####` (H4) → rótulo en carbón.
+- `##` (H2) → subtítulo azul en negrita, numerado automáticamente (1.1, 1.2…).
+- `###` (H3) → sub-subtítulo cyan, numerado (1.1.1…).
+- `####` (H4) → rótulo cyan menor, numerado (1.1.1.1…).
+
+**No numeres los encabezados a mano**: la numeración jerárquica es automática.
+Si un encabezado llega con prefijo numérico ("2.1 Diagramas"), el script lo
+limpia para no duplicarlo, pero lo correcto es escribir solo "Diagramas".
 
 Regla clave del título: **el primer `#` del documento se usa como título de la
 portada y se retira del cuerpo** (a menos que definas `title` en el front-matter,
 en cuyo caso todos los `#` son secciones).
 
 Consecuencia práctica: si quieres que tus secciones principales salgan con la
-franja cyan numerada, **numéralas con `#`**, no con `##`. Ejemplo correcto:
+franja azul numerada, **numéralas con `#`**, no con `##`. Ejemplo correcto:
 
 ```markdown
 ---
@@ -59,8 +65,9 @@ Texto...
 Texto...
 ```
 
-Aquí "Resumen para IT" y "Alcance y metodología" salen como franjas 1 y 2; el
-sub-tema como subtítulo azul. El índice se genera solo, con números de página.
+Aquí "Resumen para IT" y "Alcance y metodología" salen como franjas azules 1 y
+2; el sub-tema como subtítulo azul numerado 2.1. El índice se genera solo, con
+números de página.
 
 ## 3. Párrafos
 
@@ -122,11 +129,24 @@ nivel; el render aplana listas muy profundas.
 `**negrita**` (queda en color carbón), `*cursiva*`, `` `código` ``,
 `[enlace](https://…)`. Evita HTML crudo dentro del Markdown.
 
+## 9. Qué formato pedir al generar
+
+El mismo `.md` sirve para los dos. Con el lanzador:
+
+```bash
+python3 scripts/md_to_soutec.py informe.md --to pdf     # entregable cerrado
+python3 scripts/md_to_soutec.py informe.md --to docx    # editable en Word
+python3 scripts/md_to_soutec.py informe.md --to ambos
+```
+
+En el `.docx` el índice es un campo de Word: se rellena al abrir el archivo o
+con `F9`. No lo consideres un error del documento.
+
 ## Checklist para el agente generador
 
-1. ¿Front-matter con `title` (y `subtitle`/`date`/`author`/`confidential` si aplican)?
+1. ¿Front-matter con `title` (y `subtitle`/`date`/`author`/`client_logo` si aplican)?
 2. ¿Secciones principales con `#` para que salgan como franjas numeradas?
 3. ¿Párrafos en prosa, sin sangría ni espacios manuales?
-4. ¿Callouts con `[!TIPO]` o `**Palabra:**` y color correcto por rol?
+4. ¿Notas con `[!TIPO]` o `**Palabra:**` (salen como texto plano con el rótulo en negrita)?
 5. ¿Tablas de ≤ 6–7 columnas con celdas concisas?
 6. ¿Sin HTML crudo ni listas anidadas profundas?

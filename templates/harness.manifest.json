@@ -51,10 +51,13 @@
 
     { "id": "skill-soutec-md-a-pdf", "src": "base/claude/skills/soutec-md-a-pdf/SKILL.md", "dest": ".claude/skills/soutec-md-a-pdf/SKILL.md", "policy": "managed", "skill": "soutec-md-a-pdf" },
     { "id": "skill-soutec-md-a-pdf-guia", "src": "base/claude/skills/soutec-md-a-pdf/references/guia-autoria-md.md", "dest": ".claude/skills/soutec-md-a-pdf/references/guia-autoria-md.md", "policy": "managed", "skill": "soutec-md-a-pdf" },
+    { "id": "skill-soutec-md-a-pdf-core", "src": "base/claude/skills/soutec-md-a-pdf/scripts/soutec_md.py", "dest": ".claude/skills/soutec-md-a-pdf/scripts/soutec_md.py", "policy": "managed", "skill": "soutec-md-a-pdf" },
     { "id": "skill-soutec-md-a-pdf-script", "src": "base/claude/skills/soutec-md-a-pdf/scripts/md_to_pdf.py", "dest": ".claude/skills/soutec-md-a-pdf/scripts/md_to_pdf.py", "policy": "managed", "skill": "soutec-md-a-pdf" },
-    { "id": "skill-soutec-md-a-pdf-isotipo", "src": "base/claude/skills/soutec-md-a-pdf/assets/soutec_isotipo.png", "dest": ".claude/skills/soutec-md-a-pdf/assets/soutec_isotipo.png", "policy": "managed", "skill": "soutec-md-a-pdf", "binary": true },
+    { "id": "skill-soutec-md-a-pdf-docx", "src": "base/claude/skills/soutec-md-a-pdf/scripts/md_to_docx.py", "dest": ".claude/skills/soutec-md-a-pdf/scripts/md_to_docx.py", "policy": "managed", "skill": "soutec-md-a-pdf" },
+    { "id": "skill-soutec-md-a-pdf-launcher", "src": "base/claude/skills/soutec-md-a-pdf/scripts/md_to_soutec.py", "dest": ".claude/skills/soutec-md-a-pdf/scripts/md_to_soutec.py", "policy": "managed", "skill": "soutec-md-a-pdf" },
+    { "id": "skill-soutec-md-a-pdf-isotipo-color", "src": "base/claude/skills/soutec-md-a-pdf/assets/soutec_isotipo_3d_color.png", "dest": ".claude/skills/soutec-md-a-pdf/assets/soutec_isotipo_3d_color.png", "policy": "managed", "skill": "soutec-md-a-pdf", "binary": true },
+    { "id": "skill-soutec-md-a-pdf-isotipo-white", "src": "base/claude/skills/soutec-md-a-pdf/assets/soutec_isotipo_3d_white.png", "dest": ".claude/skills/soutec-md-a-pdf/assets/soutec_isotipo_3d_white.png", "policy": "managed", "skill": "soutec-md-a-pdf", "binary": true },
     { "id": "skill-soutec-md-a-pdf-logo", "src": "base/claude/skills/soutec-md-a-pdf/assets/soutec_logo.png", "dest": ".claude/skills/soutec-md-a-pdf/assets/soutec_logo.png", "policy": "managed", "skill": "soutec-md-a-pdf", "binary": true },
-    { "id": "skill-soutec-md-a-pdf-logo-white", "src": "base/claude/skills/soutec-md-a-pdf/assets/soutec_logo_white.png", "dest": ".claude/skills/soutec-md-a-pdf/assets/soutec_logo_white.png", "policy": "managed", "skill": "soutec-md-a-pdf", "binary": true },
 
     { "id": "skill-adr-new", "src": "base/claude/skills/adr-new/SKILL.md", "dest": ".claude/skills/adr-new/SKILL.md", "policy": "managed", "skill": "adr-new" },
     { "id": "adr-readme", "src": "base/docs/decisions/README.md", "dest": "docs/decisions/README.md", "policy": "managed", "skill": "adr-new" },

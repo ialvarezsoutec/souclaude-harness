@@ -44,9 +44,21 @@ El PDF no debe afirmar que la aplicación es “completamente segura” ni funci
 
 ## Alcance
 
-Resuelve `$ARGUMENTS` así:
+Si `$ARGUMENTS` viene vacío, **antes de ejecutar nada** pregunta al humano qué alcance
+usar, mostrando las opciones disponibles:
 
-- vacío o `full`: repositorio completo;
+- `full` (repositorio completo);
+- `branch` (rama actual frente a su upstream o base disponible);
+- `diff` (cambios no confirmados y commits de la rama frente a su base);
+- ruta, módulo o componente (foco limitado a ese elemento y sus dependencias de
+  seguridad relevantes).
+
+No asumas `full` en silencio. Si el humano no responde con un alcance concreto, o
+confirma explícitamente que no tiene preferencia, entonces sí resuelve a `full`.
+
+Si `$ARGUMENTS` no viene vacío, resuélvelo directo sin preguntar:
+
+- `full`: repositorio completo;
 - `branch`: rama actual frente a su upstream o base disponible;
 - `diff`: cambios no confirmados y commits de la rama frente a su base;
 - ruta, módulo o componente: foco principal limitado a ese elemento, incluyendo sus dependencias de seguridad relevantes.
