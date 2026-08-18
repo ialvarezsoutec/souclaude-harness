@@ -49,7 +49,7 @@ function cabezaDeLaRama() {
 
 function commitsDeLaRama(baseRef) {
   const cabeza = cabezaDeLaRama()
-  const log = sh(['git', 'log', `${baseRef}..${cabeza}`, '--format=%H%x1f%s'])
+  const log = sh(['git', 'log', `${baseRef}..${cabeza}`, '--no-merges', '--format=%H%x1f%s'])
   if (!log) return []
   return log.split('\n').map((linea) => {
     const [hash, subject] = linea.split('\x1f')
