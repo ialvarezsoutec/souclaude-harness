@@ -120,6 +120,13 @@ Antes de pedir revisión:
 - El README está actualizado si aplica.
 - El PR indica si requiere versión/release.
 
+**Antes de abrir el PR, correr la skill nativa `/security-review`** sobre el cambio y
+documentar los hallazgos en la sección "Security review" de la plantilla del PR. Si
+`/security-review` encuentra vulnerabilidades: **parar y preguntar al usuario** si
+quiere remediarlas antes de continuar con el PR. No abrir el PR con hallazgos sin
+remediar salvo que el usuario decida explícitamente continuar así — en ese caso,
+dejarlo registrado en el PR.
+
 **Completa `.github/pull_request_template.md` de verdad.** Checkboxes tildadas porque
 se hizo, no por rellenar. Nada de "N/A" genéricos.
 
