@@ -30,6 +30,7 @@ progress/                     progreso del proyecto y protocolo del Vault
     soutec-md-a-pdf           Markdown a PDF con identidad Soutec
     adr-new                   documentar decisiones con ADRs
     harness-upgrade           actualizar el harness desde Claude
+    vault-milestones          análisis e iteración de milestones en el Vault
 .gitignore                    bloque gestionado, tus líneas intactas
 ```
 

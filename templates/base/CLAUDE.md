@@ -18,6 +18,7 @@ es obligatoria y siempre está):
 - `soutec-md-a-pdf` — Markdown a PDF con identidad Soutec (si está instalada).
 - `adr-new` — documentar decisiones con ADRs (si está instalada).
 - `harness-upgrade` — actualizar el harness (si está instalada).
+- `vault-milestones` — análisis e iteración de milestones en el Vault (si está instalada).
 
 ## Git — reglas duras
 
