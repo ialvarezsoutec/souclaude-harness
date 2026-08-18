@@ -23,6 +23,11 @@ que el push inmediato al Vault.
 }
 ```
 
+**Convención SOUTEC**: cada proyecto del Vault tiene su **propio proyecto en
+Jira**, y la clave (`projectKey`) es el **PREFIJO** del proyecto en el Vault
+(`Project-SHS` → proyecto Jira `SHS`). Si `.claude/jira.json` tiene otra cosa,
+manda el archivo.
+
 **Degradación — nunca bloquees el trabajo local por Jira**: si el conector no está
 autorizado, `.claude/jira.json` no existe o todavía tiene placeholders, **dilo una
 vez, sugiere el paso que falta y sigue** con el trabajo local y el Vault. El espejo
