@@ -27,11 +27,29 @@ function sh(args) {
 }
 
 function ramaActual() {
-  return sh(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+  // En un checkout de pull_request, Actions hace HEAD detached sobre un merge
+  // commit sintetico (refs/pull/<n>/merge): "git rev-parse --abbrev-ref HEAD"
+  // devuelve literalmente "HEAD". GITHUB_HEAD_REF trae el nombre real de la rama.
+  return process.env.GITHUB_HEAD_REF || sh(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+}
+
+function cabezaDeLaRama() {
+  // Mismo motivo que ramaActual(): en el checkout de PR, Actions resuelve
+  // refs/pull/<n>/merge, un merge commit sintetico donde el padre 1 es la
+  // base y el padre 2 es la cabeza real de la rama.
+  if (process.env.GITHUB_HEAD_REF) {
+    try {
+      return sh(['git', 'rev-parse', 'HEAD^2'])
+    } catch {
+      return 'HEAD'
+    }
+  }
+  return 'HEAD'
 }
 
 function commitsDeLaRama(baseRef) {
-  const log = sh(['git', 'log', `${baseRef}..HEAD`, '--format=%H%x1f%s'])
+  const cabeza = cabezaDeLaRama()
+  const log = sh(['git', 'log', `${baseRef}..${cabeza}`, '--format=%H%x1f%s'])
   if (!log) return []
   return log.split('\n').map((linea) => {
     const [hash, subject] = linea.split('\x1f')
@@ -40,7 +58,8 @@ function commitsDeLaRama(baseRef) {
 }
 
 function archivosAgregados(baseRef) {
-  const salida = sh(['git', 'diff', `${baseRef}..HEAD`, '--diff-filter=A', '--name-only'])
+  const cabeza = cabezaDeLaRama()
+  const salida = sh(['git', 'diff', `${baseRef}..${cabeza}`, '--diff-filter=A', '--name-only'])
   return salida ? salida.split('\n') : []
 }
 
