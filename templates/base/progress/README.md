@@ -103,6 +103,13 @@ jamás se commitean en el repo del proyecto.
 
 ## Protocolo anti-solapamiento (obligatorio)
 
+**Regla previa — trazabilidad por milestone**: todo trabajo pertenece a un milestone
+del Vault. Antes de tocar código, el agente **declara al usuario sobre qué milestone
+va a trabajar** (un `SessionStart` hook del harness recuerda el tablero al arrancar).
+Si el pedido no corresponde a ningún milestone existente, se **da de alta uno en el
+Backlog** (skill `vault-milestones`) antes de empezar — trabajo sin milestone
+declarado es una violación del protocolo, no una omisión menor.
+
 **Antes de empezar a trabajar** — siempre, en este orden:
 
 ```bash

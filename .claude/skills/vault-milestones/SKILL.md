@@ -10,6 +10,12 @@ Los milestones viven en el **Vault** (repo aparte, push directo a `main`), en
 `progress/README.md` del repo del proyecto — esta skill no lo reemplaza: lo aplica
 al trabajo específico de **pensar el tablero**, no solo moverlo.
 
+**Trazabilidad obligatoria**: todo trabajo pertenece a un milestone. Al empezar
+cualquier tarea, declara al usuario sobre qué milestone vas a trabajar; si el pedido
+no corresponde a ninguno existente, da de alta el milestone en el Backlog (§3)
+**antes** de empezar — y como toda alta, con el visto bueno del usuario sobre el
+alcance de la tarjeta.
+
 ## 0. Sincronizar antes de opinar
 
 1. Lee la ruta del Vault de `.claude/vault.local.json` (respaldo: `VAULT_PATH`).

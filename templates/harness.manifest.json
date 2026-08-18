@@ -1,5 +1,5 @@
 {
-  "harnessVersion": "3.1.0",
+  "harnessVersion": "3.2.0",
   "vault": {
     "repo": "https://github.com/ialvarezsoutec/soubunker-vault.git"
   },
@@ -42,6 +42,7 @@
     { "id": "env-example", "src": "base/env.example", "dest": ".env.example", "policy": "user-owned", "when": "empty-repo" },
 
     { "id": "settings", "src": "base/claude/settings.json", "dest": ".claude/settings.json", "policy": "merge-json" },
+    { "id": "hook-declarar-milestone", "src": "base/claude/hooks/declarar-milestone.mjs", "dest": ".claude/hooks/declarar-milestone.mjs", "policy": "managed" },
     { "id": "gitignore", "src": "fragments/gitignore", "dest": ".gitignore", "policy": "append-block" },
 
     { "id": "pr-template", "src": "base/github/pull_request_template.md", "dest": ".github/pull_request_template.md", "policy": "user-owned" },
