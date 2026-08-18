@@ -31,8 +31,9 @@ function mkConfigDir(opts) {
 const AHORA = Date.now()
 
 test('parseLocalAccountsEnv: separa por path.delimiter e ignora vacios', () => {
-  const valor = ['C:\\Users\\test\\.claude1', 'C:\\Users\\test\\.claude2'].join(path.delimiter)
-  assert.deepEqual(parseLocalAccountsEnv(valor), ['C:\\Users\\test\\.claude1', 'C:\\Users\\test\\.claude2'])
+  const rutas = [path.join('home', 'test', '.claude1'), path.join('home', 'test', '.claude2')]
+  const valor = rutas.join(path.delimiter)
+  assert.deepEqual(parseLocalAccountsEnv(valor), rutas)
 })
 
 test('parseLocalAccountsEnv: undefined, vacio o solo espacios da lista vacia', () => {
