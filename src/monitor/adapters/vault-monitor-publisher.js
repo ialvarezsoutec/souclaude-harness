@@ -8,8 +8,10 @@ import { gitReal, pullRebaseSeguro } from '../../core/vault-sync.js'
 // de plan + totales de la ventana), para que los monitores de las otras
 // maquinas del equipo lo consoliden en su seccion CUENTAS. Autorizado por el
 // ADR docs/decisions/20260810-monitor-snapshots-en-vault.md: solo agregados
-// acotados (<1 KB); telemetria cruda (model-router.jsonl, datos por sesion o
-// proyecto) sigue prohibida en el Vault.
+// acotados (<1 KB); telemetria cruda (model-router.jsonl, eventos por llamada)
+// sigue prohibida en el Vault. La UNICA otra excepcion es la linea agregada
+// por sesion en Project-<PREFIJO>/sessions.md (ADR 20260817, ver
+// vault-sessions-publisher.js).
 //
 // REGLAS QUE NO SE NEGOCIAN:
 // - El snapshot se construye campo por campo (whitelist). Jamas un spread de

@@ -161,6 +161,14 @@ línea se escribe igual: el registro de **que la sesión existió y qué tocó**
 sí solo. Los números agregados y fiables por cuenta y máquina los publica el monitor
 automáticamente en `00-System/monitor/` del Vault.
 
+**El monitor también escribe esta línea solo**: con el panel en vivo abierto
+(`npx souclaude monitor`) y el Vault configurado, cada sesión terminada de este
+proyecto publica su línea automáticamente (milestone inferido de la rama, `quién`
+del campo `"quien"` de `.claude/vault.local.json` o el alias de la cuenta). La línea
+automática es un piso, no un reemplazo: si el monitor no estaba corriendo, la línea
+se agrega a mano como siempre; si la automática quedó con `n/d` o un resultado pobre,
+se corrige editándola — es tuya, no del monitor.
+
 ## Conflictos y fallos
 
 - **Conflictos en los tableros y en `sessions.md`**: una tarjeta/línea = una línea de

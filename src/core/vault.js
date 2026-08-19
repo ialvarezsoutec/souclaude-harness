@@ -60,6 +60,22 @@ export function looksLikeVault(abs) {
   return exists(path.join(abs, '00-System'))
 }
 
+// Carpeta Project-<PREFIJO> del proyecto: la declarada en vault.local.json
+// ("project") o, si el Vault tiene una sola, esa. Mismo criterio que el hook
+// declarar-milestone.mjs del template (que no puede importar de src/).
+export function carpetaProyecto(vaultPath, config) {
+  if (config?.project) return config.project
+  try {
+    const carpetas = fs
+      .readdirSync(vaultPath, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && d.name.startsWith('Project-'))
+      .map((d) => d.name)
+    return carpetas.length === 1 ? carpetas[0] : null
+  } catch {
+    return null
+  }
+}
+
 // Clonar el Vault -- otro repo git, con la memoria de TODOS los proyectos de la
 // organizacion -- adentro del repo que se esta instalando es el peor desenlace
 // posible de un prompt mal tipeado. path.relative() en vez de startsWith(): un
