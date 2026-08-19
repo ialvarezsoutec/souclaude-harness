@@ -138,7 +138,10 @@ pull → push) de forma segura desde el CLI.
 
 **Durante el trabajo**, el flujo constante es: adoptar un plan → espejarlo a `plans/`
 y anotarlo en la tarjeta del milestone → mover tareas en `kanban.md` a medida que
-cambian de estado. Cada movimiento se pushea al momento. Convención de commits del
+cambian de estado. Cada movimiento se pushea al momento. Si la skill `jira-sync`
+está instalada, cada movimiento de tarjeta se espeja además en Jira **en ese mismo
+momento** (Vault primero, Jira después); sin conector autorizado, se reporta y el
+trabajo local sigue. Convención de commits del
 Vault: `chore:` para movimientos de tableros, `docs:` para planes y espejos.
 **Nunca `git push --force`**, en ninguno de los dos repos.
 

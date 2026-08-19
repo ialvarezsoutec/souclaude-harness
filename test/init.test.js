@@ -20,6 +20,7 @@ const SKILLS = [
   'adr-new',
   'harness-upgrade',
   'vault-milestones',
+  'jira-sync',
 ]
 
 test('init en repo vacio: emite el harness completo + scaffolding', async () => {
