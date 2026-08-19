@@ -111,12 +111,28 @@ test('milestoneDeRama: infiere <PREFIJO>-M<n> y devuelve null sin patron', () =>
   assert.equal(milestoneDeRama(null), null)
 })
 
-test('seleccion: solo sesiones TERMINADAS del proyecto del cwd (grafias normalizadas)', () => {
+test('seleccion: sesiones vivas y terminadas del proyecto del cwd (grafias normalizadas), nunca de otro proyecto', () => {
   const vista = vistaEjemplo({
     sesiones: [sesionEjemplo(), sesionEjemplo({ sessionId: 'viva-0001', estado: 'corriendo' })],
   })
   const elegidas = sesionesPublicables(vista, CWD)
-  assert.deepEqual(elegidas.map((s) => s.sessionId), ['abcd1234-5678-90ab-cdef-111122223333'])
+  assert.deepEqual(elegidas.map((s) => s.sessionId), ['abcd1234-5678-90ab-cdef-111122223333', 'viva-0001'])
+})
+
+test('publisher: una sesion viva publica y su linea se actualiza al crecer (recurrente)', async () => {
+  const { pub, archivo } = mkPublisher()
+  const viva = sesionEjemplo({ estado: 'corriendo' })
+  await pub.publicar(vistaEjemplo({ sesiones: [viva] }), { ahora: AHORA })
+  assert.ok(fs.readFileSync(archivo, 'utf8').includes('in 142k / out 9k'))
+
+  const crecida = sesionEjemplo({
+    estado: 'corriendo',
+    consumo: { entrada: 180_000, salida: 15_000, cacheCreacion: 0, cacheLectura: 0 },
+  })
+  await pub.publicar(vistaEjemplo({ sesiones: [crecida] }), { ahora: AHORA + 6 * 60_000 })
+  const lineas = fs.readFileSync(archivo, 'utf8').trim().split('\n')
+  assert.equal(lineas.length, 1)
+  assert.ok(lineas[0].includes('in 180k / out 15k'))
 })
 
 test('publisher: agrega la linea, en el orden git correcto, y es idempotente', async () => {

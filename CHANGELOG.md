@@ -10,12 +10,13 @@ del agente: la publica el propio monitor (SHS-M1-T002).
 ### Agregado
 
 - **Publicación automática de `sessions.md`** desde el panel en vivo
-  (`npx souclaude monitor`): cada sesión **terminada** del proyecto actual publica su
-  línea en `Project-<PREFIJO>/sessions.md` del Vault — misma cadencia (~5 min),
+  (`npx souclaude monitor`): cada sesión **con consumo** del proyecto actual publica
+  su línea en `Project-<PREFIJO>/sessions.md` del Vault y la va actualizando de
+  forma recurrente mientras la sesión sigue viva — misma cadencia (~5 min),
   backoff y filtro de secretos que los snapshots de `00-System/monitor/`.
   Idempotente por sesión vía registro local
-  (`~/.claude/souclaude/sesiones-publicadas.json`); si una sesión reanudada crece,
-  su línea se actualiza solo si sigue byte a byte como la escribió el monitor —
+  (`~/.claude/souclaude/sesiones-publicadas.json`); la línea se actualiza en el
+  lugar solo si sigue byte a byte como la escribió el monitor —
   una línea editada a mano nunca se pisa. Autorizado por el ADR
   `20260817-milestones-planes-y-sesiones-en-vault` (la telemetría cruda sigue
   prohibida). `--no-publish` apaga snapshots y sesiones a la vez.

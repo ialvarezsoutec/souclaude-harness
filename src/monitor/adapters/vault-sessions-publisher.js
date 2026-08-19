@@ -3,11 +3,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { contieneSecreto } from './usage-fetcher.js'
 import { pullRebaseSeguro, pushSeguro, gitReal } from '../../core/vault-sync.js'
-import { TERMINADO } from '../domain/actividad.js'
 
-// Publica en el Vault la linea de sessions.md de cada sesion TERMINADA de este
-// proyecto, para que el registro de consumo por sesion no dependa de la
-// disciplina del agente. Autorizado por el ADR
+// Publica en el Vault la linea de sessions.md de cada sesion con consumo de
+// este proyecto — recurrente: la linea aparece en cuanto la sesion consumio
+// algo y se actualiza en el lugar mientras crece, asi el registro no depende
+// de la disciplina del agente ni de esperar el cierre. Autorizado por el ADR
 // docs/decisions/20260817-milestones-planes-y-sesiones-en-vault.md: una linea
 // AGREGADA por sesion y por proyecto en Project-<PREFIJO>/sessions.md.
 // La telemetria cruda (model-router.jsonl, eventos por llamada) sigue
@@ -109,8 +109,11 @@ function claveDeRuta(ruta) {
 }
 
 /**
- * Sesiones de la vista que pertenecen a ESTE proyecto (cwd del monitor) y ya
- * terminaron. Las de otros proyectos de la maquina no son de este sessions.md.
+ * Sesiones de la vista que pertenecen a ESTE proyecto (cwd del monitor),
+ * vivas o terminadas: la publicacion es recurrente y la linea de una sesion
+ * viva se actualiza en cada crecimiento (el redondeo a "k" de los tokens
+ * throttlea solo los reemplazos). Las de otros proyectos de la maquina no son
+ * de este sessions.md. Las sin consumo las descarta construirLineaDeSesion.
  */
 export function sesionesPublicables(vista, cwdProyecto) {
   const clave = claveDeRuta(cwdProyecto)
@@ -118,10 +121,7 @@ export function sesionesPublicables(vista, cwdProyecto) {
   const sesiones = []
   for (const proyecto of vista?.proyectos ?? []) {
     if (claveDeRuta(proyecto.ruta) !== clave) continue
-    for (const sesion of proyecto.sesiones ?? []) {
-      if (sesion.estado !== TERMINADO) continue
-      sesiones.push(sesion)
-    }
+    for (const sesion of proyecto.sesiones ?? []) sesiones.push(sesion)
   }
   return sesiones
 }

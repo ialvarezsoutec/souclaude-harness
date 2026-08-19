@@ -203,8 +203,9 @@ ${pc.bold('FLAGS DE MONITOR')}
   --publish            Publica al Vault, cada ~5 min y solo si cambio: (a) un
                        snapshot agregado de esta cuenta (limites + totales,
                        <1 KB) en 00-System/monitor/, y (b) la linea de cada
-                       sesion TERMINADA de este proyecto en
-                       Project-<PREFIJO>/sessions.md (idempotente por sesion;
+                       sesion con consumo de este proyecto en
+                       Project-<PREFIJO>/sessions.md, actualizada mientras la
+                       sesion sigue creciendo (idempotente por sesion;
                        el "quien" sale de "quien" en .claude/vault.local.json,
                        con el alias de la cuenta como respaldo). Solo panel en
                        vivo. Con Vault configurado es el DEFAULT (no hace falta

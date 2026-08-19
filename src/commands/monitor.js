@@ -193,8 +193,9 @@ export function crearPublisher(flags, cwd) {
 }
 
 // Publicacion de la linea por sesion en Project-<PREFIJO>/sessions.md (ADR
-// 20260817-milestones-planes-y-sesiones-en-vault): las sesiones TERMINADAS de
-// este proyecto dejan su linea sin depender de la disciplina del agente.
+// 20260817-milestones-planes-y-sesiones-en-vault): cada sesion con consumo de
+// este proyecto deja su linea y la va actualizando mientras crece, sin
+// depender de la disciplina del agente.
 // Mismas condiciones de encendido que crearPublisher (solo en vivo, --no-publish
 // la apaga); ademas necesita saber cual es la carpeta Project-* del Vault —
 // sin eso no hay sessions.md que escribir y se degrada en silencio.
