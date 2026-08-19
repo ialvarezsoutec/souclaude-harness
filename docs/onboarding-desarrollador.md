@@ -31,12 +31,27 @@ logins por ti; estos tres pasos son tuyos):
 
   ```bash
   winget install GitHub.cli   # macOS: brew install gh
-  gh auth login               # GitHub.com → HTTPS → login por navegador
+  gh auth login               # y responde las preguntas así:
   ```
 
-  El login es una sola vez; el token queda guardado en tu perfil. Aprobar y
-  mergear PRs sigue siendo del coordinador: `gh` no cambia quién decide, solo
-  quién tipea.
+  El asistente de `gh auth login` pregunta varias cosas — respuesta por respuesta:
+
+  | Pregunta | Respuesta |
+  |---|---|
+  | `Where do you use GitHub?` | **GitHub.com** (lo otro es para Enterprise autoalojado) |
+  | `Preferred protocol for Git operations?` | **HTTPS** |
+  | `Authenticate Git with your GitHub credentials?` | **Yes** |
+  | `How would you like to authenticate?` | **Login with a web browser** |
+
+  Luego te muestra un **código de un solo uso** (`XXXX-XXXX`): cópialo, presiona
+  Enter, y en el navegador (`github.com/login/device`) pega el código, inicia
+  sesión con tu cuenta de SOUTEC y dale **Authorize github**. Al volver a la
+  terminal verás `✓ Logged in as <tu-usuario>`; confírmalo con `gh auth status`.
+  Si la terminal no reconoce `gh` recién instalado, ábrela de nuevo (PATH).
+
+  El login es una sola vez por máquina; el token queda guardado en tu perfil.
+  Aprobar y mergear PRs sigue siendo del coordinador: `gh` no cambia quién
+  decide, solo quién tipea.
 - (Próximamente, milestone SHS-M10: `npx souclaude init/upgrade` verificará estos
   requisitos y avisará con el paso exacto si falta alguno.)
 
