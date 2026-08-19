@@ -18,6 +18,13 @@ Jira se deriva del Vault, nunca al revés. Y el repo del proyecto solo lleva có
 
 ## 2. Instalación (una vez por repo y por máquina)
 
+**Requisitos de máquina** (una sola vez):
+
+- Node.js >= 22.4 y git.
+- **GitHub CLI**: `winget install GitHub.cli` y luego `gh auth login` (GitHub.com,
+  HTTPS, login por navegador). Sin `gh` autenticado, el agente puede pushear ramas
+  pero no abrir los PRs por ti.
+
 ```bash
 npx souclaude init        # en un repo nuevo (o `upgrade` en uno ya instalado)
 ```
