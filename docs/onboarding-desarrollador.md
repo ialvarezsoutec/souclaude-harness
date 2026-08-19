@@ -18,12 +18,27 @@ Jira se deriva del Vault, nunca al revés. Y el repo del proyecto solo lleva có
 
 ## 2. Instalación (una vez por repo y por máquina)
 
-**Requisitos de máquina** (una sola vez):
+**Requisitos de máquina** (una sola vez por máquina — el harness distribuye
+archivos dentro del repo, pero no puede instalar software en tu equipo ni hacer
+logins por ti; estos tres pasos son tuyos):
 
-- Node.js >= 22.4 y git.
-- **GitHub CLI**: `winget install GitHub.cli` y luego `gh auth login` (GitHub.com,
-  HTTPS, login por navegador). Sin `gh` autenticado, el agente puede pushear ramas
-  pero no abrir los PRs por ti.
+- **Node.js >= 22.4 y git** — corren el CLI del harness y el flujo de ramas.
+- **GitHub CLI (`gh`)**: la herramienta oficial de GitHub para la terminal. `git`
+  solo sabe de commits y ramas; `gh` es lo que le permite al agente operar GitHub
+  mismo — sobre todo **abrir los Pull Requests por ti**, con la plantilla
+  completa. Sin `gh` autenticado, el agente pushea la rama pero el PR queda para
+  abrir a mano.
+
+  ```bash
+  winget install GitHub.cli   # macOS: brew install gh
+  gh auth login               # GitHub.com → HTTPS → login por navegador
+  ```
+
+  El login es una sola vez; el token queda guardado en tu perfil. Aprobar y
+  mergear PRs sigue siendo del coordinador: `gh` no cambia quién decide, solo
+  quién tipea.
+- (Próximamente, milestone SHS-M10: `npx souclaude init/upgrade` verificará estos
+  requisitos y avisará con el paso exacto si falta alguno.)
 
 ```bash
 npx souclaude init        # en un repo nuevo (o `upgrade` en uno ya instalado)
