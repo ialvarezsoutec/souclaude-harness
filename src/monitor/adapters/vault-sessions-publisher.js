@@ -61,22 +61,36 @@ export function construirLineaDeSesion(sesion, { quien, maquina } = {}) {
   if (tokensIn + tokensOut === 0) return null
 
   const fecha = new Date(sesion.ultimoTs ?? Date.now()).toISOString().slice(0, 10)
-  const rama = sesion.rama ?? (sesion.sessionId ? sesion.sessionId.slice(0, 8) : 'n/d')
-  const milestone = milestoneDeRama(sesion.rama) ?? 'n/d'
-  const autor = quien ?? sesion.cuentaAlias ?? 'n/d'
+  const rama = sanearCampo(sesion.rama) ?? (sesion.sessionId ? sesion.sessionId.slice(0, 8) : 'n/d')
+  const milestone = milestoneDeRama(rama) ?? 'n/d'
+  const autor = sanearCampo(quien) ?? sanearCampo(sesion.cuentaAlias) ?? 'n/d'
   const resultado = sanearResultado(sesion.titulo)
 
   return (
-    `- ${fecha} · ${rama} · ${milestone} · @${autor} · ${maquina ?? 'n/d'} · ` +
+    `- ${fecha} · ${rama} · ${milestone} · @${autor} · ${sanearCampo(maquina) ?? 'n/d'} · ` +
     `in ${enK(tokensIn)} / out ${enK(tokensOut)} · ${resultado}`
   )
+}
+
+// TODO campo interpolado se sanea, no solo el titulo: un nombre de rama puede
+// contener legalmente el separador de campos (·) y falsificaria milestone,
+// @quien y tokens de la linea — el registro compartido de consumo es un dato
+// de auditoria, no decorativo (hallazgo del security review del PR).
+function sanearCampo(valor) {
+  if (typeof valor !== 'string') return null
+  const plano = valor.replace(/[·\r\n]+/g, '-').replace(/\s+/g, ' ').trim()
+  return plano === '' ? null : plano
 }
 
 // El titulo de la sesion como resultado provisorio: es lo unico en prosa que
 // el monitor conoce. El separador de campos (·) y los saltos de linea se
 // sanean porque romperian el contrato "una linea = una linea de archivo".
+// El filtro de secretos corre sobre el titulo CRUDO ademas del de la linea
+// final: truncar primero podria dejar un fragmento que ya no matchea ningun
+// patron y se colaria al Vault.
 function sanearResultado(titulo) {
   if (typeof titulo !== 'string' || titulo.trim() === '') return 'n/d'
+  if (contieneSecreto(titulo)) return 'n/d'
   const plano = titulo.replace(/[·\r\n]+/g, ' ').replace(/\s+/g, ' ').trim()
   if (plano === '') return 'n/d'
   return plano.length > LARGO_MAX_RESULTADO ? plano.slice(0, LARGO_MAX_RESULTADO - 1) + '…' : plano

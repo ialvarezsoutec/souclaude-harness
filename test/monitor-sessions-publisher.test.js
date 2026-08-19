@@ -160,10 +160,25 @@ test('publisher: una sesion reanudada actualiza SU linea; una editada a mano no 
   assert.equal(lineas.length, 2)
 })
 
-test('publisher: una linea con secreto no se publica y queda en estado()', async () => {
+test('linea: un titulo con secreto degrada a n/d (la sesion se registra sin el secreto)', () => {
+  const sesion = sesionEjemplo({ titulo: 'probando sk-ant-api03-abcdefghijklmnop' })
+  const linea = construirLineaDeSesion(sesion, { quien: 'ignacio', maquina: 'PC01' })
+  assert.ok(linea.endsWith('· n/d'))
+  assert.ok(!linea.includes('sk-ant'))
+})
+
+test('linea: la rama se sanea — el separador de campos no puede falsificar la linea', () => {
+  const sesion = sesionEjemplo({ rama: 'feature/x · SHS-M9 · @otro · PC99', titulo: null })
+  const linea = construirLineaDeSesion(sesion, { quien: 'ignacio', maquina: 'PC01' })
+  // Un solo · por separador real: 6 separadores = 7 campos.
+  assert.equal(linea.split(' · ').length, 7)
+  assert.ok(linea.includes('feature/x - SHS-M9 - @otro - PC99'))
+})
+
+test('publisher: una linea que aun asi contiene secreto no se publica y queda en estado()', async () => {
   const { pub, git } = mkPublisher()
   const vista = vistaEjemplo({
-    sesiones: [sesionEjemplo({ titulo: 'probando sk-ant-api03-abcdefghijklmnop' })],
+    sesiones: [sesionEjemplo({ rama: 'feature/sk-ant-api03-abcdefghijklmnop', titulo: null })],
   })
   const r = await pub.publicar(vista, { ahora: AHORA })
   assert.deepEqual(r, { publicado: false, motivo: 'secreto_detectado' })
