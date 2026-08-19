@@ -2,6 +2,33 @@
 
 El harness y el CLI se versionan juntos.
 
+## [3.4.0] — 2026-08-19
+
+La línea de consumo por sesión de `sessions.md` deja de depender de la disciplina
+del agente: la publica el propio monitor (SHS-M1-T002).
+
+### Agregado
+
+- **Publicación automática de `sessions.md`** desde el panel en vivo
+  (`npx souclaude monitor`): cada sesión **con consumo** del proyecto actual publica
+  su línea en `Project-<PREFIJO>/sessions.md` del Vault y la va actualizando de
+  forma recurrente mientras la sesión sigue viva — misma cadencia (~5 min),
+  backoff y filtro de secretos que los snapshots de `00-System/monitor/`.
+  Idempotente por sesión vía registro local
+  (`~/.claude/souclaude/sesiones-publicadas.json`); la línea se actualiza en el
+  lugar solo si sigue byte a byte como la escribió el monitor —
+  una línea editada a mano nunca se pisa. Autorizado por el ADR
+  `20260817-milestones-planes-y-sesiones-en-vault` (la telemetría cruda sigue
+  prohibida). `--no-publish` apaga snapshots y sesiones a la vez.
+- Campo opcional `"quien"` en `.claude/vault.local.json`: el `@quién` de la línea
+  automática (respaldo: alias de la cuenta). El milestone se infiere del nombre de
+  la rama (`feature/SHS-M1-T002-...` → `SHS-M1`); sin patrón reconocible, `n/d`.
+
+### Cambiado
+
+- `progress/README.md` (managed) documenta la línea automática como piso del
+  protocolo manual, no reemplazo.
+
 ## [3.1.0] — 2026-08-17
 
 El Vault pasa de tablero de tareas a estado vivo de tres niveles por proyecto:

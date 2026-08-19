@@ -200,12 +200,18 @@ ${pc.bold('FLAGS DE MONITOR')}
   --seed-extra-detectado-en <ISO>  Fecha de deteccion del gasto extra alcanzado,
                        solo para la primera vez que se crea usage-history.json.
                        En corridas posteriores (el archivo ya existe) se ignora.
-  --publish            Publica un snapshot agregado de esta cuenta (limites +
-                       totales, <1 KB) en 00-System/monitor/ del Vault, cada
-                       ~5 min y solo si cambio. Solo panel en vivo. Con Vault
-                       configurado es el DEFAULT (no hace falta el flag);
-                       --no-publish lo apaga por corrida. Sin Vault, el flag
-                       explicito avisa y el monitor sigue local-only.
+  --publish            Publica al Vault, cada ~5 min y solo si cambio: (a) un
+                       snapshot agregado de esta cuenta (limites + totales,
+                       <1 KB) en 00-System/monitor/, y (b) la linea de cada
+                       sesion con consumo de este proyecto en
+                       Project-<PREFIJO>/sessions.md, actualizada mientras la
+                       sesion sigue creciendo (idempotente por sesion;
+                       el "quien" sale de "quien" en .claude/vault.local.json,
+                       con el alias de la cuenta como respaldo). Solo panel en
+                       vivo. Con Vault configurado es el DEFAULT (no hace falta
+                       el flag); --no-publish apaga ambos por corrida. Sin
+                       Vault, el flag explicito avisa y el monitor sigue
+                       local-only.
 
 ${pc.bold('MONITOR --EMIT-ROUTER')}
   Escribe UNA linea "medida" en progress/model-router.jsonl a partir de la

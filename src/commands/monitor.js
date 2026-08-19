@@ -14,6 +14,7 @@ import { presentar } from '../monitor/adapters/panel-presenter.js'
 import { renderJson, renderPlain } from '../monitor/adapters/plain-renderer.js'
 import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writer.js'
 import { createVaultPublisher } from '../monitor/adapters/vault-monitor-publisher.js'
+import { createSessionsPublisher } from '../monitor/adapters/vault-sessions-publisher.js'
 import { createVaultAccountsReader, gitAsync } from '../monitor/adapters/vault-accounts-reader.js'
 import {
   createLocalAccountsReader,
@@ -21,7 +22,7 @@ import {
   parseLocalAccountsEnv,
   pathsDeConfigDir,
 } from '../monitor/adapters/local-accounts-reader.js'
-import { readVaultConfig } from '../core/vault.js'
+import { readVaultConfig, carpetaProyecto } from '../core/vault.js'
 
 // El caché de limites de ~/.claude.json solo se reescribe cuando el humano corre
 // /usage, asi que sin esto el panel muestra un dato de 20-50 minutos. El fetcher
@@ -129,6 +130,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
   // Vault sirve en todos los modos (--json lo expone gratis), pero su pull
   // remoto solo corre en vivo y solo si el publisher no lo hace ya.
   const publisher = enVivo ? crearPublisher(flags, cwd) : null
+  const sesionesPublisher = enVivo ? crearPublisherDeSesiones(flags, cwd) : null
   const accountsReader = crearAccountsReader(cwd, { conPull: enVivo && !publisher })
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
@@ -168,7 +170,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     return codigoDeSalida(vista)
   }
 
-  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher })
+  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher, sesionesPublisher })
 }
 
 // Publicacion de snapshots agregados de esta cuenta al Vault (ADR
@@ -188,6 +190,34 @@ export function crearPublisher(flags, cwd) {
     return null
   }
   return createVaultPublisher({ vaultPath: config.path })
+}
+
+// Publicacion de la linea por sesion en Project-<PREFIJO>/sessions.md (ADR
+// 20260817-milestones-planes-y-sesiones-en-vault): cada sesion con consumo de
+// este proyecto deja su linea y la va actualizando mientras crece, sin
+// depender de la disciplina del agente.
+// Mismas condiciones de encendido que crearPublisher (solo en vivo, --no-publish
+// la apaga); ademas necesita saber cual es la carpeta Project-* del Vault —
+// sin eso no hay sessions.md que escribir y se degrada en silencio.
+export function crearPublisherDeSesiones(flags, cwd) {
+  if (flags.publish === false) return null
+  const config = readVaultConfig(cwd)
+  if (!config?.path) return null
+  const proyecto = carpetaProyecto(config.path, config)
+  if (!proyecto) {
+    if (flags.publish === true) {
+      ui.log.warn('No se pudo determinar la carpeta Project-<PREFIJO> del Vault: las lineas de sessions.md no se publican (declara "project" en .claude/vault.local.json).')
+    }
+    return null
+  }
+  const paths = resolveClaudeHome({ override: flags['claude-home'] })
+  return createSessionsPublisher({
+    vaultPath: config.path,
+    proyecto,
+    cwdProyecto: cwd,
+    quien: typeof config.quien === 'string' && config.quien !== '' ? config.quien : null,
+    registroPath: path.join(paths.home, 'souclaude', 'sesiones-publicadas.json'),
+  })
 }
 
 // Lector de los snapshots que publico el resto del equipo (Vault) combinado
@@ -220,7 +250,7 @@ function crearCuentasLocales() {
 
 // --- panel en vivo ---
 
-async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher = null }) {
+async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher = null, sesionesPublisher = null }) {
   const intervalo = Math.max(INTERVALO_MINIMO, enteroPositivo(flags.interval, INTERVALO_DEFAULT))
   const renderer = createTtyRenderer()
 
@@ -234,7 +264,12 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHis
     if (!vista && !errorDelTick) return
     const { cols, rows } = renderer.size()
     const modelo = conAvisoDeError(vista, errorDelTick)
-    const conPublicacion = conAvisoDePublicacion(modelo, publisher, clock.now())
+    const conPublicacion = conAvisoDePublicacion(
+      conAvisoDePublicacion(modelo, publisher, clock.now(), 'Vault'),
+      sesionesPublisher,
+      clock.now(),
+      'sessions.md'
+    )
     const proyeccion = presentar(conPublicacion, { ahora: modelo.generadoEn, top: opciones.top })
     renderer.paint(renderPanel(proyeccion, { cols, rows, caps, color: caps.color !== false, modo }))
   }
@@ -259,6 +294,9 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHis
     // cambio material) y jamas puede demorar ni tumbar el render.
     if (publisher && vista) {
       publisher.publicar(vista, { ahora: clock.now() }).catch(() => {})
+    }
+    if (sesionesPublisher && vista) {
+      sesionesPublisher.publicar(vista, { ahora: clock.now() }).catch(() => {})
     }
     pintar()
   }
@@ -408,21 +446,23 @@ function codigoDeSalida(vista) {
   return 0
 }
 
-// Traduce el estado del publisher a un aviso visible, sin mutar el modelo. Un
-// secreto detectado o una racha de fallos que dejo el snapshot viejo son cosas
+// Traduce el estado de un publisher a un aviso visible, sin mutar el modelo. Un
+// secreto detectado o una racha de fallos que dejo el dato viejo son cosas
 // que el humano tiene que ver; una publicacion al dia no necesita anunciarse.
-function conAvisoDePublicacion(vista, publisher, ahora) {
+// `etiqueta` distingue el snapshot agregado ('Vault') de la linea por sesion
+// ('sessions.md'): comparten forma de estado() pero fallan por separado.
+function conAvisoDePublicacion(vista, publisher, ahora, etiqueta = 'Vault') {
   if (!publisher || !vista) return vista
   const e = publisher.estado()
 
   let aviso = null
   if (e.secretoDetectado) {
-    aviso = 'publicacion al Vault ABORTADA: el snapshot contenia un posible secreto'
+    aviso = `publicacion a ${etiqueta} ABORTADA: el contenido tenia un posible secreto`
   } else if (e.fallosSeguidos > 0 && e.ultimaPublicacionMs != null) {
     const min = Math.round((ahora - e.ultimaPublicacionMs) / 60_000)
-    aviso = `Vault: sin publicar hace ${min}m (${e.fallosSeguidos} fallo${e.fallosSeguidos === 1 ? '' : 's'})`
+    aviso = `${etiqueta}: sin publicar hace ${min}m (${e.fallosSeguidos} fallo${e.fallosSeguidos === 1 ? '' : 's'})`
   } else if (e.fallosSeguidos >= 3) {
-    aviso = `Vault: todavia sin publicar (${e.fallosSeguidos} fallos)`
+    aviso = `${etiqueta}: todavia sin publicar (${e.fallosSeguidos} fallos)`
   }
 
   if (!aviso) return vista
