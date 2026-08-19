@@ -116,7 +116,62 @@ Lo que el agente **no hace nunca** (es tuyo o del coordinador):
 - El OAuth del conector Jira (tú, una vez por máquina).
 - Decidir el alcance de un milestone nuevo: el agente lo propone, **tú lo apruebas**.
 
-## 6. Referencias
+## 6. Sincronización con Jira: casuísticas de arranque
+
+El régimen permanente es siempre el mismo (ver §4, paso 5); lo que cambia entre
+proyectos es **cómo se puebla el tablero la primera vez**. Identifica tu caso:
+
+### A. Proyecto nuevo, desde cero
+
+1. El coordinador crea el repo en GitHub y el **proyecto Jira** con clave igual
+   al prefijo del Vault (`Project-XYZ` → proyecto Jira `XYZ`); el prefijo se
+   registra en `00-System/id-registry.md` del Vault.
+2. `npx souclaude init` en el repo: skills (incluida `jira-sync`), Vault
+   conectado, `.mcp.json` listo; `.claude/jira.json` con la URL y la clave.
+3. Requisitos de máquina (§2): `gh auth login` + OAuth de Atlassian en `/mcp`.
+4. Primera sesión: el hook muestra un tablero vacío, así que el agente **no
+   puede trabajar** hasta definir contigo los milestones iniciales (skill
+   `vault-milestones`). Desde ahí todo nace sincronizado: cada alta de tarea
+   crea su issue en Jira.
+
+### B. Proyecto existente, sin milestones definidos
+
+Igual que A en instalación, más una **sesión de arranque del tablero**: el agente
+lee el repo (README, ramas, issues) y propone el roadmap inverso — qué ya está
+logrado (milestones que nacen directamente en **Hecho**, para que el tablero
+cuente la verdad histórica), qué está a medias (En curso real) y qué falta
+(Backlog secuenciado por dependencias). Tú apruebas, se escribe `milestones.md`
+y recién entonces corre la primera sincronización. Regla de oro: **no se inventa
+historia fina** — los milestones Hecho retroactivos van sin tareas desglosadas;
+el detalle empieza desde hoy.
+
+### C. Tablero en el Vault ya poblado, Jira vacío (backfill)
+
+La primera corrida de `jira-sync` recorre `kanban.md` completo: crea cada tarea
+viva en su estado equivalente (Backlog → To Do, En curso → In Progress, En
+review → In Review) y, si aceptas, las tareas Hecho directamente en **Done**,
+para que Jira nazca con la historia completa. La idempotencia por ID en el
+summary hace que correrla dos veces no duplique nada: una segunda pasada solo
+corrige estados divergentes.
+
+### D. Régimen permanente (proyecto ya sincronizado)
+
+Movimiento por movimiento: alta de tarea → issue en To Do con la etiqueta de su
+milestone; tomarla → In Progress; a revisión → In Review; cerrarla → Done;
+milestone a Hecho → antes de cerrarlo se verifica que todos sus issues (por
+etiqueta) estén en Done, y si alguno no lo está, se reporta. Reglas fijas:
+**Vault primero, Jira después**; si Jira diverge (alguien movió un issue allá),
+el agente lo reporta y el Vault manda; si el conector falla, el trabajo local
+nunca se bloquea y el espejo pendiente queda anotado para la próxima sesión.
+
+> **Hoy y mañana**: la sincronización es automática *cuando trabaja un agente*
+> (la skill la dispara en cada movimiento de tarjeta). Para que sea automática
+> *siempre* — también cuando un humano edita el tablero a mano — el paso
+> siguiente es un workflow de CI en el repo del Vault que espeje cada push de
+> `kanban.md` a Jira con un token de servicio (milestone propuesto, no
+> implementado).
+
+## 7. Referencias
 
 - Protocolo completo del Vault: `progress/README.md` (en cualquier repo con el harness).
 - Flujo Git/GitHub: skill `soutec-github` (`.claude/skills/soutec-github/SKILL.md`).
