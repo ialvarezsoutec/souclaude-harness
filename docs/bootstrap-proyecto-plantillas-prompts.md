@@ -422,7 +422,7 @@ Cuatro cosas que van a repetirse en cada proyecto hasta que se arreglen en orige
 
 1. **El tag `v3` no existe.** El comando de instalación del README falla tal cual está escrito. *(Pendiente a propósito: el tag se publica cuando todo esté listo.)*
 2. **`upgrade --vault-path` no escribe el campo `project`.** El hook queda ciego en silencio en cuanto el Vault tiene más de un proyecto.
-3. **`CODEOWNERS` referencia equipos `@org-soutec/...`**, que solo existen en organizaciones de GitHub. En una cuenta personal nunca resuelven: la aprobación obligatoria **no se aplica y no avisa**. Sumado a la falta de branch protection, la regla de "el coordinador mergea" queda sin respaldo técnico.
+3. **`CODEOWNERS` referencia equipos `@org-soutec/...`**, que solo existen en organizaciones de GitHub. En una cuenta personal nunca resuelven: la aprobación obligatoria **no se aplica y no avisa**. Sumado a la falta de branch protection, la regla de "el coordinador mergea" queda sin respaldo técnico. *(En camino: la organización va a incorporar seguridad en los repos vía cuentas de equipo de GitHub — al migrar, los equipos de CODEOWNERS resuelven y este problema y su raíz desaparecen.)*
 4. ~~**El prefijo `SHS` no está en `id-registry.md`**~~ **Resuelto** (20-ago-2026): registrado en el Vault.
 
 Los cuatro tienen la misma raíz en el caso 3: mientras los repositorios vivan en una cuenta personal y no en una organización de GitHub, el gobierno que la metodología describe no puede aplicarse técnicamente.
