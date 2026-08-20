@@ -81,6 +81,9 @@ function materializar(r) {
   return {
     sessionId: r.sessionId,
     fecha: typeof r.fin === 'string' ? r.fin.slice(0, 10) : null,
+    inicio: typeof r.inicio === 'string' ? r.inicio : null,
+    fin: typeof r.fin === 'string' ? r.fin : null,
+    generadoEn: typeof r.generadoEn === 'string' ? r.generadoEn : null,
     proyecto: r.proyecto ?? null,
     rama: r.rama ?? null,
     milestone: r.milestone ?? null,
