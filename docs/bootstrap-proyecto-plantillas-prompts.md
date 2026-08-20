@@ -4,7 +4,16 @@ Secuencia reutilizable para levantar un proyecto nuevo con el harness `souclaude
 
 Cada fase trae: el prompt para copiar, qué te va a preguntar el agente, qué debe quedar hecho al terminar, y los errores conocidos que hay que esquivar.
 
-Las fases 0–6 describen el caso base (proyecto nuevo). Para un **repo que ya existe** y adopta el harness, ve a la sección "Casuística 2": reutiliza estas mismas fases y solo cambia el arranque.
+Las fases 0–6 describen el caso base (proyecto nuevo desde cero). Las demás casuísticas reutilizan estas fases y están al final del documento:
+
+| Casuística | Sección |
+|---|---|
+| Proyecto nuevo desde cero | Fases 0–6 |
+| Repo existente que adopta el harness | Casuística 2 |
+| Integrante nuevo en proyecto adoptado | Casuística 3 (→ guía de onboarding) |
+| Máquina nueva | Casuística 4 |
+| Actualizar el harness | Casuística 5 (→ skill `harness-upgrade`) |
+| Proyecto sin Jira todavía | Casuística 6 |
 
 ---
 
@@ -274,6 +283,83 @@ Después de la fase 2, sigue con la **fase 3** tal cual está arriba, con un
 énfasis extra: pide además que el agente revise las costumbres ya instaladas
 (¿se commiteaba directo a `main`? ¿existe `dev`? ¿el README describe otro flujo?)
 y las reencuadre en el mismo cambio.
+
+---
+
+## Casuística 3 · Integrante nuevo en un proyecto ya adoptado
+
+No repitas nada de este playbook: el proyecto ya está montado. El camino es otro
+documento — **`docs/onboarding-desarrollador.md`** (la guía de la metodología:
+las tres piezas, la regla de trazabilidad, el ciclo diario). Léela primero de
+punta a punta; después ejecuta la **casuística 4** para dejar tu máquina lista.
+
+Lo único que el proyecto debe darte de antemano: acceso de escritura al repo del
+proyecto y al Vault, y usuario en el sitio Jira. Eso es del coordinador, no tuyo.
+
+---
+
+## Casuística 4 · Máquina nueva (integrante nuevo o existente)
+
+Todo lo de esta lista es **por máquina**, no por proyecto — si ya trabajas en
+otra máquina, nada de esto se hereda solo. En orden:
+
+1. **Requisitos**: Node ≥ 22.4, git, y `gh` autenticado (`gh auth status`; el
+   paso a paso del login está en la guía de onboarding).
+2. **Clona el repo del proyecto** en una ruta **fuera de OneDrive**.
+3. **Clona el Vault** ({{VAULT_REPO}}) también fuera de OneDrive y conéctalo:
+   `npx souclaude upgrade --vault-path {{RUTA_VAULT}}`.
+4. **Añade a mano `"project"`** a `.claude/vault.local.json` (problema conocido
+   de la fase 4: el CLI no lo escribe y el hook queda ciego en silencio si el
+   Vault tiene más de un proyecto):
+
+   ```json
+   { "path": "{{RUTA_VAULT}}", "repo": "{{VAULT_REPO}}", "project": "Project-{{PREFIJO}}" }
+   ```
+
+5. **Autoriza el conector Jira**: `/mcp` en sesión interactiva → autenticar
+   Atlassian (OAuth, una vez por máquina).
+6. **Verifica**: abre una sesión nueva — el hook de SessionStart debe imprimir el
+   tablero de `Project-{{PREFIJO}}`. Si no lo hace, el paso 3 o 4 quedó mal.
+
+Prompt de verificación para cerrar:
+
+```
+Verifica que esta máquina quedó bien conectada a la metodología: gh autenticado,
+Vault clonado y conectado con el campo project en vault.local.json, conector de
+Atlassian respondiendo y hook de sesión leyendo el tablero. Repórtame qué está
+bien y qué falta, sin arreglar nada todavía.
+```
+
+---
+
+## Casuística 5 · Actualizar el harness en un proyecto ya adoptado
+
+No uses este playbook: el flujo vive en la skill **`harness-upgrade`** y en el
+comando `souclaude upgrade` (con `souclaude status` para ver qué cambió antes).
+Regla de siempre: el upgrade va por rama + PR contra `dev`, como cualquier cambio.
+
+> Mientras el tag `v3` no esté publicado (problema 1), los upgrades llegan desde
+> la rama `dev`: anota el commit exacto en el mensaje, igual que en la fase 2.
+
+---
+
+## Casuística 6 · Proyecto sin Jira (o conector sin autorizar)
+
+La metodología degrada a propósito: **Jira nunca bloquea el trabajo local**. Sin
+proyecto Jira o sin conector autorizado, todo lo demás sigue igual — Vault,
+milestones, kanban, sesiones — y cada espejo pendiente queda anotado en
+`notes.md` para la próxima sesión con conector.
+
+Cuando Jira llegue (proyecto creado según la fase 0, conector autorizado según la
+fase 5), se ponen al día los espejos con una sincronización completa:
+
+```
+El proyecto Jira {{PREFIJO}} ya existe y el conector está autorizado. Sincroniza
+todo el tablero del Vault en Jira desde cero: tarjetas madre de todos los
+milestones y issues de todas las tareas, con sus estados actuales. Verifica
+idempotencia antes de crear cada issue — si algo ya existe, actualízalo en vez de
+duplicarlo. Al final, repórtame el mapeo tarjeta → issue.
+```
 
 ---
 
