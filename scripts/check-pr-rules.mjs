@@ -14,6 +14,7 @@
 
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 import { parseArgs } from 'node:util'
 
 // El prefijo opcional en mayusculas es el ID de tarea del tracker que la skill
@@ -87,12 +88,15 @@ function compararSemver(a, b) {
   return 0
 }
 
-function evaluaRama(nombre) {
+export function evaluaRama(nombre) {
   if (!RAMA_REGEX.test(nombre)) {
     return { regla: 'rama-formato', cumple: false, detalle: `"${nombre}" no cumple tipo/descripcion-corta` }
   }
+  // Coincidencia exacta: la lista caza nombres vagos ("prueba" a secas), no
+  // descripciones legitimas que empiecen igual (experiment/prueba-modelo-rag
+  // es un ejemplo valido de la propia skill).
   const slug = nombre.split('/').slice(1).join('/')
-  const enListaNegra = RAMA_LISTA_NEGRA.some((mala) => slug === mala || slug.startsWith(`${mala}-`))
+  const enListaNegra = RAMA_LISTA_NEGRA.includes(slug)
   if (enListaNegra) {
     return { regla: 'rama-formato', cumple: false, detalle: `"${nombre}" usa un slug prohibido` }
   }
@@ -151,7 +155,7 @@ function evaluaMergeable(pr) {
   }
 }
 
-function extraeSeccion(cuerpo, titulo) {
+export function extraeSeccion(cuerpo, titulo) {
   // El lookahead (?=\n## |$) se combina con el flag 'm' del anchor ^, y ahi
   // $ significa fin-de-linea (no fin-de-string): corta la seccion en su
   // primera linea. (?![\s\S]) fuerza fin-de-string real.
@@ -160,7 +164,7 @@ function extraeSeccion(cuerpo, titulo) {
   return m ? m[1].trim() : null
 }
 
-function evaluaVersion(pr, baseRefName) {
+export function evaluaVersion(pr, baseRefName) {
   if (pr == null) {
     return { regla: 'version-semver', cumple: null, detalle: 'no hay datos de PR' }
   }
@@ -199,7 +203,7 @@ function plantillaPR() {
   }
 }
 
-function evaluaSeccionesCompletas(pr) {
+export function evaluaSeccionesCompletas(pr) {
   if (pr == null) {
     return { regla: 'sin-secciones-vacias', cumple: null, detalle: 'no hay datos de PR' }
   }
@@ -261,4 +265,7 @@ function main() {
   process.exit(huboFalse ? 1 : 0)
 }
 
-main()
+// Solo como ejecutable: al importarse desde los tests no corre nada.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main()
+}

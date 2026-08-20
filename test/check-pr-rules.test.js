@@ -1,0 +1,94 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+import { evaluaRama, evaluaSeccionesCompletas, evaluaVersion } from '../scripts/check-pr-rules.mjs'
+
+// La norma de la skill soutec-github admite DOS formas de rama, y las dos son
+// contrato: tipo/descripcion-corta a secas, o tipo/ID-descripcion-corta donde
+// el ID en mayusculas es tarea del Vault, milestone del Vault o tracker externo.
+
+test('evaluaRama: acepta la forma simple tipo/descripcion-corta', () => {
+  const validas = [
+    'feature/captura-lead',
+    'fix/error-integracion-odoo',
+    'hotfix/correccion-produccion',
+    'docs/onboarding-auth-gh',
+    'chore/actualizar-dependencias',
+    'refactor/mejorar-estructura-api',
+    'experiment/prueba-modelo-rag',
+  ]
+  for (const rama of validas) {
+    assert.equal(evaluaRama(rama).cumple, true, rama)
+  }
+})
+
+test('evaluaRama: acepta el prefijo de ID en sus tres variantes', () => {
+  const validas = [
+    'feature/SHS-M7-T006-playbook-adopcion', // tarea del Vault
+    'fix/SHS-M7-T007-check-pr-reglas',
+    'fix/SHS-M10-chequeo-gh', // milestone del Vault, sin tarea desglosada
+    'feature/CSC-M1-alta-de-milestones',
+    'feature/REA-123-captura-lead', // tracker externo
+  ]
+  for (const rama of validas) {
+    assert.equal(evaluaRama(rama).cumple, true, rama)
+  }
+})
+
+test('evaluaRama: rechaza lo que ninguna de las dos formas permite', () => {
+  const invalidas = [
+    'feature/Mayusculas-en-el-slug', // el slug sigue siendo minusculas
+    'feature/SHS-M7-T006', // ID sin slug descriptivo
+    'cambios/algo', // tipo inexistente
+    'feature/prueba', // slug prohibido
+    'feature/final-final',
+    'main',
+    'feature/', // sin slug
+  ]
+  for (const rama of invalidas) {
+    assert.equal(evaluaRama(rama).cumple, false, rama)
+  }
+})
+
+test('evaluaSeccionesCompletas: la plantilla sin rellenar NO pasa', () => {
+  const plantilla = readFileSync('.github/pull_request_template.md', 'utf8')
+  const r = evaluaSeccionesCompletas({ body: plantilla })
+  assert.equal(r.cumple, false)
+  assert.match(r.detalle, /Descripción del cambio/)
+})
+
+test('evaluaSeccionesCompletas: secciones con contenido real pasan', () => {
+  const body = [
+    '## Descripción del cambio',
+    'Se corrige la regex de ramas del check.',
+    '',
+    '## Evidencia',
+    'npm test en verde, regex probada contra las ramas historicas.',
+    '',
+    '## Impacto / Riesgos',
+    'Solo CI de este repo.',
+  ].join('\n')
+  assert.equal(evaluaSeccionesCompletas({ body }).cumple, true)
+})
+
+test('evaluaSeccionesCompletas: "N/A" o vacia sigue fallando', () => {
+  const body = [
+    '## Descripción del cambio',
+    'N/A',
+    '',
+    '## Evidencia',
+    '',
+    '## Impacto / Riesgos',
+    'Ninguno relevante.',
+  ].join('\n')
+  const r = evaluaSeccionesCompletas({ body })
+  assert.equal(r.cumple, false)
+})
+
+test('evaluaVersion: exige exactamente una casilla marcada', () => {
+  const conNo = '## Requiere versión / release\n- [x] No\n- [ ] Sí\nVersión sugerida: vX.Y.Z'
+  const cruda = '## Requiere versión / release\n- [ ] No\n- [ ] Sí\nVersión sugerida: vX.Y.Z'
+  assert.equal(evaluaVersion({ body: conNo }, 'dev').cumple, true)
+  assert.equal(evaluaVersion({ body: cruda }, 'dev').cumple, false)
+})
