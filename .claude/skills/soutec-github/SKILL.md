@@ -25,8 +25,9 @@ Estas no se negocian, ni siquiera en un hotfix.
 - **Nunca commitear secretos**: `.env`, `*.pem`, `*.key`, `*.pfx`, `credentials.json`,
   `secrets.json`, tokens, contraseñas, llaves privadas.
 - **Nunca crear una rama sin nombre descriptivo.** Formato `tipo/descripcion-corta`. Si
-  el trabajo tiene un ID de tarea en un tracker, va como prefijo del slug
-  (`feature/REA-123-captura-lead`); si no lo hay, el slug solo. **No inventes IDs.**
+  el trabajo tiene un ID rastreable — tarea o milestone del Vault, o tarea de un
+  tracker externo — va como prefijo del slug (`feature/SHS-M7-T006-playbook-adopcion`,
+  `feature/REA-123-captura-lead`); si no lo hay, el slug solo. **No inventes IDs.**
 - **Nunca crear repositorios.** Eso es del coordinador. Los **tags de versión**
   (`vX.Y.Z` y el tag móvil por major) sí puede crearlos el agente, únicamente al
   publicar y después del merge de release `dev` → `main`.
@@ -45,8 +46,15 @@ Chequeo previo: ¿leíste el README? ¿tienes el `.env` local configurado?
 ## Nombre de rama
 
 ```
-tipo/descripcion-corta          # o tipo/ID-tarea-descripcion-corta si hay tracker
+tipo/descripcion-corta          # o tipo/ID-descripcion-corta si hay ID rastreable
 ```
+
+El **ID** va en mayúsculas como prefijo del slug y puede ser cualquiera de estos
+(en orden de preferencia — usa el más específico que exista, y **no inventes IDs**):
+
+- **Tarea del Vault**: `feature/SHS-M7-T006-playbook-adopcion`
+- **Milestone del Vault** (si aún no hay tarea desglosada): `fix/SHS-M10-chequeo-gh`
+- **Tracker externo**: `feature/REA-123-captura-lead`
 
 | Tipo | Uso |
 |---|---|
@@ -130,6 +138,13 @@ dejarlo registrado en el PR.
 **Completa `.github/pull_request_template.md` de verdad.** Checkboxes tildadas porque
 se hizo, no por rellenar. Nada de "N/A" genéricos: si una sección no aplica, se
 **omite entera** (título incluido), no se deja con "N/A" ni vacía.
+
+**La plantilla no se aplica sola al abrir el PR por CLI.** Solo la web de GitHub la
+precarga; `gh pr create` deja el cuerpo que le pases y nada más. El flujo correcto:
+escribir la plantilla ya completada en un archivo temporal y abrir el PR con
+`gh pr create --body-file <archivo>`. Un PR con la plantilla cruda o incompleta
+**falla el check `reglas-pr` de CI** (secciones con el texto guía intacto, casilla
+de versión sin marcar), así que la descripción tiene que quedar bien desde el alta.
 
 Si piden correcciones: **pushear a la misma rama.** El PR se actualiza solo. Crear un
 PR nuevo por cada corrección rompe la trazabilidad y duplica el ruido.
