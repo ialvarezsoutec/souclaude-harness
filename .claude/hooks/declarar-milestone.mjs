@@ -60,10 +60,30 @@ function tablero(rutaMd) {
   return columnas
 }
 
-// Asuntos de los commits ya mergeados al tronco del repo del proyecto, segun
-// los refs remotos que existan localmente (sin fetch: el hook no toca la red;
-// el estado es el del ultimo fetch, suficiente para avisar y nunca para borrar).
+// Refresco best-effort contra el remoto: con timeout corto y sin prompts de
+// credenciales, para que un merge o un movimiento de tarjeta hecho en otra
+// maquina se vea en esta sesion. Si no hay red, remoto o tiempo, devuelve
+// false y el hook sigue con el estado local — la sesion jamas se corta.
+const REFRESCO_TIMEOUT_MS = 5000
+
+function gitRefresco(args) {
+  try {
+    execFileSync('git', args, {
+      stdio: 'ignore',
+      timeout: REFRESCO_TIMEOUT_MS,
+      env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Asuntos de los commits ya mergeados al tronco del repo del proyecto. Antes
+// de mirar los refs remotos locales se intenta un fetch (best-effort): sin el,
+// un PR mergeado despues del ultimo fetch de la maquina es invisible.
 function asuntosMergeados(root) {
+  gitRefresco(['-C', root, 'fetch', 'origin', '--quiet'])
   const asuntos = []
   for (const ref of ['origin/dev', 'origin/main', 'origin/master']) {
     try {
@@ -119,6 +139,10 @@ function main() {
     return
   }
 
+  // El Vault se actualiza antes de leerlo (pull solo fast-forward: si el clon
+  // local divergio, no se toca nada y se lee tal cual esta).
+  const vaultAlDia = gitRefresco(['-C', vaultPath, 'pull', '--ff-only', '--quiet'])
+
   const proyecto = carpetaProyecto(vaultPath, config)
   if (!proyecto) {
     salida.push('No se pudo determinar la carpeta Project-<PREFIJO> del Vault: pregunta al usuario cual es.')
@@ -135,7 +159,11 @@ function main() {
 
   const enCurso = columnas['En curso'] ?? []
   const backlog = columnas['Backlog'] ?? []
-  salida.push(`Tablero ${proyecto}/milestones.md (puede estar desactualizado: haz pull --rebase del Vault):`)
+  salida.push(
+    vaultAlDia
+      ? `Tablero ${proyecto}/milestones.md (recien sincronizado con el remoto):`
+      : `Tablero ${proyecto}/milestones.md (no se pudo sincronizar con el remoto — puede estar desactualizado: haz pull --rebase del Vault):`,
+  )
   salida.push(`En curso (${enCurso.length}):`)
   for (const tarjeta of enCurso) salida.push(`  ${tarjeta}`)
   if (enCurso.length === 0) salida.push('  (vacio)')

@@ -103,6 +103,54 @@ test('hook ignora tarjetas En review sin numero de PR', () => {
   assert.doesNotMatch(correrHook(dir), /PRs ya mergeados/)
 })
 
+// Remoto real (repo git en tmp) y su clon: lo que se commitee en el remoto
+// DESPUES del clone no esta en los refs locales del clon hasta un fetch.
+function remotoYClon({ rama, archivos = {} }) {
+  const remoto = fs.mkdtempSync(path.join(os.tmpdir(), 'souclaude remoto '))
+  git(remoto, 'init', '-b', rama)
+  for (const [ruta, contenido] of Object.entries(archivos)) write(remoto, ruta, contenido)
+  git(remoto, 'add', '-A')
+  git(remoto, '-c', 'user.email=test@test', '-c', 'user.name=test', 'commit', '--allow-empty', '-m', 'chore: raiz')
+  const clon = fs.mkdtempSync(path.join(os.tmpdir(), 'souclaude clon '))
+  execFileSync('git', ['clone', '--quiet', remoto, clon], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+  return { remoto, clon }
+}
+
+test('hook hace fetch: detecta el PR mergeado despues del ultimo fetch de la maquina', () => {
+  const { remoto, clon } = remotoYClon({ rama: 'dev' })
+  // El merge ocurre en el remoto DESPUES del clone: sin fetch seria invisible.
+  git(remoto, '-c', 'user.email=test@test', '-c', 'user.name=test', 'commit', '--allow-empty', '-m', 'Merge pull request #30 from x/rama')
+
+  const kanban = ['## En review', '', '- [ ] SHS-M7-T009 · rediseño jira-sync · @ignacio · PR #30', ''].join('\n')
+  const vault = vaultCon({ milestones: MILESTONES, kanban })
+  write(clon, '.claude/vault.local.json', JSON.stringify({ path: vault, project: 'Project-SHS' }))
+
+  const salida = correrHook(clon)
+  assert.match(salida, /SHS-M7-T009 .*<- PR #30 mergeado/)
+})
+
+test('hook actualiza el Vault (pull --ff-only) antes de leer el tablero', () => {
+  const { remoto, clon } = remotoYClon({
+    rama: 'main',
+    archivos: { 'Project-SHS/milestones.md': MILESTONES },
+  })
+  // El tablero cambia en el remoto DESPUES del clone.
+  write(remoto, 'Project-SHS/milestones.md', MILESTONES.replace('SHS-M4 · sync', 'SHS-M4 · sync remota'))
+  git(remoto, 'add', '-A')
+  git(remoto, '-c', 'user.email=test@test', '-c', 'user.name=test', 'commit', '-m', 'chore: mover tarjeta')
+
+  const salida = correrHook(proyectoCon(clon))
+  assert.match(salida, /recien sincronizado con el remoto/)
+  assert.match(salida, /SHS-M4 · sync remota/)
+})
+
+test('hook con Vault sin remoto: avisa que no pudo sincronizar y el tablero sigue saliendo', () => {
+  const vault = vaultCon({ milestones: MILESTONES })
+  const salida = correrHook(proyectoCon(vault))
+  assert.match(salida, /no se pudo sincronizar con el remoto/)
+  assert.match(salida, /En curso \(1\)/)
+})
+
 test('hook sin kanban.md o sin repo git: degrada en silencio y el tablero sigue saliendo', () => {
   const vault = vaultCon({ milestones: MILESTONES })
   const sinKanban = correrHook(proyectoCon(vault, { conGit: true }))
