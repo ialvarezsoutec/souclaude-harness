@@ -62,7 +62,10 @@ npx souclaude init        # en un repo nuevo (o `upgrade` en uno ya instalado)
 - El instalador pregunta qué **skills** instalar (`soutec-github` es obligatoria;
   para esta metodología necesitas también `vault-milestones` y `jira-sync`).
 - Conecta el **Vault**: si no está clonado en tu máquina, el CLI ofrece clonarlo.
-  La ruta queda en `.claude/vault.local.json` (local, gitignorado).
+  La ruta queda en `.claude/vault.local.json` (local, gitignorado). **Añade a mano
+  el campo `"project"`** (`"project": "Project-<PREFIJO>"`): el CLI todavía no lo
+  escribe, y sin él el hook de sesión no encuentra el tablero cuando el Vault
+  tiene más de un proyecto — y no avisa.
 - **Conector Jira** (una vez por máquina): abre Claude Code en el repo, corre
   `/mcp`, aprueba el servidor `atlassian` (lo trae el `.mcp.json` del harness) y
   completa el OAuth en el navegador. El token queda guardado entre sesiones.
