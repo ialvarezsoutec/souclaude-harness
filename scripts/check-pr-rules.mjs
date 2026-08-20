@@ -13,9 +13,12 @@
 // Las reglas en None (no medibles en este contexto) se reportan pero no rompen el build.
 
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 
-const RAMA_REGEX = /^(feature|fix|hotfix|docs|chore|refactor|experiment)\/[a-z0-9-]+$/
+// El prefijo opcional en mayusculas es el ID de tarea del tracker que la skill
+// exige anteponer al slug (feature/REA-123-captura-lead, feature/SHS-M4-T001-...).
+const RAMA_REGEX = /^(feature|fix|hotfix|docs|chore|refactor|experiment)\/(?:[A-Z][A-Z0-9]{1,3}(?:-[A-Z0-9]+)+-)?[a-z0-9-]+$/
 const RAMA_LISTA_NEGRA = ['cambios', 'prueba', 'final', 'final-final', 'arreglo']
 const COMMIT_TIPOS = ['feat', 'fix', 'docs', 'chore', 'refactor', 'test', 'style', 'build', 'ci', 'perf', 'revert']
 const COMMIT_REGEX = new RegExp(`^(${COMMIT_TIPOS.join('|')}): [a-z].*[^.]$`)
@@ -188,19 +191,31 @@ function evaluaVersion(pr, baseRefName) {
   return { regla: 'version-semver', cumple: true, detalle: `${propuesta} > ${ultimo ?? '(sin tags previos)'}` }
 }
 
+function plantillaPR() {
+  try {
+    return readFileSync('.github/pull_request_template.md', 'utf8')
+  } catch {
+    return ''
+  }
+}
+
 function evaluaSeccionesCompletas(pr) {
   if (pr == null) {
     return { regla: 'sin-secciones-vacias', cumple: null, detalle: 'no hay datos de PR' }
   }
   const cuerpo = pr.body ?? ''
+  const plantilla = plantillaPR()
   const secciones = ['Descripción del cambio', 'Evidencia', 'Impacto / Riesgos']
   const vacias = secciones.filter((titulo) => {
     const contenido = extraeSeccion(cuerpo, titulo)
     if (contenido == null) return true
-    return contenido === '' || /^n\/a\.?$/i.test(contenido)
+    if (contenido === '' || /^n\/a\.?$/i.test(contenido)) return true
+    // Plantilla intacta: el texto guia de la seccion quedo tal cual, sin rellenar.
+    const guia = extraeSeccion(plantilla, titulo)
+    return guia != null && guia !== '' && contenido === guia
   })
   if (vacias.length > 0) {
-    return { regla: 'sin-secciones-vacias', cumple: false, detalle: `vacias o "N/A": ${vacias.join(', ')}` }
+    return { regla: 'sin-secciones-vacias', cumple: false, detalle: `vacias, "N/A" o con el texto de la plantilla: ${vacias.join(', ')}` }
   }
   return { regla: 'sin-secciones-vacias', cumple: true, detalle: 'secciones clave con contenido' }
 }
