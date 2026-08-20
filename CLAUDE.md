@@ -34,8 +34,9 @@ nacen de `dev` y su PR apunta a `dev`; el paso `dev` → `main` es el release, t
 por PR.
 
 - Ramas: `tipo/<slug>` (`feature/captura-lead`). Tipos: `feature` `fix` `hotfix`
-  `docs` `chore` `refactor` `experiment`. Si hay un ID de tarea de un tracker, va
-  como prefijo del slug — pero **no inventes IDs**.
+  `docs` `chore` `refactor` `experiment`. Si hay un ID rastreable — tarea o
+  milestone del Vault (`feature/SHS-M7-T006-playbook-adopcion`) o tarea de un
+  tracker externo — va como prefijo del slug, pero **no inventes IDs**.
 - Commits: `tipo: descripción breve` (español, sin scope). Tipos: `feat` `fix` `docs`
   `chore` `refactor` `test` `style` `build` `ci` `perf` `revert`. Un hotfix se commitea
   como `fix:`. Prohibidos: `update`, `cosas`, `ahora sí`.

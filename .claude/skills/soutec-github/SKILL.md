@@ -25,8 +25,9 @@ Estas no se negocian, ni siquiera en un hotfix.
 - **Nunca commitear secretos**: `.env`, `*.pem`, `*.key`, `*.pfx`, `credentials.json`,
   `secrets.json`, tokens, contraseñas, llaves privadas.
 - **Nunca crear una rama sin nombre descriptivo.** Formato `tipo/descripcion-corta`. Si
-  el trabajo tiene un ID de tarea en un tracker, va como prefijo del slug
-  (`feature/REA-123-captura-lead`); si no lo hay, el slug solo. **No inventes IDs.**
+  el trabajo tiene un ID rastreable — tarea o milestone del Vault, o tarea de un
+  tracker externo — va como prefijo del slug (`feature/SHS-M7-T006-playbook-adopcion`,
+  `feature/REA-123-captura-lead`); si no lo hay, el slug solo. **No inventes IDs.**
 - **Nunca crear repositorios.** Eso es del coordinador. Los **tags de versión**
   (`vX.Y.Z` y el tag móvil por major) sí puede crearlos el agente, únicamente al
   publicar y después del merge de release `dev` → `main`.
@@ -45,8 +46,15 @@ Chequeo previo: ¿leíste el README? ¿tienes el `.env` local configurado?
 ## Nombre de rama
 
 ```
-tipo/descripcion-corta          # o tipo/ID-tarea-descripcion-corta si hay tracker
+tipo/descripcion-corta          # o tipo/ID-descripcion-corta si hay ID rastreable
 ```
+
+El **ID** va en mayúsculas como prefijo del slug y puede ser cualquiera de estos
+(en orden de preferencia — usa el más específico que exista, y **no inventes IDs**):
+
+- **Tarea del Vault**: `feature/SHS-M7-T006-playbook-adopcion`
+- **Milestone del Vault** (si aún no hay tarea desglosada): `fix/SHS-M10-chequeo-gh`
+- **Tracker externo**: `feature/REA-123-captura-lead`
 
 | Tipo | Uso |
 |---|---|
