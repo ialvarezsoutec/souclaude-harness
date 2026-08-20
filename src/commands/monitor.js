@@ -16,7 +16,7 @@ import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writ
 import { createVaultPublisher } from '../monitor/adapters/vault-monitor-publisher.js'
 import { createSessionsPublisher } from '../monitor/adapters/vault-sessions-publisher.js'
 import { createUsageDbPublisher } from '../monitor/adapters/vault-usage-db.js'
-import { leerRegistrosDeUsage } from '../monitor/adapters/vault-usage-reader.js'
+import { leerRegistrosDeUsage, createVaultUsageReader } from '../monitor/adapters/vault-usage-reader.js'
 import { agregarUsage } from '../monitor/domain/usage-agregado.js'
 import { consumoPorVentana } from '../monitor/domain/ventanas-limite.js'
 import { sesionesActivas, picoDiario } from '../monitor/domain/actividad-equipo.js'
@@ -140,6 +140,11 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
   const sesionesPublisher = enVivo ? crearPublisherDeSesiones(flags, cwd) : null
   const usagePublisher = enVivo ? crearPublisherDeUsage(flags, cwd) : null
   const accountsReader = crearAccountsReader(cwd, { conPull: enVivo && !publisher })
+  // Lector del registro de consumo del Vault para las vistas del panel
+  // (SHS-M3-T005): ventanas de limite con consumo propio y equipo activo.
+  // Como accountsReader, sirve en todos los modos (--json lo expone gratis) y
+  // sin Vault configurado queda en null — el panel omite las secciones.
+  const usageReader = crearUsageDbReader(cwd)
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
   const usageHistory = crearUsageHistory(flags)
@@ -156,6 +161,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     usageHistory,
     usageFetcher,
     accountsReader,
+    usageReader,
     cuentasLocales: crearCuentasLocales(),
   })
   const clock = { now: () => Date.now() }
@@ -263,6 +269,15 @@ function crearAccountsReader(cwd, { conPull }) {
 
   if (vaultReader && localReader) return createCombinedAccountsReader([vaultReader, localReader])
   return vaultReader ?? localReader
+}
+
+// Lector cacheado del registro de consumo del Vault (SHS-M3-T005). No hace
+// pull propio: la frescura remota ya la traen el publisher o accountsReader
+// en vivo; aca solo se lee el working tree.
+function crearUsageDbReader(cwd) {
+  const config = readVaultConfig(cwd)
+  if (!config?.path) return null
+  return createVaultUsageReader({ vaultPath: config.path })
 }
 
 // {paths} de cada cuenta local (SOUCLAUDE_LOCAL_ACCOUNTS) para que

@@ -22,6 +22,12 @@ export function createSnapshotSource({
   usageHistory,
   usageFetcher,
   accountsReader = null,
+  // Registro de consumo por sesion del Vault (00-System/monitor/usage), ya
+  // cacheado por TTL (vault-usage-reader.js::createVaultUsageReader). El panel
+  // lo usa para las ventanas de limite con consumo propio y el equipo activo
+  // (SHS-M3-T005). null = sin Vault configurado: el snapshot lo distingue de
+  // "Vault vacio" llevando registrosUsage en null, no en [].
+  usageReader = null,
   // Otras carpetas de Claude Code EN ESTA MISMA MAQUINA (SOUCLAUDE_LOCAL_ACCOUNTS,
   // ej. claude1/claude2 con su propio CLAUDE_CONFIG_DIR): cada una es un
   // {paths} con la MISMA forma que `paths` (home/projectsDir/sessionsDir/
@@ -220,6 +226,20 @@ export function createSnapshotSource({
       }
     }
 
+    // 5c. Registro de consumo por sesion del Vault (SHS-M3-T005). Sincrono
+    // pero cacheado por TTL dentro del reader; un fallo se degrada a aviso,
+    // nunca tumba el tick (mismo trato que accountsReader).
+    let registrosUsage = null
+    if (usageReader) {
+      try {
+        const res = usageReader.leer({ ahora: instante })
+        registrosUsage = res.registros
+        avisos.push(...res.warnings)
+      } catch (err) {
+        avisos.push({ file: 'vault-usage', reason: err.code ?? err.message })
+      }
+    }
+
     ticks += 1
 
     // 6. Snapshot con la forma exacta que espera construirVista.
@@ -236,6 +256,7 @@ export function createSnapshotSource({
       registroExtra,
       cuenta,
       cuentasRemotas,
+      registrosUsage,
       avisos,
     }
   }

@@ -55,6 +55,16 @@ import { charsFor } from './caps.js'
  * @property {{sesiones?:number, proyectos?:number, agentes?:number}} [recortes]
  *           Lo que el dominio ya dejo fuera aguas arriba. El panel lo suma a lo que
  *           recorta por altura para decir la verdad en la linea "y N mas".
+ * @property {Array<{etiqueta?:string, porcentaje?:number|null, reseteaEn?:number|null,
+ *                   alineada?:boolean, tokensIn?:number, tokensOut?:number,
+ *                   costoUsd?:number, sesiones?:number}>} [ventanas]
+ *           Consumo propio del registro del Vault dentro de cada ventana de rate
+ *           limit (SHS-M3-T005). Vacio = sin datos: la seccion se omite.
+ * @property {{filas?:Array<{quien?:string, cuenta?:string, maquina?:string, proyecto?:string,
+ *                           rama?:string, tokens?:number, costoUsd?:number,
+ *                           frescuraMs?:number|null}>}|null} [equipo]
+ *           Sesiones activas del equipo segun el Vault (SHS-M3-T005). null = sin
+ *           Vault configurado (seccion omitida); filas vacias = nadie activo (se pinta).
  * @property {string[]} [avisos]
  * @property {string[]} [historico]
  *           Filas ya formateadas de gasto extra archivado (SHS-H3-T105, panel-presenter.js
@@ -966,15 +976,113 @@ function seccionProyectos(ctx, vista) {
   }
 }
 
+// Consumo propio (registro del Vault) dentro de cada ventana de rate limit,
+// junto al porcentaje que informa la API (SHS-M3-T005). El porcentaje es el
+// dato de la API sobre SU limite; los tokens son lo que el equipo midio: dos
+// fuentes distintas en la misma fila, a proposito.
+function seccionVentanas(ctx, vista) {
+  const filas = Array.isArray(vista?.ventanas) ? vista.ventanas.filter(Boolean) : []
+  const ancha = ctx.interior >= 92
+  const anchoBarra = Math.max(6, Math.min(14, ctx.interior - 58))
+
+  function filaVentana(v) {
+    const sev = severidad(num(v.porcentaje))
+    const pct = Number.isFinite(v.porcentaje) ? pctTexto(v.porcentaje) : 'n/d'
+    // Sin reset alineado la ventana es rodante: decirlo vale mas que una hora
+    // de reset inventada.
+    const resetea = v.alineada
+      ? Number.isFinite(v.reseteaEn) && v.reseteaEn > ctx.ahora
+        ? `resetea ${fmtDuracionMin(v.reseteaEn - ctx.ahora)}`
+        : ''
+      : 'rodante'
+    return lineaCaja(
+      ctx,
+      [
+        { texto: texto(v.etiqueta, 'ventana'), ancho: ancha ? 20 : 14 },
+        { texto: pct, ancho: 4, alinear: 'd', tinte: tinteDeNivel(sev.nivel) },
+        {
+          texto: barra(num(v.porcentaje), anchoBarra, { lleno: ctx.chars.bar.full, vacio: ctx.chars.bar.empty }),
+          ancho: anchoBarra,
+        },
+        { texto: `in ${fmtTokens(num(v.tokensIn))}`, ancho: 9, alinear: 'd' },
+        { texto: `out ${fmtTokens(num(v.tokensOut))}`, ancho: 10, alinear: 'd' },
+        ancha ? { texto: `${num(v.sesiones)} ses`, ancho: 7, alinear: 'd', tinte: 'dim' } : null,
+        { texto: resetea, ancho: RESTO, alinear: 'd', tinte: 'dim' },
+      ],
+      ctx.tinteMarco
+    )
+  }
+
+  return {
+    id: 'ventanas',
+    min: Math.min(2, 1 + filas.length),
+    max: 1 + filas.length,
+    build(n) {
+      const lineas = [
+        regla(ctx, ctx.chars.frame.ml, ctx.chars.frame.mr, 'VENTANAS', 'consumo propio del Vault', ctx.tinteMarco),
+      ]
+      const huecos = Math.max(0, n - 1)
+      for (const v of filas.slice(0, huecos)) lineas.push(filaVentana(v))
+      return lineas
+    },
+  }
+}
+
+// Sesiones activas del EQUIPO segun el registro del Vault (SHS-M3-T005): quien
+// esta consumiendo ahora en cualquier maquina, no solo en esta. La seccion se
+// pinta aun sin filas ("nadie activo" es informacion); si no hay Vault
+// configurado, renderFull la omite entera (vista.equipo null).
+function seccionEquipo(ctx, vista) {
+  const filas = Array.isArray(vista?.equipo?.filas) ? vista.equipo.filas.filter(Boolean) : []
+  const ancha = ctx.interior >= 92
+
+  function filaEquipo(f) {
+    const hace = Number.isFinite(f.frescuraMs) ? fmtRelativo(ctx.ahora - f.frescuraMs, ctx.ahora) : '-'
+    return lineaCaja(
+      ctx,
+      [
+        { texto: texto(f.quien, texto(f.cuenta, '?')), ancho: 10, tinte: 'cyan' },
+        ancha ? { texto: texto(f.maquina), ancho: 12, tinte: 'dim' } : null,
+        { texto: texto(f.proyecto), ancho: RESTO },
+        ancha ? { texto: texto(f.rama), ancho: 20, tinte: 'dim' } : null,
+        { texto: fmtTokens(num(f.tokens)), ancho: 7, alinear: 'd' },
+        { texto: hace, ancho: 8, alinear: 'd', tinte: 'dim' },
+      ],
+      ctx.tinteMarco
+    )
+  }
+
+  return {
+    id: 'equipo',
+    min: 2,
+    max: 1 + Math.max(1, filas.length),
+    build(n) {
+      const lineas = [
+        regla(ctx, ctx.chars.frame.ml, ctx.chars.frame.mr, 'EQUIPO', `${filas.length} activas en el Vault`, ctx.tinteMarco),
+      ]
+      const huecos = Math.max(0, n - 1)
+      if (filas.length === 0) {
+        if (huecos > 0) {
+          lineas.push(lineaCaja(ctx, [{ texto: 'sin sesiones activas del equipo', ancho: RESTO, tinte: 'dim' }], ctx.tinteMarco))
+        }
+        return lineas
+      }
+      for (const f of filas.slice(0, huecos)) lineas.push(filaEquipo(f))
+      return lineas
+    },
+  }
+}
+
 // --- presupuesto de altura ---
 
 /**
  * Reparte las filas disponibles ANTES de dibujar. Orden de corte, de abajo hacia
- * arriba: DESGLOSE cae primero, luego PROYECTOS, CONSUMO (indivisible), SESIONES,
- * CUENTAS y por ultimo AHORA. El header de limites nunca entra en la negociacion.
+ * arriba: DESGLOSE cae primero, luego PROYECTOS, EQUIPO, VENTANAS, CONSUMO
+ * (indivisible), SESIONES, CUENTAS y por ultimo AHORA. El header de limites
+ * nunca entra en la negociacion.
  */
 function repartirAltura(secciones, disponible) {
-  const prioridad = ['ahora', 'cuentas', 'sesiones', 'consumo', 'proyectos', 'desglose']
+  const prioridad = ['ahora', 'cuentas', 'sesiones', 'consumo', 'ventanas', 'equipo', 'proyectos', 'desglose']
   const porId = new Map(secciones.map((s) => [s.id, s]))
   const asignado = new Map()
   let libre = disponible
@@ -991,7 +1099,7 @@ function repartirAltura(secciones, disponible) {
 
   // El sobrante se reparte de a una linea por vuelta, para que ninguna seccion se
   // quede en el minimo mientras otra se queda con todo el aire.
-  const crecibles = ['ahora', 'cuentas', 'sesiones', 'proyectos', 'desglose']
+  const crecibles = ['ahora', 'cuentas', 'sesiones', 'ventanas', 'equipo', 'proyectos', 'desglose']
   let progreso = true
   while (libre > 0 && progreso) {
     progreso = false
@@ -1043,8 +1151,13 @@ function renderFull(ctx, vista) {
     ...(hayCuentas ? [seccionCuentas(ctx, vista)] : []),
     seccionAhora(ctx, vista),
     seccionConsumo(ctx, vista),
+    // VENTANAS solo con datos (sin registro o sin limites no hay fila que
+    // valga); EQUIPO tambien sin filas — "nadie activo" es informacion — pero
+    // nunca sin Vault configurado (equipo null).
+    ...((vista?.ventanas?.length ?? 0) > 0 ? [seccionVentanas(ctx, vista)] : []),
     seccionDesglose(ctx, vista),
     seccionSesiones(ctx, vista),
+    ...(vista?.equipo ? [seccionEquipo(ctx, vista)] : []),
     seccionProyectos(ctx, vista),
   ]
   const asignado = disponible > 0 ? repartirAltura(secciones, disponible) : new Map()
