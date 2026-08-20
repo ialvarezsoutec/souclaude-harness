@@ -60,6 +60,10 @@ const OPTIONS = {
   // monitor --usage: consulta el registro de consumo por sesion del Vault
   // (00-System/monitor/usage/, ADR 20260820). Solo lectura.
   usage: { type: 'boolean' },
+  // Filtros de drill-down de --usage (SHS-M3-T004). --project se comparte con
+  // el panel en vivo; estos dos son exclusivos de la consulta al registro.
+  quien: { type: 'string' },
+  cuenta: { type: 'string' },
   // monitor --emit-router: el puente de telemetria estimada a medida.
   'emit-router': { type: 'boolean' },
   // vault-sync: pull/push seguro al Vault desde el proceso del CLI.
@@ -217,11 +221,19 @@ ${pc.bold('FLAGS DE MONITOR')}
                        configurado es el DEFAULT (no hace falta el flag);
                        --no-publish apaga los tres por corrida. Sin Vault, el
                        flag explicito avisa y el monitor sigue local-only.
-  --usage              Consulta el registro de consumo del Vault: totales y
-                       desglose por quien, cuenta, proyecto y maquina de TODO
-                       el equipo. --since acota el periodo (default: all);
-                       --json vuelca el agregado completo. Solo lectura (pull
-                       --rebase de frescura, omitido en CI). Exit 3 sin Vault.
+  --usage              Consulta el registro de consumo del Vault: totales con
+                       desglose (cache incluido) por quien, cuenta, proyecto,
+                       maquina, milestone, dia y modelo de TODO el equipo, mas
+                       el consumo propio dentro de las ventanas de rate limit
+                       (5h / 7d / semanal por modelo, alineadas al reset real
+                       de la API), las sesiones activas ahora, el pico diario
+                       y el detalle de sesiones. --since acota el periodo
+                       (default: all); --json vuelca el modelo completo. Solo
+                       lectura (pull --rebase de frescura, omitido en CI).
+                       Exit 3 sin Vault.
+  --quien <txt>        (solo --usage) Filtra por contribuyente.
+  --cuenta <txt>       (solo --usage) Filtra por alias o uuid de cuenta.
+                       --project tambien aplica como filtro de la consulta.
 
 ${pc.bold('MONITOR --EMIT-ROUTER')}
   Escribe UNA linea "medida" en progress/model-router.jsonl a partir de la
