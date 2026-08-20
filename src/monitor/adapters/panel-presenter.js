@@ -165,6 +165,7 @@ function filasDeLimites(limites) {
     if (yaEmitidos.includes(clave)) continue
     filas.push({
       etiqueta: etiquetaDeGrupo(g),
+      tipo: g.tipo ?? null,
       modelo: g.modelo ?? null,
       porcentaje: g.porcentaje,
       reseteaEn,
@@ -227,7 +228,7 @@ function ordenLimiteCuenta(l) {
   if (l.tipo === 'weekly_all') return 0 // Ventana 7d
   if (l.tipo === 'session') return 1 // Ventana 5h
   if (typeof l.etiqueta === 'string' && l.etiqueta.startsWith('Extra')) return 3
-  return 2 // Fable / semanal por modelo (porGrupo, sin tipo propio)
+  return 2 // Fable / semanal por modelo (weekly_scoped y afines, ya tipados)
 }
 
 function agregarVentana(filas, ventana, etiqueta, tipo) {
