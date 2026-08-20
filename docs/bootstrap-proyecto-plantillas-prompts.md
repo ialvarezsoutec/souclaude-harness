@@ -10,7 +10,7 @@ Cada fase trae: el prompt para copiar, qué te va a preguntar el agente, qué de
 
 1. Rellena la tabla de variables de abajo.
 2. Sustituye los `{{PLACEHOLDER}}` en cada prompt antes de pegarlo.
-3. Ejecuta las fases **en orden**. La 3 depende de la 2, y la 6 de la 4 y la 5.
+3. Ejecuta las fases **en orden**, empezando por la 0. La 3 depende de la 2, y la 6 de la 4 y la 5.
 4. No pegues varias fases juntas: cada una tiene puntos de decisión que conviene resolver antes de seguir.
 
 ### Variables
@@ -26,16 +26,44 @@ Cada fase trae: el prompt para copiar, qué te va a preguntar el agente, qué de
 | `{{VAULT_REPO}}` | Repo del Vault | `https://github.com/ialvarezsoutec/soubunker-vault` |
 | `{{JIRA_SITE}}` | Sitio de Atlassian | `https://dev-soutec.atlassian.net` |
 
-### Prerrequisitos
+### Prerrequisitos de máquina
 
 Verifícalos antes de empezar; si falta alguno, las fases fallan a mitad de camino:
 
 - `gh` instalado y autenticado (`gh auth status`).
 - Node **≥ 22.4** (el harness lo exige; su `.nvmrc` pide 24).
 - Acceso de escritura al repo del Vault.
-- Prefijo acordado y **libre** en `00-System/id-registry.md` del Vault.
-- Proyecto creado en Jira con la clave `{{PREFIJO}}` (el agente no lo crea).
-- Conector MCP de Atlassian autorizado (`/mcp` en sesión interactiva).
+
+Las decisiones y altas previas (prefijo, visibilidad, proyecto Jira) van en la
+**Fase 0**. El conector MCP de Atlassian se autoriza recién en la **fase 5**: el
+`.mcp.json` que lo habilita lo instala el harness en la fase 2, antes no existe.
+
+---
+
+## Fase 0 · Decisiones previas (sin agente)
+
+Todo lo de esta fase es de las personas, no del agente: son las decisiones de
+"Lo que no se delega". Resolverlas ahora evita que las fases siguientes se frenen
+a mitad de camino esperando una respuesta.
+
+| Decisión | Quién | Qué dejar resuelto |
+|---|---|---|
+| Visibilidad del repo | Coordinador + dueño | Privado salvo razón explícita; público es irreversible en la práctica |
+| Prefijo `{{PREFIJO}}` | Coordinador | 2-4 letras, **libre** en `00-System/id-registry.md` del Vault; es para siempre |
+| Stack inicial | Dueño del proyecto | Si no está decidido, se pedirá andamiaje genérico en la fase 1 |
+| Rutas locales | Cada integrante | `{{RUTA_LOCAL}}` y `{{RUTA_VAULT}}` **fuera de OneDrive** |
+| Proyecto en Jira | Quien tenga permisos en el sitio | Ver el paso a paso de abajo |
+
+**Crear el proyecto en Jira** (manual, ~2 minutos — el conector MCP de Atlassian
+no expone creación de proyectos, así que el agente no puede hacerlo):
+
+1. En `{{JIRA_SITE}}`: **Proyectos → Crear proyecto → Kanban** (gestionado por
+   el equipo / team-managed).
+2. Nombre: `{{PROYECTO}}`. Clave: **`{{PREFIJO}}`** — la misma del Vault; esa
+   igualdad es la convención en la que descansa `jira-sync`.
+3. Al tablero por defecto (Por hacer / En curso / Listo) agrégale la columna
+   **En revisión**, entre En curso y Listo. Si no existe, `jira-sync` degrada
+   "En review" a En curso y el espejo pierde fidelidad.
 
 ---
 
@@ -155,7 +183,7 @@ Configura el proyecto Jira destino de este repositorio.
 
 **Debe quedar:** `.claude/jira.json` sin placeholders y el conector verificado.
 
-> **Dos cosas que el agente no puede hacer por ti:** autorizar el conector MCP (es OAuth, requiere `/mcp` en sesión interactiva) y crear el proyecto en Jira. La skill `jira-sync` sincroniza issues *dentro de* un proyecto existente.
+> **Al llegar aquí, autoriza el conector**: escribe `/mcp` en una sesión interactiva y autentica Atlassian. Es OAuth — el agente no puede hacerlo por ti, y antes de la fase 2 no existía el `.mcp.json` que lo habilita. El proyecto Jira destino ya debe existir (Fase 0): la skill `jira-sync` sincroniza issues *dentro de* un proyecto existente, no lo crea.
 >
 > Si el conector no está autorizado, no bloquea: el trabajo local y el Vault siguen, y el espejo pendiente queda anotado en `notes.md`.
 
