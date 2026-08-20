@@ -15,7 +15,11 @@ import { renderJson, renderPlain } from '../monitor/adapters/plain-renderer.js'
 import { construirLinea, emitirLinea } from '../monitor/adapters/router-log-writer.js'
 import { createVaultPublisher } from '../monitor/adapters/vault-monitor-publisher.js'
 import { createSessionsPublisher } from '../monitor/adapters/vault-sessions-publisher.js'
+import { createUsageDbPublisher } from '../monitor/adapters/vault-usage-db.js'
+import { leerRegistrosDeUsage } from '../monitor/adapters/vault-usage-reader.js'
+import { agregarUsage } from '../monitor/domain/usage-agregado.js'
 import { createVaultAccountsReader, gitAsync } from '../monitor/adapters/vault-accounts-reader.js'
+import { pullRebaseSeguro } from '../core/vault-sync.js'
 import {
   createLocalAccountsReader,
   createCombinedAccountsReader,
@@ -109,6 +113,7 @@ const ORDENES = new Set(['tokens', 'costo', 'reciente'])
 
 export async function monitor(flags = {}, cwd = process.cwd()) {
   if (flags['emit-router']) return await emitRouter(flags, cwd)
+  if (flags.usage) return await usageQuery(flags, cwd)
 
   const ventana = flags.since ?? VENTANA_DEFAULT
   if (parsearDuracion(ventana) === null) {
@@ -131,6 +136,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
   // remoto solo corre en vivo y solo si el publisher no lo hace ya.
   const publisher = enVivo ? crearPublisher(flags, cwd) : null
   const sesionesPublisher = enVivo ? crearPublisherDeSesiones(flags, cwd) : null
+  const usagePublisher = enVivo ? crearPublisherDeUsage(flags, cwd) : null
   const accountsReader = crearAccountsReader(cwd, { conPull: enVivo && !publisher })
 
   const paths = resolveClaudeHome({ override: flags['claude-home'] })
@@ -170,7 +176,7 @@ export async function monitor(flags = {}, cwd = process.cwd()) {
     return codigoDeSalida(vista)
   }
 
-  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher, sesionesPublisher })
+  return await enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher, sesionesPublisher, usagePublisher })
 }
 
 // Publicacion de snapshots agregados de esta cuenta al Vault (ADR
@@ -220,6 +226,25 @@ export function crearPublisherDeSesiones(flags, cwd) {
   })
 }
 
+// Publicacion del registro estructurado de consumo por sesion — la "base de
+// datos del monitor" — en 00-System/monitor/usage/ (ADR
+// 20260820-registro-de-consumo-por-sesion-en-vault). Cubre TODOS los
+// proyectos de la maquina (el registro es de la organizacion, no de un cwd),
+// por eso no necesita carpeta Project-*. Mismas condiciones de encendido que
+// crearPublisher: solo en vivo, por defecto con Vault configurado,
+// --no-publish la apaga.
+export function crearPublisherDeUsage(flags, cwd) {
+  if (flags.publish === false) return null
+  const config = readVaultConfig(cwd)
+  if (!config?.path) return null
+  const paths = resolveClaudeHome({ override: flags['claude-home'] })
+  return createUsageDbPublisher({
+    vaultPath: config.path,
+    quien: typeof config.quien === 'string' && config.quien !== '' ? config.quien : null,
+    registroPath: path.join(paths.home, 'souclaude', 'usage-publicado.json'),
+  })
+}
+
 // Lector de los snapshots que publico el resto del equipo (Vault) combinado
 // con las cuentas locales adicionales (SOUCLAUDE_LOCAL_ACCOUNTS, ej. las
 // carpetas ~/.claude1 y ~/.claude2 de claude1/claude2 en el perfil de
@@ -250,7 +275,7 @@ function crearCuentasLocales() {
 
 // --- panel en vivo ---
 
-async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher = null, sesionesPublisher = null }) {
+async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHistory, publisher = null, sesionesPublisher = null, usagePublisher = null }) {
   const intervalo = Math.max(INTERVALO_MINIMO, enteroPositivo(flags.interval, INTERVALO_DEFAULT))
   const renderer = createTtyRenderer()
 
@@ -265,10 +290,15 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHis
     const { cols, rows } = renderer.size()
     const modelo = conAvisoDeError(vista, errorDelTick)
     const conPublicacion = conAvisoDePublicacion(
-      conAvisoDePublicacion(modelo, publisher, clock.now(), 'Vault'),
-      sesionesPublisher,
+      conAvisoDePublicacion(
+        conAvisoDePublicacion(modelo, publisher, clock.now(), 'Vault'),
+        sesionesPublisher,
+        clock.now(),
+        'sessions.md'
+      ),
+      usagePublisher,
       clock.now(),
-      'sessions.md'
+      'usage'
     )
     const proyeccion = presentar(conPublicacion, { ahora: modelo.generadoEn, top: opciones.top })
     renderer.paint(renderPanel(proyeccion, { cols, rows, caps, color: caps.color !== false, modo }))
@@ -297,6 +327,9 @@ async function enVivoLoop({ source, clock, opciones, caps, modo, flags, usageHis
     }
     if (sesionesPublisher && vista) {
       sesionesPublisher.publicar(vista, { ahora: clock.now() }).catch(() => {})
+    }
+    if (usagePublisher && vista) {
+      usagePublisher.publicar(vista, { ahora: clock.now() }).catch(() => {})
     }
     pintar()
   }
@@ -405,6 +438,70 @@ async function emitRouter(flags, cwd) {
   ui.log.success(`Linea de telemetria medida escrita en ${rutaJsonl}`)
   ui.log.success(JSON.stringify(linea))
   return 0
+}
+
+// --- usage: la consulta a la base de datos del monitor en el Vault ---
+//
+// Lee 00-System/monitor/usage/*.jsonl (lo que publican TODAS las maquinas del
+// equipo) y responde el consumo por cuenta, contribuyente, proyecto y sesion
+// (SHS-M2). Solo lectura del Vault: el unico efecto es un pull --rebase de
+// frescura (best effort, se omite en CI). Default de ventana 'all', no 24h:
+// una consulta al registro historico busca el acumulado, no el estado del
+// panel. Exit: 0 ok, 3 sin Vault configurado (mismo codigo que vault-sync).
+async function usageQuery(flags, cwd) {
+  const config = readVaultConfig(cwd)
+  if (!config?.path) {
+    ui.log.error('No hay Vault configurado (.claude/vault.local.json o VAULT_PATH): no hay registro de consumo que consultar.')
+    return 3
+  }
+
+  const ventana = flags.since ?? 'all'
+  const duracion = parsearDuracion(ventana)
+  if (duracion === null) {
+    ui.log.error(`Ventana invalida: "${ventana}". Usa 30m, 1h, 6h, 24h, 7d o all.`)
+    return 2
+  }
+
+  // Frescura best effort: ver los registros que las otras maquinas ya
+  // pushearon. Un fallo (sin red) no bloquea: se consulta el working tree.
+  if (!ui.isCI()) await pullRebaseSeguro({ vaultPath: config.path, git: gitAsync })
+
+  const { registros, warnings } = leerRegistrosDeUsage(config.path)
+  const ahora = Date.now()
+  const desde = Number.isFinite(duracion) ? ahora - duracion : null
+  const agregado = agregarUsage(registros, { desde })
+
+  if (flags.json) {
+    console.log(JSON.stringify({ ventana, ...agregado, warnings }, null, 2))
+    return 0
+  }
+
+  for (const w of warnings) ui.log.warn(`${w.file}: ${w.reason}`)
+  imprimirUsage(agregado, ventana)
+  return 0
+}
+
+function imprimirUsage(agregado, ventana) {
+  const t = agregado.totales
+  console.log(`CONSUMO (${ventana}) · ${t.sesiones} sesion${t.sesiones === 1 ? '' : 'es'} · in ${enK(t.tokensIn)} / out ${enK(t.tokensOut)} · $${t.costoUsd} · ${t.llamadas} llamadas`)
+  seccionUsage('POR QUIEN', agregado.porQuien)
+  seccionUsage('POR CUENTA', agregado.porCuenta)
+  seccionUsage('POR PROYECTO', agregado.porProyecto)
+  seccionUsage('POR MAQUINA', agregado.porMaquina)
+}
+
+function seccionUsage(titulo, grupos) {
+  if (grupos.length === 0) return
+  console.log(`\n${titulo}`)
+  for (const g of grupos) {
+    console.log(`  ${g.clave} · in ${enK(g.tokensIn)} / out ${enK(g.tokensOut)} · $${g.costoUsd} · ${g.sesiones} sesion${g.sesiones === 1 ? '' : 'es'}`)
+  }
+}
+
+function enK(n) {
+  if (n < 1000) return String(n)
+  if (n < 1_000_000) return `${Math.round(n / 1000)}k`
+  return `${(n / 1_000_000).toFixed(1)}M`
 }
 
 // --- helpers ---

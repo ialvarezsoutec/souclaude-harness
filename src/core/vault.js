@@ -41,17 +41,33 @@ export function readVaultConfig(cwd) {
   return process.env.VAULT_PATH ? { path: toPosix(process.env.VAULT_PATH), repo: null } : null
 }
 
-export function writeVaultConfig(cwd, { path: vaultPath, repo }) {
-  const content = JSON.stringify(
-    {
-      _comentario: 'Config local del Vault. NO se commitea: la ruta es de esta maquina.',
-      path: toPosix(vaultPath),
-      repo: repo ?? null,
-    },
-    null,
-    2
-  )
-  writeFileLF(configPath(cwd), content)
+export function writeVaultConfig(cwd, { path: vaultPath, repo, project, quien } = {}) {
+  // Los campos que el usuario pudo haber puesto a mano (project, quien) se
+  // preservan al reescribir: un upgrade no puede borrar en silencio la
+  // identidad del contribuyente ni la carpeta Project-* declarada.
+  const previo = leerConfigDeArchivo(cwd)
+  const contenido = {
+    _comentario: 'Config local del Vault. NO se commitea: la ruta es de esta maquina.',
+    path: toPosix(vaultPath),
+    repo: repo ?? previo?.repo ?? null,
+  }
+  const proyecto = project ?? previo?.project ?? null
+  if (proyecto) contenido.project = proyecto
+  const autor = quien ?? previo?.quien ?? null
+  if (autor) contenido.quien = autor
+  writeFileLF(configPath(cwd), JSON.stringify(contenido, null, 2))
+}
+
+// Solo el archivo, sin el respaldo VAULT_PATH: para preservar campos al
+// reescribir no debe inventarse una config a partir del entorno.
+function leerConfigDeArchivo(cwd) {
+  const raw = readIfExists(configPath(cwd))
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
 }
 
 // Un Vault de verdad tiene 00-System/ (id-registry, metodologia, plantillas).
@@ -124,6 +140,33 @@ function manualHint(repo) {
 // prompts (default: el modulo real de UI) se puede inyectar en tests para
 // ejercer el camino interactivo sin una TTY real ni mockear el modulo entero.
 export async function ensureVault({ cwd, flags = {}, manifest, lock, yes, prompts = ui }) {
+  const abs = await conectarVault({ cwd, flags, manifest, lock, yes, prompts })
+  if (abs) await asegurarQuien(cwd, { yes, prompts })
+  return abs
+}
+
+// El "quien" de vault.local.json es el eje CONTRIBUYENTE del registro de
+// consumo (ADR 20260820): sin el, el monitor degrada al alias de la cuenta.
+// Se pregunta UNA vez (solo interactivo, solo si falta) y queda persistido;
+// con --yes o en CI se omite en silencio — nunca es bloqueante.
+async function asegurarQuien(cwd, { yes, prompts }) {
+  if (yes || ui.isCI()) return
+  // Solo el archivo real: si la config viene del respaldo VAULT_PATH (env),
+  // preguntar aqui persistiria esa ruta en un archivo que el usuario no creo.
+  const config = leerConfigDeArchivo(cwd)
+  if (!config?.path || (typeof config.quien === 'string' && config.quien.trim() !== '')) return
+
+  const respuesta = await prompts.text({
+    message: 'Alias del contribuyente para el registro de consumo del Vault (campo "quien"; vacio para omitir)',
+    initialValue: '',
+  })
+  const quien = String(respuesta ?? '').trim()
+  if (!quien) return
+  writeVaultConfig(cwd, { path: config.path, repo: config.repo ?? null, quien })
+  ui.log.success(`Contribuyente registrado: "${quien}" (${VAULT_CONFIG})`)
+}
+
+async function conectarVault({ cwd, flags = {}, manifest, lock, yes, prompts = ui }) {
   if (flags.vault === false) {
     ui.log.info('--no-vault: no se toca la conexion con el Vault.')
     return null

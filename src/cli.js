@@ -57,6 +57,9 @@ const OPTIONS = {
   // Sin default aqui a proposito: undefined = "auto", true = pedido explicito
   // (avisa si falta el Vault), false = opt-out.
   publish: { type: 'boolean' },
+  // monitor --usage: consulta el registro de consumo por sesion del Vault
+  // (00-System/monitor/usage/, ADR 20260820). Solo lectura.
+  usage: { type: 'boolean' },
   // monitor --emit-router: el puente de telemetria estimada a medida.
   'emit-router': { type: 'boolean' },
   // vault-sync: pull/push seguro al Vault desde el proceso del CLI.
@@ -202,16 +205,23 @@ ${pc.bold('FLAGS DE MONITOR')}
                        En corridas posteriores (el archivo ya existe) se ignora.
   --publish            Publica al Vault, cada ~5 min y solo si cambio: (a) un
                        snapshot agregado de esta cuenta (limites + totales,
-                       <1 KB) en 00-System/monitor/, y (b) la linea de cada
+                       <1 KB) en 00-System/monitor/, (b) la linea de cada
                        sesion con consumo de este proyecto en
                        Project-<PREFIJO>/sessions.md, actualizada mientras la
                        sesion sigue creciendo (idempotente por sesion;
                        el "quien" sale de "quien" en .claude/vault.local.json,
-                       con el alias de la cuenta como respaldo). Solo panel en
-                       vivo. Con Vault configurado es el DEFAULT (no hace falta
-                       el flag); --no-publish apaga ambos por corrida. Sin
-                       Vault, el flag explicito avisa y el monitor sigue
-                       local-only.
+                       con el alias de la cuenta como respaldo), y (c) el
+                       registro estructurado por sesion (tokens, costo, modelo,
+                       cuenta, quien) en 00-System/monitor/usage/, la base de
+                       datos del monitor. Solo panel en vivo. Con Vault
+                       configurado es el DEFAULT (no hace falta el flag);
+                       --no-publish apaga los tres por corrida. Sin Vault, el
+                       flag explicito avisa y el monitor sigue local-only.
+  --usage              Consulta el registro de consumo del Vault: totales y
+                       desglose por quien, cuenta, proyecto y maquina de TODO
+                       el equipo. --since acota el periodo (default: all);
+                       --json vuelca el agregado completo. Solo lectura (pull
+                       --rebase de frescura, omitido en CI). Exit 3 sin Vault.
 
 ${pc.bold('MONITOR --EMIT-ROUTER')}
   Escribe UNA linea "medida" en progress/model-router.jsonl a partir de la
