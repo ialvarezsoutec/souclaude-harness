@@ -4,6 +4,8 @@ Secuencia reutilizable para levantar un proyecto nuevo con el harness `souclaude
 
 Cada fase trae: el prompt para copiar, qué te va a preguntar el agente, qué debe quedar hecho al terminar, y los errores conocidos que hay que esquivar.
 
+Las fases 0–6 describen el caso base (proyecto nuevo). Para un **repo que ya existe** y adopta el harness, ve a la sección "Casuística 2": reutiliza estas mismas fases y solo cambia el arranque.
+
 ---
 
 ## Cómo usar este documento
@@ -207,6 +209,71 @@ sessions.md.
 **Debe quedar:** milestone `{{PREFIJO}}-M1` En curso con plan `P1` y tareas `{{PREFIJO}}-M1-T00n`; los issues correspondientes en Jira con la etiqueta del milestone; y la línea de sesión registrada.
 
 > **Cómo se ve el milestone en Jira.** Desde SHS-M7-T005, cada milestone tiene su **tarjeta madre**: un issue propio (labels `<PREFIJO>-M<n>` + `milestone`) con la descripción del milestone, y sus tareas vinculadas con "relates to". Un milestone sin tareas igualmente aparece en Jira como su tarjeta madre en To Do.
+
+---
+
+## Casuística 2 · Repo existente que adopta el harness
+
+La secuencia es la misma salvo el arranque: **la fase 1 no aplica** (el repo ya
+existe) y la **fase 2 cambia de comandos**. Las fases 0, 3, 4, 5 y 6 se ejecutan
+igual que arriba — la 3 es todavía más importante aquí, porque el repo trae
+historia y costumbres propias que probablemente contradigan la guía.
+
+Antes de empezar, dos verificaciones:
+
+- El repo está **fuera de OneDrive**. Si vive en una carpeta sincronizada,
+  muévelo primero (mismo motivo que en la fase 1).
+- Decide en la fase 0 el prefijo y el proyecto Jira igual que para un proyecto
+  nuevo: la adopción no exime de nada de eso.
+
+La fase 2 se bifurca según lo que el repo ya tenga:
+
+**Ruta A — el repo no tiene nada de Claude** (ni `CLAUDE.md` ni `.claude/`):
+se instala directo. `souclaude init` detecta el repo existente y emite **solo la
+superficie Claude** — no toca el código del proyecto.
+
+```
+Quiero instalar el harness de Claude Code de SOUTEC en este proyecto ya existente.
+Vive en {{HARNESS_REPO}}.
+
+Este repo no tiene superficie Claude previa. Antes de ejecutar nada verifica qué
+tags y ramas existen realmente, corre un --dry-run y muéstrame el plan. Confirma
+que el plan emite solo la superficie Claude y no toca el código del proyecto.
+```
+
+**Ruta B — el repo ya tiene estructura previa** (un `CLAUDE.md` escrito a mano,
+una copia vieja del Kit, skills sueltas): **no instales encima**. El comando
+`souclaude adopt` existe para esto: no escribe ni un archivo salvo el lockfile
+(`.claude/harness.json`) — registra qué archivos ya coinciden byte a byte con el
+harness y deja en paz el resto.
+
+```
+Este repo ya tiene estructura Claude hecha a mano y quiero adoptarlo al harness
+de SOUTEC ({{HARNESS_REPO}}) sin perder nada de lo que hay.
+
+1. Corre souclaude adopt --dry-run y muéstrame el plan: qué archivos ya coinciden
+   con el harness y cuáles difieren.
+2. Ejecuta souclaude adopt y después souclaude upgrade --dry-run.
+3. Ejecuta souclaude upgrade: lo que difiera del harness debe quedar como
+   propuesta en archivos .new al lado del original, nunca pisado.
+4. Lístame los .new generados con un resumen de qué cambia en cada uno, y los
+   mergeamos juntos: yo decido qué se conserva de lo viejo.
+```
+
+**Debe quedar:** la misma superficie que en la fase 2 normal, más el merge
+resuelto de cada `.new` (sin `.new` huérfanos en el árbol).
+
+> **Por qué adopt y no init.** Adoptar un archivo modificado sería decirle al
+> próximo `upgrade` "esto es salida intacta del harness, písalo tranquilo" — y le
+> borraría el trabajo al equipo. `adopt` solo reclama lo byte-idéntico; todo lo
+> demás pasa por `.new` y decisión humana. Si el repo ya tiene un harness
+> instalado (existe `.claude/harness.json`), `adopt` no hace nada y el camino es
+> `souclaude upgrade`.
+
+Después de la fase 2, sigue con la **fase 3** tal cual está arriba, con un
+énfasis extra: pide además que el agente revise las costumbres ya instaladas
+(¿se commiteaba directo a `main`? ¿existe `dev`? ¿el README describe otro flujo?)
+y las reencuadre en el mismo cambio.
 
 ---
 
