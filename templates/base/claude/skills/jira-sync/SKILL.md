@@ -1,6 +1,6 @@
 ---
 name: jira-sync
-description: Sincroniza el tablero del Vault con Jira vía el conector MCP de Atlassian - cada milestone es una tarjeta madre (issue propio con su descripción) y cada tarea del kanban es un issue propio etiquetado con su milestone y vinculado a la tarjeta madre con "relates to"; se crea o transiciona en el momento en que la tarjeta se mueve. Actívate SIEMPRE que muevas una tarjeta del kanban del Vault (alta, En curso, En review, Hecho), al dar de alta, tomar o cerrar un milestone, o cuando el usuario pida sincronizar, ver o actualizar el estado del proyecto en Jira.
+description: Sincroniza el tablero del Vault con Jira vía el conector MCP de Atlassian - cada milestone es una épica (con su descripción) y cada tarea del kanban es un issue hijo de esa épica, etiquetado con su milestone; se crea o transiciona en el momento en que la tarjeta se mueve. Actívate SIEMPRE que muevas una tarjeta del kanban del Vault (alta, En curso, En review, Hecho), al dar de alta, tomar o cerrar un milestone, o cuando el usuario pida sincronizar, ver o actualizar el estado del proyecto en Jira.
 ---
 
 # jira-sync — el Vault espejado en Jira
@@ -35,38 +35,45 @@ pendiente se anota en `notes.md` para la próxima sesión con conector.
 
 ## Mapeo Vault → Jira
 
-Sin Epics: el flujo en Jira queda libre a propósito. Hay **dos clases de issue**,
-ambas type Task, y la relación entre ellas va por **etiquetas y vínculos**:
+Jerarquía nativa de Jira, para que el tablero agrupe por épica en vez de acumular
+tareas sueltas:
 
-**La tarjeta madre (milestone)** — cada milestone de `milestones.md` es un issue
-propio, para que el backlog de Jira muestre todo lo que hay por delante y no solo
-las tareas ya desglosadas:
+**La épica (milestone)** — cada milestone de `milestones.md` es una épica, para que
+el backlog de Jira muestre todo lo que hay por delante y no solo las tareas ya
+desglosadas:
 
 | Vault | Jira |
 |---|---|
-| Milestone (`<PREFIJO>-M<n>`) | Un **issue** (type Task) propio |
-| Summary del issue | `<PREFIJO>-M<n> · <título del milestone>` |
-| Description del issue | La descripción del milestone en `milestones.md` |
-| Labels | `<PREFIJO>-M<n>` **y** `milestone` (esta última identifica a las tarjetas madre como grupo) |
-| Sus tareas | Vínculo **"relates to"** hacia cada issue de tarea del milestone |
+| Milestone (`<PREFIJO>-M<n>`) | Una **épica** (el issue type de nivel épica del proyecto) |
+| Summary | `<PREFIJO>-M<n> · <título del milestone>` |
+| Description | La descripción del milestone en `milestones.md` |
+| Labels | `<PREFIJO>-M<n>` |
+| Sus tareas | Issues **hijos** de la épica (campo `parent`) |
 | Columna en `milestones.md` (Backlog / En curso / Hecho) | Status **To Do** / **In Progress** / **Done** |
 
-**La tarea del kanban** — igual que siempre:
+**La tarea del kanban** — un issue estándar colgado de su épica:
 
 | Vault | Jira |
 |---|---|
-| Tarea del kanban (`<PREFIJO>-M<n>-T<m>`) | Un **issue** (type Task) propio |
-| Milestone de la tarea | **Label** `<PREFIJO>-M<n>` en el issue + vínculo "relates to" con su tarjeta madre |
-| Summary del issue | `<PREFIJO>-M<n>-T<m> · <descripción de la tarjeta>` |
+| Tarea del kanban (`<PREFIJO>-M<n>-T<m>`) | Un issue estándar (type Task o equivalente) con **`parent` = la épica de su milestone** |
+| Milestone de la tarea | El **`parent`** + label `<PREFIJO>-M<n>` (redundancia útil para JQL) |
+| Summary | `<PREFIJO>-M<n>-T<m> · <descripción de la tarjeta>` |
 | Columna Backlog | Status **To Do** |
 | Columna En curso | Status **In Progress** |
 | Columna En review | Status **In Review** (si el proyecto no lo tiene: In Progress) |
 | Columna Hecho | Status **Done** |
 | Dueño de la tarjeta (`@quién`) | Assignee, si se puede resolver; si no, se omite |
 
-Los estados son **independientes**: mover una tarea nunca mueve la tarjeta madre,
-y viceversa. La tarjeta madre espeja la columna del **milestone** en
-`milestones.md`; las tareas espejan su columna en `kanban.md`.
+**Nombres de issue type**: pueden estar localizados (`Epic`/`Épica`,
+`Task`/`Tarea`). Si la creación falla por el nombre, descubre los tipos del
+proyecto con `getJiraProjectIssueTypesMetadata` y usa el de nivel épica
+(`hierarchyLevel: 1`) y el estándar (`hierarchyLevel: 0`). **No uses subtareas
+nativas (Sub-task)**: en Jira no pueden colgar de una épica; la jerarquía que
+agrupa el tablero es épica → issue hijo.
+
+Los estados son **independientes**: mover una tarea nunca mueve la épica, y
+viceversa. La épica espeja la columna del **milestone** en `milestones.md`; las
+tareas espejan su columna en `kanban.md`.
 
 El **ID en el summary es la clave de idempotencia** — para las dos clases: antes
 de crear, busca en el proyecto un issue cuyo summary empiece con ese ID
@@ -74,13 +81,22 @@ de crear, busca en el proyecto un issue cuyo summary empiece con ese ID
 tras el ID evita que `M1` matchee `M11`). Si existe, se actualiza/transiciona; si
 no, se crea. **Nunca dupliques** issues.
 
+**Migración del esquema anterior** (milestones como issue Task con label
+`milestone`, tareas atadas con vínculo "relates to"): al tocar un milestone cuyo
+issue existente **no** es épica, intenta convertirlo con `editJiraIssue`
+(`fields: {"issuetype": ...}`); si el proyecto no lo permite, repórtalo al usuario
+para que lo convierta en la UI de Jira — **no crees una épica duplicada**. Al
+tocar una tarea sin `parent`, asígnale su épica; los vínculos "relates to" viejos
+pueden quedar, no los borres.
+
 ## Herramientas del conector
 
 Las que importan del servidor MCP de Atlassian (búscalas con ToolSearch si están
 diferidas): `searchJiraIssuesUsingJql` (idempotencia: `project = <CLAVE> AND
-summary ~ "<ID-tarea>"`), `createJiraIssue`, `editJiraIssue` (labels),
+summary ~ "<ID-tarea>"`), `createJiraIssue` (con `issueTypeName` y `parent`),
+`editJiraIssue` (labels, `parent`, tipo de issue),
+`getJiraProjectIssueTypesMetadata` (descubrir el nombre del type épica/estándar),
 `getTransitionsForJiraIssue` + `transitionJiraIssue` (estados),
-`createIssueLink` (type `Relates`, para atar tareas a su tarjeta madre),
 `addCommentToJiraIssue`, `lookupJiraAccountId` (assignee por email). El conector
 no permite borrar issues — coherente con la regla de nunca borrar.
 
@@ -89,17 +105,16 @@ no permite borrar issues — coherente con la regla de nunca borrar.
 En el mismo flujo en que tocas el Vault — el orden es siempre Vault primero
 (fuente de verdad), Jira inmediatamente después:
 
-- **Alta de tarea** en el kanban → crear el issue en To Do con su label **y el
-  vínculo "relates to" hacia su tarjeta madre** (si la tarjeta madre no existe,
-  créala primero).
+- **Alta de tarea** en el kanban → crear el issue en To Do con su label y
+  **`parent` = la épica de su milestone** (si la épica no existe, créala primero).
 - **Tomar una tarea** (→ En curso) → transicionar a In Progress (crear si falta).
 - **Tarea a En review / Hecho** → transicionar al status correspondiente.
-- **Milestone nuevo** → crear su tarjeta madre en To Do, con la descripción del
-  milestone y las labels `<PREFIJO>-M<n>` + `milestone`.
-- **Milestone a En curso** → transicionar su tarjeta madre a In Progress.
-- **Milestone a Hecho** → verificar que todos sus issues de tarea (label del
-  milestone) estén en Done; si alguno no lo está, repórtalo antes de cerrar. Si
-  está todo cerrado, transicionar la tarjeta madre a Done.
+- **Milestone nuevo** → crear su épica en To Do, con la descripción del milestone
+  y la label `<PREFIJO>-M<n>`.
+- **Milestone a En curso** → transicionar su épica a In Progress.
+- **Milestone a Hecho** → verificar que todos sus issues hijos estén en Done; si
+  alguno no lo está, repórtalo antes de cerrar. Si está todo cerrado, transicionar
+  la épica a Done.
 
 ## Reglas
 
