@@ -18,6 +18,8 @@ import { createSessionsPublisher } from '../monitor/adapters/vault-sessions-publ
 import { createUsageDbPublisher } from '../monitor/adapters/vault-usage-db.js'
 import { leerRegistrosDeUsage } from '../monitor/adapters/vault-usage-reader.js'
 import { agregarUsage } from '../monitor/domain/usage-agregado.js'
+import { consumoPorVentana } from '../monitor/domain/ventanas-limite.js'
+import { sesionesActivas, picoDiario } from '../monitor/domain/actividad-equipo.js'
 import { createVaultAccountsReader, gitAsync } from '../monitor/adapters/vault-accounts-reader.js'
 import { pullRebaseSeguro } from '../core/vault-sync.js'
 import {
@@ -444,10 +446,13 @@ async function emitRouter(flags, cwd) {
 //
 // Lee 00-System/monitor/usage/*.jsonl (lo que publican TODAS las maquinas del
 // equipo) y responde el consumo por cuenta, contribuyente, proyecto y sesion
-// (SHS-M2). Solo lectura del Vault: el unico efecto es un pull --rebase de
-// frescura (best effort, se omite en CI). Default de ventana 'all', no 24h:
-// una consulta al registro historico busca el acumulado, no el estado del
-// panel. Exit: 0 ok, 3 sin Vault configurado (mismo codigo que vault-sync).
+// (SHS-M2), mas las vistas de SHS-M3: consumo propio dentro de las ventanas
+// de rate limit (5h/7d/Fable), sesiones activas del equipo, pico diario y
+// drill-down via filtros --project/--quien/--cuenta. Solo lectura del Vault:
+// el unico efecto es un pull --rebase de frescura (best effort, se omite en
+// CI). Default de ventana 'all', no 24h: una consulta al registro historico
+// busca el acumulado, no el estado del panel. Exit: 0 ok, 3 sin Vault
+// configurado (mismo codigo que vault-sync).
 async function usageQuery(flags, cwd) {
   const config = readVaultConfig(cwd)
   if (!config?.path) {
@@ -469,25 +474,117 @@ async function usageQuery(flags, cwd) {
   const { registros, warnings } = leerRegistrosDeUsage(config.path)
   const ahora = Date.now()
   const desde = Number.isFinite(duracion) ? ahora - duracion : null
-  const agregado = agregarUsage(registros, { desde })
+  const filtros = filtrosDeUsage(flags, cwd)
+  const agregado = agregarUsage(registros, { ...filtros, desde })
+
+  // Las ventanas de rate limit necesitan los limites de la cuenta local: se
+  // leen del cache de ~/.claude.json (mas el fetcher si hay red permitida),
+  // best effort — sin limites la consulta al registro vale igual.
+  const limites = await leerLimitesParaUsage(flags, ahora)
+  const ventanasLimite = consumoPorVentana(registros, limites, ahora, filtros)
+  const activas = sesionesActivas(agregado.sesiones, ahora)
+  const pico = picoDiario(agregado.porDia)
 
   if (flags.json) {
-    console.log(JSON.stringify({ ventana, ...agregado, warnings }, null, 2))
+    console.log(JSON.stringify({ ventana, filtros, ...agregado, ventanasLimite, activas, pico, warnings }, null, 2))
     return 0
   }
 
   for (const w of warnings) ui.log.warn(`${w.file}: ${w.reason}`)
-  imprimirUsage(agregado, ventana)
+  imprimirUsage(agregado, ventana, {
+    filtros,
+    ventanasLimite,
+    activas,
+    pico,
+    ahora,
+    top: enteroPositivo(flags.top, TOP_DEFAULT),
+  })
   return 0
 }
 
-function imprimirUsage(agregado, ventana) {
+// Filtros del drill-down. `--project .` significa "este proyecto": el nombre
+// de la carpeta del repo, que es lo que publica el registro (nunca la ruta).
+function filtrosDeUsage(flags, cwd) {
+  const filtros = {}
+  if (typeof flags.project === 'string' && flags.project !== '') {
+    filtros.proyecto = flags.project === '.' ? path.basename(cwd) : flags.project
+  }
+  if (typeof flags.quien === 'string' && flags.quien !== '') filtros.quien = flags.quien
+  if (typeof flags.cuenta === 'string' && flags.cuenta !== '') filtros.cuenta = flags.cuenta
+  return filtros
+}
+
+// Lector de limites para --usage: el mismo cache (+fetcher opcional) que usa
+// el panel, pero best effort — cualquier fallo devuelve null y la consulta
+// sigue sin la seccion de ventanas.
+async function leerLimitesParaUsage(flags, ahora) {
+  try {
+    const paths = resolveClaudeHome({ override: flags['claude-home'] })
+    const reader = createLimitsReader({ fetcher: crearUsageFetcher(flags) })
+    const res = await reader.read(paths.configFile, { ahora })
+    return res.limits
+  } catch {
+    return null
+  }
+}
+
+function imprimirUsage(agregado, ventana, extras = {}) {
+  const { filtros = {}, ventanasLimite = [], activas = [], pico = null, top = TOP_DEFAULT } = extras
   const t = agregado.totales
-  console.log(`CONSUMO (${ventana}) · ${t.sesiones} sesion${t.sesiones === 1 ? '' : 'es'} · in ${enK(t.tokensIn)} / out ${enK(t.tokensOut)} · $${t.costoUsd} · ${t.llamadas} llamadas`)
+  const filtroTxt = Object.entries(filtros)
+    .map(([k, v]) => ` · ${k}=${v}`)
+    .join('')
+  console.log(`CONSUMO (${ventana}${filtroTxt}) · ${t.sesiones} sesion${t.sesiones === 1 ? '' : 'es'} · in ${enK(t.tokensIn)} / out ${enK(t.tokensOut)} · $${t.costoUsd} · ${t.llamadas} llamadas`)
+  if (t.desglose) {
+    const d = t.desglose
+    console.log(`  desglose · entrada ${enK(d.entrada)} · cache creacion ${enK(d.cacheCreacion)} · cache lectura ${enK(d.cacheLectura)} · salida ${enK(d.salida)}`)
+  }
+
+  if (ventanasLimite.length > 0) {
+    console.log('\nVENTANAS DE LIMITE')
+    for (const v of ventanasLimite) {
+      const pct = v.porcentaje !== null ? `${Math.round(v.porcentaje)}% del limite` : 'sin %'
+      const resetea = v.reseteaEn !== null && v.alineada ? ` · resetea ${horaLocal(v.reseteaEn)}` : ''
+      const aviso = v.alineada ? '' : ' · (rodante: sin reset de la API)'
+      console.log(`  ${v.etiqueta} · ${pct} · in ${enK(v.consumo.tokensIn)} / out ${enK(v.consumo.tokensOut)} · $${v.consumo.costoUsd} · ${v.sesiones} sesion${v.sesiones === 1 ? '' : 'es'}${resetea}${aviso}`)
+    }
+  }
+
+  if (activas.length > 0) {
+    console.log('\nACTIVAS AHORA')
+    for (const s of activas) {
+      console.log(`  ${s.quien ?? s.cuentaAlias ?? 'n/d'} @ ${s.maquina ?? 'n/d'} · ${s.proyecto ?? 'n/d'} · in ${enK(s.tokensIn)} / out ${enK(s.tokensOut)} · hace ${minutos(s.frescuraMs)}`)
+    }
+  }
+
+  if (pico) {
+    console.log(`\nPICO · ${pico.fecha} · ${enK(pico.tokens)} tokens · $${pico.costoUsd} · ${pico.sesiones} sesion${pico.sesiones === 1 ? '' : 'es'}`)
+  }
+
   seccionUsage('POR QUIEN', agregado.porQuien)
   seccionUsage('POR CUENTA', agregado.porCuenta)
   seccionUsage('POR PROYECTO', agregado.porProyecto)
   seccionUsage('POR MAQUINA', agregado.porMaquina)
+  seccionUsage('POR MILESTONE', agregado.porMilestone)
+  seccionUsage('POR MODELO', agregado.porModelo)
+
+  if (agregado.sesiones.length > 0) {
+    const visibles = agregado.sesiones.slice(0, top)
+    console.log(`\nSESIONES (top ${visibles.length} de ${agregado.sesiones.length})`)
+    for (const s of visibles) {
+      console.log(`  ${s.fecha ?? 'n/d'} · ${s.proyecto ?? 'n/d'} · ${s.quien ?? 'n/d'} @ ${s.maquina ?? 'n/d'} · in ${enK(s.tokensIn)} / out ${enK(s.tokensOut)} · $${s.costoUsd}`)
+    }
+  }
+}
+
+function horaLocal(epochMs) {
+  const d = new Date(epochMs)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function minutos(ms) {
+  const m = Math.round(ms / 60_000)
+  return m < 1 ? '<1m' : `${m}m`
 }
 
 function seccionUsage(titulo, grupos) {
