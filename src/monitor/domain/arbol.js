@@ -9,6 +9,9 @@ import { construirVentana, filtrarPorVentana, bucketsHorarios, ritmo } from './v
 import { clasificarAgente, clasificarSesion, esActivo } from './actividad.js'
 import { estadoDelExtra } from './gasto-extra.js'
 import { normalizarCuenta, consolidarCuentas } from './cuentas.js'
+import { consumoPorVentana } from './ventanas-limite.js'
+import { sesionesActivas } from './actividad-equipo.js'
+import { agregarUsage } from './usage-agregado.js'
 
 // DEDUPLICACION: es responsabilidad EXCLUSIVA del tailer (adapters/jsonl-tailer.js,
 // via crearDeduplicador() de consumo.js), que mantiene un deduplicador por archivo.
@@ -83,6 +86,16 @@ export function construirVista(snapshot = {}, opciones = {}) {
     ahora,
   })
 
+  // Vistas del registro del Vault (SHS-M3-T005). "Propio" = medido por el
+  // equipo en el registro, en contraste con el porcentaje opaco de la API —
+  // sin filtro de cuenta, la misma semantica que --usage. registrosUsage null
+  // (sin Vault configurado) se distingue de [] (Vault sin registros): con
+  // null equipoActivo va en null para que el panel pueda omitir la seccion
+  // en vez de afirmar "nadie activo" sobre un dato que no existe.
+  const registrosUsage = snapshot.registrosUsage ?? null
+  const ventanasLimite = registrosUsage ? consumoPorVentana(registrosUsage, snapshot.limites ?? null, ahora) : []
+  const equipoActivo = registrosUsage ? sesionesActivas(agregarUsage(registrosUsage).sesiones, ahora) : null
+
   return {
     generadoEn: ahora,
     ventana,
@@ -98,6 +111,8 @@ export function construirVista(snapshot = {}, opciones = {}) {
     avisos: [...(snapshot.avisos ?? []), ...consolidado.avisos],
     recortes,
     historico,
+    ventanasLimite,
+    equipoActivo,
   }
 }
 

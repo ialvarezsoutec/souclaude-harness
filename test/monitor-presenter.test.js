@@ -277,3 +277,59 @@ function lineaEvento({ ts, sessionId = 'sess' }) {
     uso: { entrada: 100, salida: 50, cacheCreacion: 0, cacheLectura: 0, cache1h: 0, cache5m: 0 },
   }
 }
+
+// --- ventanas de limite y equipo activo (SHS-M3-T005) ---
+
+test('presenter: proyecta ventanasLimite a filas planas conservando los null de las ventanas por modelo', () => {
+  const vista = {
+    generadoEn: AHORA,
+    ventanasLimite: [
+      {
+        clave: '5h', etiqueta: 'Ventana 5h', porcentaje: 40, reseteaEn: AHORA + 3_600_000, alineada: true,
+        consumo: { tokensIn: 1000, tokensOut: 100, desglose: { entrada: 1000, salida: 100, cacheCreacion: 0, cacheLectura: 0 }, costoUsd: 0.5, llamadas: 3 },
+        sesiones: 1,
+      },
+      {
+        clave: 'modelo:fable', etiqueta: 'Semanal claude-fable-5', porcentaje: null, reseteaEn: null, alineada: false,
+        consumo: { tokensIn: 200, tokensOut: 20, desglose: null, costoUsd: 0.1, llamadas: null },
+        sesiones: 1,
+      },
+    ],
+  }
+  const p = presentar(vista, { ahora: AHORA })
+
+  assert.equal(p.ventanas.length, 2)
+  assert.deepEqual(p.ventanas[0], {
+    etiqueta: 'Ventana 5h', porcentaje: 40, reseteaEn: AHORA + 3_600_000, alineada: true,
+    tokensIn: 1000, tokensOut: 100, costoUsd: 0.5, sesiones: 1,
+  })
+  assert.equal(p.ventanas[1].porcentaje, null)
+  assert.equal(p.ventanas[1].alineada, false)
+})
+
+test('presenter: equipo null pasa tal cual (sin Vault) y con sesiones activas arma filas con tokens sumados', () => {
+  assert.equal(presentar({ generadoEn: AHORA }, { ahora: AHORA }).equipo, null)
+
+  const vista = {
+    generadoEn: AHORA,
+    equipoActivo: [
+      {
+        sessionId: 's-1', quien: 'colega', cuentaAlias: null, cuentaUuid: 'uuid-abcdef123',
+        maquina: 'PC02', proyecto: 'souclaude', rama: 'dev',
+        tokensIn: 900, tokensOut: 100, costoUsd: 0.2, frescuraMs: 120_000,
+      },
+    ],
+  }
+  const p = presentar(vista, { ahora: AHORA })
+  assert.equal(p.equipo.filas.length, 1)
+  const fila = p.equipo.filas[0]
+  assert.equal(fila.quien, 'colega')
+  assert.equal(fila.cuenta, 'uuid-abc')
+  assert.equal(fila.tokens, 1000)
+  assert.equal(fila.frescuraMs, 120_000)
+})
+
+test('presenter: equipo con lista vacia produce filas vacias (nadie activo), no null', () => {
+  const p = presentar({ generadoEn: AHORA, equipoActivo: [] }, { ahora: AHORA })
+  assert.deepEqual(p.equipo, { filas: [] })
+})

@@ -20,6 +20,7 @@
  * @property {object[]} archivos  Entradas del indice de transcripts de este tick.
  * @property {object[]} vivos     Procesos de ~/.claude/sessions con procesoVivo resuelto.
  * @property {object|null} limites  Limites de uso ya proyectados al dominio.
+ * @property {object[]|null} registrosUsage  Registros v1 del Vault (crudos); null = sin Vault configurado.
  * @property {{file: string, reason: string}[]} avisos  Todos los warnings concatenados.
  */
 

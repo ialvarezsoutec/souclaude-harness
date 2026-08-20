@@ -67,3 +67,28 @@ export function leerRegistrosDeUsage(vaultPath) {
   }
   return { registros, warnings }
 }
+
+/**
+ * Lector cacheado del registro para el tick del panel (SHS-M3-T005). La
+ * lectura cruda relee TODOS los .jsonl del registro de forma sincrona: a
+ * intervalo de tick (~2s) eso seria disco inutil, asi que se cachea con TTL
+ * — mismo criterio que usage-limits-reader. El instante entra por parametro
+ * para que el tick tenga un solo reloj y el test pueda fijarlo.
+ * @param {{vaultPath?: string, ttlMs?: number, lector?: Function}} [opciones]
+ * @returns {{leer: (args?: {ahora?: number}) => {registros: object[], warnings: object[]}}}
+ */
+export function createVaultUsageReader({ vaultPath, ttlMs = 30_000, lector = leerRegistrosDeUsage } = {}) {
+  let cache = null
+  let leidoEn = -Infinity
+
+  function leer({ ahora } = {}) {
+    const instante = typeof ahora === 'number' ? ahora : Date.now()
+    if (cache === null || instante - leidoEn >= ttlMs) {
+      cache = lector(vaultPath)
+      leidoEn = instante
+    }
+    return cache
+  }
+
+  return { leer }
+}

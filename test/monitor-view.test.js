@@ -516,3 +516,75 @@ test('snapshot-source: con el fetcher sano (sin fallos ni backoff), no aparece e
   const hayAviso = snapshot.avisos.some((a) => (a?.reason ?? '').includes('sin refrescar'))
   assert.equal(hayAviso, false)
 })
+
+// ---------------------------------------------------------------------------
+// Vistas del registro del Vault en el panel (SHS-M3-T005)
+// ---------------------------------------------------------------------------
+
+function registroDeUsage(extra = {}) {
+  return {
+    version: 1,
+    sessionId: 'sesion-vault-1',
+    generadoEn: new Date(AHORA - 60_000).toISOString(),
+    inicio: new Date(AHORA - 3_600_000).toISOString(),
+    fin: new Date(AHORA - 120_000).toISOString(),
+    proyecto: 'souclaude',
+    rama: 'feature/SHS-M3-T005-panel-vivo-usage',
+    milestone: 'SHS-M3',
+    quien: 'ignacio',
+    cuenta: { uuid: 'uuid-1', alias: 'dev' },
+    maquina: { machineID: 'maq-1', hostname: 'PC01' },
+    tokens: { entrada: 1000, salida: 100, cacheCreacion: 0, cacheLectura: 0 },
+    costoUsd: 0.5,
+    llamadas: 3,
+    porModelo: [],
+    ...extra,
+  }
+}
+
+test('arbol: con registrosUsage y limites la vista trae ventanasLimite con el consumo del registro adentro', () => {
+  const snapshot = {
+    ...snapshotTotales(),
+    limites: {
+      cincoHoras: { porcentaje: 40, reseteaEn: AHORA + 3_600_000 },
+      sieteDias: { porcentaje: 70, reseteaEn: AHORA + 86_400_000 },
+      porGrupo: [],
+    },
+    registrosUsage: [registroDeUsage()],
+  }
+  const vista = construirVista(snapshot, { ahora: AHORA })
+
+  assert.equal(vista.ventanasLimite.length, 2)
+  const cinco = vista.ventanasLimite.find((v) => v.clave === '5h')
+  assert.equal(cinco.porcentaje, 40)
+  // La sesion del registro termino hace 2 minutos: cae dentro de la ventana 5h.
+  assert.equal(cinco.consumo.tokensIn, 1000)
+  assert.equal(cinco.consumo.tokensOut, 100)
+  assert.equal(cinco.sesiones, 1)
+})
+
+test('arbol: equipoActivo trae solo las sesiones frescas del registro, ordenadas por frescura', () => {
+  const fresca = registroDeUsage()
+  const vieja = registroDeUsage({
+    sessionId: 'sesion-vault-2',
+    quien: 'colega',
+    generadoEn: new Date(AHORA - 3_600_000).toISOString(),
+    fin: new Date(AHORA - 3_600_000).toISOString(),
+  })
+  const vista = construirVista({ ...snapshotTotales(), registrosUsage: [fresca, vieja] }, { ahora: AHORA })
+
+  assert.equal(vista.equipoActivo.length, 1)
+  assert.equal(vista.equipoActivo[0].quien, 'ignacio')
+  assert.equal(vista.equipoActivo[0].frescuraMs, 60_000)
+})
+
+test('arbol: sin Vault configurado (registrosUsage null) equipoActivo es null y ventanasLimite vacio', () => {
+  const vista = construirVista(snapshotTotales(), { ahora: AHORA })
+  assert.equal(vista.equipoActivo, null)
+  assert.deepEqual(vista.ventanasLimite, [])
+})
+
+test('arbol: con Vault configurado pero sin registros, equipoActivo es lista vacia (nadie activo), no null', () => {
+  const vista = construirVista({ ...snapshotTotales(), registrosUsage: [] }, { ahora: AHORA })
+  assert.deepEqual(vista.equipoActivo, [])
+})

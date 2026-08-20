@@ -174,3 +174,29 @@ test('agregado: filtra por proyecto, quien y cuenta sin distinguir mayusculas; c
   assert.deepEqual(agregarUsage(registros, { cuenta: 'uuid-1' }).sesiones.map((s) => s.sessionId), ['sesion-0001'])
   assert.equal(agregarUsage(registros, { proyecto: 'inexistente' }).totales.sesiones, 0)
 })
+
+// --- lector cacheado para el tick del panel (SHS-M3-T005) ---
+
+import { createVaultUsageReader } from '../src/monitor/adapters/vault-usage-reader.js'
+
+test('lector cacheado: dentro del TTL no relee el disco y pasado el TTL si', () => {
+  let lecturas = 0
+  const reader = createVaultUsageReader({
+    vaultPath: '/vault',
+    ttlMs: 30_000,
+    lector: () => {
+      lecturas += 1
+      return { registros: [{ sessionId: `s-${lecturas}` }], warnings: [] }
+    },
+  })
+
+  const t0 = 1_000_000
+  const a = reader.leer({ ahora: t0 })
+  const b = reader.leer({ ahora: t0 + 29_999 })
+  assert.equal(lecturas, 1)
+  assert.equal(a, b)
+
+  const c = reader.leer({ ahora: t0 + 30_000 })
+  assert.equal(lecturas, 2)
+  assert.equal(c.registros[0].sessionId, 's-2')
+})
