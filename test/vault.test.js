@@ -282,3 +282,29 @@ test('camino interactivo: sin Vault detectado, una sola confirmacion y sin pregu
   assert.equal(confirmCalls, 1, 'el camino interactivo hizo mas de una confirmacion')
   assert.equal(abs, path.join(path.dirname(cwd), 'soubunker-vault'))
 })
+
+test('writeVaultConfig preserva project y quien al reescribir (upgrade no borra la identidad)', async () => {
+  const { writeVaultConfig } = await import('../src/core/vault.js')
+  const cwd = mkRepo({ 'README.md': '' })
+  const vault = mkVault()
+
+  fs.mkdirSync(path.join(cwd, '.claude'), { recursive: true })
+  fs.writeFileSync(
+    path.join(cwd, ...VAULT_CONFIG.split('/')),
+    JSON.stringify({ path: vault, repo: 'https://x/y.git', project: 'Project-SHS', quien: 'ignacio' }),
+    'utf8'
+  )
+
+  // Reescritura tipica de un upgrade: solo path + repo. Lo manual sobrevive.
+  writeVaultConfig(cwd, { path: vault, repo: null })
+  let config = readVaultConfig(cwd)
+  assert.equal(config.project, 'Project-SHS')
+  assert.equal(config.quien, 'ignacio')
+  assert.equal(config.repo, 'https://x/y.git')
+
+  // Pasar quien explicito lo actualiza sin tocar el resto.
+  writeVaultConfig(cwd, { path: vault, quien: 'nacho' })
+  config = readVaultConfig(cwd)
+  assert.equal(config.quien, 'nacho')
+  assert.equal(config.project, 'Project-SHS')
+})
