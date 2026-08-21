@@ -97,6 +97,82 @@ export function carpetasProyecto(vaultPath) {
   }
 }
 
+// El registro de prefijos del Vault: la fuente unica que dice que prefijo le
+// corresponde a cada proyecto de la organizacion (vault-guide §3). Un prefijo no
+// se inventa; si el repo no figura aca, no se resuelve.
+const REGISTRO = '00-System/id-registry.md'
+
+// Filas { prefijo, proyecto } de la tabla markdown del registro. Tolerante: un
+// registro ausente, ilegible o con otro formato devuelve [] y el llamador sigue
+// por los otros caminos -- nunca es un error duro.
+export function leerRegistroDePrefijos(vaultPath) {
+  let contenido
+  try {
+    contenido = fs.readFileSync(path.join(vaultPath, ...REGISTRO.split('/')), 'utf8')
+  } catch {
+    return []
+  }
+
+  const filas = []
+  for (const linea of contenido.split('\n')) {
+    if (!linea.trim().startsWith('|')) continue
+    const celdas = linea.split('|').slice(1, -1).map((c) => c.trim())
+    if (celdas.length < 2) continue
+    const [prefijo, proyecto] = celdas
+    // Encabezado y fila de guiones de la tabla.
+    if (!prefijo || !proyecto || /^-+$/.test(prefijo) || prefijo.toLowerCase() === 'prefijo') continue
+    filas.push({ prefijo, proyecto })
+  }
+  return filas
+}
+
+// Nombres con los que este repo puede figurar en el registro, de la senal mas
+// confiable a la menos: el "name" de package.json, el repo del remoto git y la
+// carpeta. Se comparan EXACTO (solo case-insensitive): una coincidencia
+// aproximada seria otra forma de adivinar, que es lo que se esta corrigiendo.
+function identidadDelRepo(cwd) {
+  const nombres = []
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(cwd, 'package.json'), 'utf8'))
+    if (typeof pkg?.name === 'string') nombres.push(pkg.name)
+  } catch {
+    // Sin package.json o ilegible: quedan las otras dos senales.
+  }
+  const remoto = nombreDelRemoto(cwd)
+  if (remoto) nombres.push(remoto)
+  nombres.push(path.basename(cwd))
+  return nombres.map((n) => String(n).trim().toLowerCase()).filter(Boolean)
+}
+
+function nombreDelRemoto(cwd) {
+  try {
+    const url = git(['-C', cwd, 'remote', 'get-url', 'origin']).trim()
+    return url.replace(/\.git$/, '').split(/[/:]/).pop() || null
+  } catch {
+    return null
+  }
+}
+
+// Que proyecto del Vault es este repo, segun el registro. Devuelve la carpeta
+// solo si el registro apunta a UNA sola y esa carpeta existe. `esperada` viaja
+// aparte para poder distinguir "el registro no me conoce" de "me conoce y su
+// carpeta todavia no esta en el Vault": son dos situaciones distintas.
+function resolverPorRegistro(cwd, vaultPath, carpetas) {
+  const nombres = new Set(identidadDelRepo(cwd))
+  const esperadas = [
+    ...new Set(
+      leerRegistroDePrefijos(vaultPath)
+        .filter((f) => nombres.has(f.proyecto.toLowerCase()))
+        .map((f) => `${PREFIJO_PROYECTO}${f.prefijo}`)
+        .filter((c) => NOMBRE_PROYECTO.test(c))
+    ),
+  ]
+  if (esperadas.length !== 1) return { carpeta: null, esperada: null }
+
+  const esperada = esperadas[0]
+  return { carpeta: carpetas.includes(esperada) ? esperada : null, esperada }
+}
+
 // Carpeta Project-<PREFIJO> del proyecto: la declarada en vault.local.json
 // ("project") o, si el Vault tiene una sola, esa. Mismo criterio que el hook
 // declarar-milestone.mjs del template (que no puede importar de src/).
@@ -221,6 +297,20 @@ async function asegurarProyecto(cwd, vaultPath, { flags = {}, yes, prompts }) {
 
   if (!carpetas.length) {
     ui.log.warn(`El Vault todavia no tiene una carpeta ${PREFIJO_PROYECTO}<PREFIJO> para este repo: ${VAULT_CONFIG} queda sin "project".`)
+    return null
+  }
+
+  // El registro de prefijos manda sobre cualquier heuristica de conteo: es la
+  // fuente unica de que proyecto es cada repo. Resuelve sin preguntar, asi que
+  // tambien completa un `upgrade --yes` sobre una instalacion vieja, que es lo
+  // unico que quedaba sin cubrir.
+  const { carpeta: porRegistro, esperada } = resolverPorRegistro(cwd, vaultPath, carpetas)
+  if (porRegistro) return persistirProyecto(cwd, vaultPath, porRegistro)
+
+  if (esperada) {
+    // El registro sabe cual es su proyecto y su carpeta no esta en el Vault.
+    // Caer al "hay una sola, debe ser esa" aca declararia el proyecto de OTRO.
+    ui.log.warn(`${REGISTRO} asocia este repo a ${esperada}, que todavia no existe en el Vault: ${VAULT_CONFIG} queda sin "project".`)
     return null
   }
 
