@@ -2,25 +2,26 @@
 
 > Esta guía vive en el repo del harness porque el Vault todavía no es un repo propio. El
 > día que lo sea, esta guía **migra allá** y aquí queda solo un puntero. No se distribuye
-> a los repos consumidores: el Vault es **uno por organización** (singleton).
+> a los repos consumidores: el Vault es **uno por organización** (singleton). El
+> protocolo operativo que ejecutan los agentes sí se distribuye, en el
+> `progress/README.md` que instala el harness.
 
 ## 1. Qué es y qué no es
 
-El Vault es la **memoria ejecutiva** de todos los proyectos: las rocas trimestrales, los
-hitos con sus criterios congelados, el registro de prefijos y la evidencia ejecutiva de
-los cierres. Es esencial para orquestar múltiples agentes con varias personas trabajando
-sobre los mismos repos, porque es la **fuente única** de dos cosas que ningún repo puede
-poseer: los prefijos de proyecto y el estado de las rocas.
+El Vault es la **vista ejecutiva y el estado vivo** de todos los proyectos: qué
+milestones existen, cuál está trabajando quién y en qué máquina, con qué plan, qué
+tareas se movieron hoy y cuánto costó cada sesión. Es esencial para orquestar múltiples
+agentes con varias personas trabajando sobre los mismos repos, porque es la **fuente
+única** de dos cosas que ningún repo puede poseer: los prefijos de proyecto y el estado
+del trabajo entre máquinas.
 
 El Vault vive en un **repo distinto** al de cada proyecto a propósito: toda la
-visibilidad se acumula ahí sin ensuciar los repos de código. Además de la capa ejecutiva,
-el Vault recibe el **espejo** de lo que los agentes generan (specs, plans, tasks,
-resúmenes de progreso) y un **kanban con estado vivo** por proyecto — todo suma, y el
-progreso se visualiza sin abrir el repo (ver §6).
+visibilidad se acumula ahí sin ensuciar los repos de código, y la actualización
+constante de estado no contamina el historial de ningún proyecto.
 
 **No es** un repo de código: el código, los diffs, los tests y la evidencia técnica
-pesada viven en cada repo, que sigue siendo la **fuente de verdad técnica**. El Vault es
-la vista. A **Ninety** sigue subiendo solo el nivel hito (regla de `ccem-planner`).
+viven en cada repo, que sigue siendo la **fuente de verdad técnica**. El Vault es la
+vista.
 
 ## 2. Estructura de carpetas
 
@@ -28,210 +29,151 @@ la vista. A **Ninety** sigue subiendo solo el nivel hito (regla de `ccem-planner
 Vault/
 ├── 00-System/                          # el sistema — no pertenece a ningún proyecto
 │   ├── id-registry.md                  # AUTORIDAD de prefijos (ver §3)
-│   ├── metodologia-roca.md             # Metodología de Roca v2.1.0 (copia de referencia)
-│   └── templates/
-│       └── plantilla_apertura_roca.yaml  # esquema del YAML de apertura de roca
-├── Project-<PREFIJO>/                  # una carpeta por proyecto (Project-REA, Project-RAM…)
-│   ├── roca_<TRIMESTRE>_<PREFIJO>.yaml   # abre /rock-plan, cierra /rock-close (MISMO archivo)
-│   ├── Project-State.md                # GENERADO — derivado de GitHub, no editable
-│   ├── kanban.md                       # ESTADO VIVO — tablero de tasks (plugin Kanban de Obsidian)
-│   ├── specs/                          # espejo de artefactos SDD del repo
-│   │   └── <ID-hito>-<slug>/           #   spec.md, plan.md, tasks.md
-│   └── progress/                       # espejo de resúmenes de progreso del repo
-│       ├── history.md                  #   copia del historial compartido
-│       └── <ID-hito>-<slug>_*.md       #   summary, impl_summary, review por spec
-└── evidence/
-    └── <TRIMESTRE>/                    # evidencia ejecutiva de cierres, por trimestre
+│   └── monitor/                        # snapshots agregados de consumo por (cuenta, máquina)
+│       └── <cuenta8>--<maquina8>.json  #   los escribe `souclaude monitor` (ADR 20260810)
+└── Project-<PREFIJO>/                  # una carpeta por proyecto (Project-REA, Project-RAM…)
+    ├── milestones.md                   # ESTADO VIVO — tablero de milestones (claim de nivel alto)
+    ├── plans/                          # planes por milestone: <PREFIJO>-M<n>-P<n>-<slug>.md
+    ├── kanban.md                       # ESTADO VIVO — tablero de tareas
+    ├── sessions.md                     # append-only: una línea por sesión (quién, qué, tokens)
+    └── progress/
+        └── history.md                  # espejo del historial del repo
 ```
 
-## 3. Archivos semilla
+Carpetas heredadas de series anteriores del harness (`specs/`, `roca_*.yaml`,
+`evidence/`) pueden seguir existiendo — no se borran, pero el harness 3.x ya no las
+escribe: los comandos `/rock-*` y el flujo SDD se eliminaron en 3.0.0. Si el equipo
+mantiene la capa de rocas, la opera un humano.
+
+## 3. El modelo: milestones → planes → tareas → sesiones
+
+| Nivel | Artefacto | ID | Qué responde |
+|---|---|---|---|
+| Milestone | tarjeta en `milestones.md` | `<PREFIJO>-M<n>` | ¿Qué objetivos tiene el proyecto y quién trabaja cuál **ahora**? |
+| Plan | archivo en `plans/` | `<PREFIJO>-M<n>-P<n>` | ¿Cómo se piensa llegar al objetivo? Puede haber varios: si P1 fracasa, P2 lo releva sin borrar la historia. |
+| Tarea | tarjeta en `kanban.md` | `<PREFIJO>-M<n>-T<nnn>` | ¿Qué se está ejecutando hoy y en qué estado está? |
+| Sesión | línea en `sessions.md` | — | ¿Quién trabajó, cuándo, sobre qué milestone y cuántos tokens costó? |
+
+El **milestone** es la unidad de anti-solapamiento entre máquinas: su tarjeta lleva
+dueño **y máquina** (`@nacho · PC01`). La **tarea** es la unidad de trabajo del día.
+La **sesión** es la unidad de consumo.
 
 ### `00-System/id-registry.md` — la autoridad de prefijos
 
-Su ausencia **bloquea `/rock-plan`** (el checklist exige que el prefijo exista aquí; no se
-inventa). Formato:
+Fuente única de prefijos de proyecto. Solo se **agregan** filas; nunca se edita ni se
+reutiliza una fila ajena. Un proyecto cerrado pasa a `retirado` — su prefijo jamás se
+reutiliza (los IDs históricos lo referencian). Un agente que necesita un prefijo que no
+existe **para y lo pide**: sin prefijo registrado no hay carpeta `Project-<PREFIJO>/`.
 
 ```markdown
-# Registro de prefijos — fuente única. Un prefijo = un proyecto, para siempre.
-# Solo se AGREGAN filas. Nunca edites ni reutilices una fila ajena.
-
-| Prefijo | Proyecto                    | Dueño | Fecha de alta | Estado |
-|---------|-----------------------------|-------|---------------|--------|
-| RAM     | Ramón                       | [dueño] | [fecha]     | activo |
-| REA     | Reachy                      | [dueño] | [fecha]     | activo |
-| PAC     | Paco                        | [dueño] | [fecha]     | activo |
-| ALF     | Alfred                      | [dueño] | [fecha]     | activo |
-| PLN     | Transversal / multi-proyecto | [dueño] | [fecha]     | activo |
-| SP      | Origen SharePoint           | [dueño] | [fecha]     | activo |
+| Prefijo | Proyecto | Dueño | Fecha de alta | Estado |
+|---------|----------|-------|---------------|--------|
+| REA     | Reachy   | [dueño] | [fecha]     | activo |
 ```
-
-Reglas: un prefijo se pide **antes** de la reunión trimestral, no durante. Los prefijos
-son de **proyecto**, no de tarjeta ni de persona. Un proyecto cerrado pasa a estado
-`retirado` — su prefijo jamás se reutiliza (los IDs históricos lo referencian).
-
-### `00-System/templates/plantilla_apertura_roca.yaml`
-
-El esquema que `/rock-plan` llena en el Paso 2: identidad (prefijo, trimestre), enunciado
-verificable, dueño, hitos con IDs `<PREFIJO>-H<n>` y fechas, criterios de éxito
-**congelados desde t=0** con método de verificación, riesgos `<PREFIJO>-R-<nn>` con
-mitigación, `descarte_planificado.minimo_irrenunciable`, specs reservados (1-3 por hito,
-solo título y slug), y los campos de Ninety vacíos desde el día uno (`ninety_rock_id`,
-`ninety_milestone_id`, `ultima_sincronizacion`). Los bloques `[CIERRE]` (estado,
-evidencias, desviaciones, lecciones, firma) los llena `/rock-close` en el **mismo
-archivo**.
-
-### `00-System/metodologia-roca.md`
-
-Copia de referencia de la Metodología de Roca v2.1.0, para que la doctrina sea legible
-sin salir del Vault.
 
 ## 4. Quién escribe qué
 
 | Artefacto | Quién | Cómo |
 |---|---|---|
 | `id-registry.md` | Humano (coordinador) | Agregar filas; jamás editar ajenas. |
-| `roca_*.yaml` — apertura | Dueño + agente vía `/rock-plan` | El agente propone; el dueño decide fechas y recortes. |
-| `roca_*.yaml` — cierre | Dueño vía `/rock-close` | Contra criterios congelados, con evidencia por criterio. |
-| `roca_*.yaml` — campos derivados (`fecha_real`, desviaciones) | **Generado** (`/rock-status`) | Nunca a mano: un derivado escrito a mano es un dato falso. |
-| `Project-State.md` | **Generado** (`/rock-status`, semanal) | Derivado de GitHub (ramas/PRs). No editable. |
-| `kanban.md` | **Agentes**, en vivo | spec-author crea tarjetas; implementer y reviewer las mueven al cambiar el estado y **pushean en ese momento** (§6, §7). |
-| `specs/` y `progress/` (espejos) | **Agentes**, al cerrar cada artefacto | Copias desde el repo; nunca se editan aquí — se corrige en el repo y se re-espeja. |
-| `evidence/` | Humano | Solo evidencia **ejecutiva**; la técnica queda en el repo. |
+| `milestones.md` | Humano define; **agentes mueven** | El humano crea/ordena los milestones; el agente mueve la tarjeta al tomar o cerrar uno, y **pushea en ese momento**. |
+| `plans/` | **Agentes**, al adoptar un plan | Espejo del plan acordado en la sesión o en el repo. No se edita en el Vault: se corrige y se re-espeja. Los planes viejos no se borran. |
+| `kanban.md` | **Agentes**, en vivo | Crear tarjetas al planificar; moverlas al cambiar el estado, con push inmediato. |
+| `sessions.md` | **Agentes**, al cerrar cada sesión | Una línea append-only con milestone, dueño, máquina, tokens y resultado. |
+| `progress/history.md` | **Agentes**, al cerrar tareas | Copia del `history.md` del repo. |
+| `00-System/monitor/` | **Generado** (`souclaude monitor`) | Snapshots agregados por (cuenta, máquina); no se editan a mano. |
 
-## 5. Relación Vault ↔ repos de código ↔ Ninety
+## 5. Relación Vault ↔ repos de código
 
-La frontera es el **hito**: es lo único que existe a ambos lados.
+La frontera es el **milestone**: en el Vault vive su estado y sus planes; en el repo
+vive su ejecución (ramas, PRs, código, tests). Recuperar contexto desde cualquier
+punto: buscar el ID (`REA-M3`) en el Vault da el objetivo, el plan activo y quién lo
+trabaja; en GitHub da rama/PR/commits; en el repo, `grep -r REA-M3` da el detalle
+técnico.
 
 | Nivel | Vive en | Contiene |
 |---|---|---|
-| Ejecutivo (Ninety) | Ninety | Rocas, hitos, issues ejecutivos, to-dos, scorecard. Vínculo por `[<PREFIJO>]` en el título. **Nunca specs ni tasks.** |
-| Estratégico + vista (Vault) | Vault | Rocas + hitos con criterios congelados, registro de IDs, evidencia ejecutiva, **espejos de specs/plans/tasks y progreso, kanban con estado vivo**. |
-| Técnico (repo) | Cada repo | **Fuente de verdad**: `specs/<ID-hito>-<slug>/`, `progress/` (current, history, subcarpetas por spec, telemetría del router), ADRs, código, tests, evidencia técnica. |
+| Vista + estado vivo (Vault) | Vault | Milestones con dueño/máquina, planes, kanban, sesiones con consumo, registro de prefijos, snapshots del monitor. |
+| Técnico (repo) | Cada repo | **Fuente de verdad**: código, tests, `progress/history.md`, ADRs, evidencia técnica. |
 
-Recuperar contexto desde cualquier punto: buscar el ID de hito (`REA-H3`) en el Vault da
-el compromiso y sus criterios; en GitHub da rama/PR/commits; en el repo, `grep -r REA-H3
-specs/` da spec/plan/tasks.
+## 6. Estado vivo — la regla central
 
-## 6. Espejo de artefactos y estado vivo (kanban)
+Cuando un agente **empieza** a trabajar un milestone o una tarea, mueve su tarjeta
+**en ese momento** y pushea. El tablero nunca depende de un push final: refleja el
+ahora. Todo proyecto con el harness instalado está **constantemente** enviando su
+progreso: claim del milestone al empezar, plan espejado al adoptarlo, tarjetas de
+tareas al cambiar de estado, línea de sesión al cerrar. El protocolo paso a paso vive
+en el `progress/README.md` de cada repo (lo instala el harness y lo mantiene
+`souclaude upgrade`).
 
-Todo lo que un agente genera **suma**: además de vivir en el repo, se espeja al Vault
-para que el progreso de todos los proyectos se visualice desde un solo lugar.
-
-**Qué se espeja y cuándo** (reglas operativas en el `progress/README.md` de cada repo):
-
-- Al cerrar cada artefacto SDD: `spec.md`, `plan.md`, `tasks.md` →
-  `Project-<PREFIJO>/specs/<ID-hito>-<slug>/`.
-- Al cerrar cada fase/task: `summary.md`, `impl_summary.md`, `review.md` y `history.md` →
-  `Project-<PREFIJO>/progress/`.
-- Los espejos **no se editan en el Vault**: se corrige en el repo y se re-espeja.
-
-**Estado vivo — la regla central**: cuando un agente **empieza** a trabajar un task o un
-plan, mueve su tarjeta en `Project-<PREFIJO>/kanban.md` **en ese momento**. El tablero
-nunca depende de un push final: refleja el ahora. Por eso el Vault es un repo distinto al
-del proyecto — la actualización constante de estado no ensucia el historial del repo de
-código.
-
-**Formato del kanban** (compatible con el plugin **Kanban de Obsidian** — el Vault se
-visualiza como tablero sin ninguna herramienta extra):
-
-```markdown
----
-kanban-plugin: board
----
-
-## Backlog
-
-- [ ] TNP-H1-T004 · validar formulario · @pendiente
-
-## En curso
-
-- [ ] TNP-H1-T003 · capturar lead al cierre · @nacho
-
-## En review
-
-- [ ] TNP-H1-T002 · persistencia del ticket · @nacho
-
-## Hecho
-
-- [x] TNP-H1-T001 · esqueleto del dominio · @nacho
-```
-
-Una tarjeta = un task (`<ID-hito>-T<nnn> · qué · @quién`). Movimientos: el `spec-author`
-crea las tarjetas en Backlog al emitir `tasks.md`; el `implementer` mueve a **En curso**
-al tomar el task y a **En review** al cerrarlo; el `reviewer` mueve a **Hecho** con
-`APPROVED` o devuelve a **En curso** con `CHANGES_REQUESTED`.
+**Formato de los tableros**: compatible con el plugin **Kanban de Obsidian** —
+frontmatter `kanban-plugin: board`, una tarjeta = una línea. `milestones.md` usa
+columnas Backlog / En curso / Hecho; `kanban.md` agrega En review.
 
 **Cómo llegan los agentes**: cada repo guarda la ruta local del Vault en
-`.claude/vault.local.json`, que escribe el instalador (`npx souclaude`, harness ≥ 2.3.0) y
-está gitignorado — la ruta es de esa máquina. **No se usa `VAULT_PATH` del `.env`**:
-`.claude/settings.json` deniega `Read(./.env)`, así que un agente no puede leerlo de ahí. Si
-no hay ruta configurada o no existe, el espejo se omite **sin bloquear el trabajo** y queda
-anotado en el `history.md` del repo (`vault_skip`).
-
-**El Vault es un repo, no una carpeta**: mover una tarjeta sin `git push` al Vault deja el
-cambio en una sola máquina. El movimiento y el push son el mismo paso — protocolo en la §7.
+`.claude/vault.local.json`, que escribe el instalador (`npx souclaude`) y está
+gitignorado — la ruta es de esa máquina. Si no hay ruta configurada o no existe, el
+espejo se omite **sin bloquear el trabajo** y queda anotado en el `history.md` del
+repo (`vault_skip`).
 
 ## 7. Concurrencia — varias personas, múltiples agentes
 
 - **El Vault es un repo git** (`soubunker-vault`) con una regla **opuesta** a la de los
-  repos de código: **push directo a `main`, sin PR**. No es un descuido, es la condición
-  para que el tablero sea estado vivo — una tarjeta que espera el merge de un PR ya no
-  refleja el ahora. Por eso el `main` del Vault **no** lleva revisión obligatoria. Cada
-  persona/agente escribe **solo las tarjetas y espejos de su proyecto y su task**: la
-  partición natural por `Project-<PREFIJO>/` evita casi todos los conflictos.
-- **Protocolo de dos repos** (el que ejecutan los agentes, definido en el
-  `progress/README.md` que instala el harness):
-  1. `git -C "<vault>" pull --rebase` **antes** de tomar un task.
-  2. Leer `Project-<PREFIJO>/kanban.md`. Si la tarjeta ya está en "En curso" o "En review"
-     con otro dueño, la trabaja otra máquina: **parar y preguntar al humano**. Este es el
-     anti-solapamiento: sin el `pull` previo, dos agentes en equipos distintos toman el
-     mismo task sin enterarse.
-  3. Mover la tarjeta y **pushear en ese momento**: `chore: <ID-task> a En curso (@dueño)`
-     para el kanban, `docs:` para los espejos. Nunca `git push --force`.
-  4. Conflicto en `kanban.md`: conservar **ambas** tarjetas (una tarjeta = una línea, como
-     `history.md`) y no borrar la de otro. Dos rebases fallidos seguidos → `vault_skip` en
-     el `history.md` del repo y reportar; el trabajo local nunca se bloquea.
-- Los dos remotos **nunca se cruzan**: código, diffs y tests jamás al Vault; artefactos del
-  Vault jamás al repo del proyecto.
-- Si es una carpeta compartida (OneDrive/SharePoint/vault de Obsidian sincronizado), la
-  convención mínima: `id-registry.md` **solo agrega filas** (nunca editar ajenas), cada
-  `roca_*.yaml` tiene **un solo dueño**, los generados no se tocan, y en `kanban.md`
-  solo se mueven las tarjetas propias.
-- La capa **estratégica** (registro de IDs, rocas) la escriben solo `/rock-plan`,
-  `/rock-status` y `/rock-close` operados por el dueño. La capa de **vista** (espejos,
-  kanban) la escriben los agentes en vivo (§6). Un agente que necesita un prefijo o un
-  ID que no existe, **para y lo pide** — regla dura de `ccem-planner`.
+  repos de código: **push directo a `main`, sin PR**. No es un descuido, es la
+  condición para que el tablero sea estado vivo — una tarjeta que espera el merge de un
+  PR ya no refleja el ahora.
+- **El claim es en dos niveles** (protocolo completo en `progress/README.md` de cada
+  repo):
+  1. `git -C "<vault>" pull --rebase` **antes** de empezar — sin este pull, dos agentes
+     en máquinas distintas toman lo mismo sin enterarse.
+  2. `milestones.md`: si el milestone está **En curso con otro dueño u otra máquina**,
+     lo trabaja otro agente → **parar y preguntar al humano**. Nunca tomarlo, nunca
+     moverlo, nunca saltar a otro por cuenta propia.
+  3. `kanban.md`: misma regla a nivel tarea (En curso o En review con otro dueño).
+  4. Mover tarjeta y **pushear en ese momento**: `chore: <ID> a En curso (@dueño ·
+     <máquina>)`. `npx souclaude vault-sync --push` hace el ciclo seguro.
+- **Conflictos**: una tarjeta/línea = una línea de archivo — conservar **ambas** y no
+  borrar la de otro. Dos rebases fallidos seguidos → `vault_skip` en el `history.md`
+  del repo y reportar; el trabajo local nunca se bloquea. **Nunca `git push --force`.**
+- Cada persona/agente escribe **solo** las tarjetas, planes y sesiones de su proyecto y
+  su trabajo: la partición por `Project-<PREFIJO>/` evita casi todos los conflictos.
+- Los dos remotos **nunca se cruzan**: código, diffs y tests jamás al Vault; artefactos
+  del Vault jamás al repo del proyecto.
 
-## 8. Qué NO va al Vault
+## 8. Consumo de tokens — qué va y qué no
 
-Código, diffs, tests, la telemetría cruda del router (`progress/model-router.jsonl`),
-evidencia técnica pesada (logs, capturas), gotchas y patterns del repo. Eso vive
-versionado en cada repo, que es la fuente de verdad técnica. La distinción: al Vault van
-los **artefactos de conocimiento y estado** (specs, plans, tasks, resúmenes, kanban);
-en el repo queda la **materia prima técnica**. Y a Ninety, solo el nivel hito.
+Dos canales, complementarios:
 
-**Única excepción de telemetría** (ADR `20260810-monitor-snapshots-en-vault` del repo
-del harness): `00-System/monitor/` guarda un snapshot **agregado** por (cuenta,
-máquina) — límites de plan, totales del día, <1 KB — que `souclaude monitor --publish`
-escribe cada ~5 min para que todo el equipo vea el estado de todas las cuentas de
-Claude. Nada por sesión ni por proyecto; `model-router.jsonl` crudo sigue prohibido.
-Estos archivos los escribe una máquina sola (nombre `<cuenta8>--<maquina8>.json`), así
-que nunca generan conflictos de merge y no se editan a mano.
+1. **`Project-<PREFIJO>/sessions.md`** — una línea por sesión, escrita por el agente al
+   cerrar: fecha, rama/sesión, milestone, quién, máquina, tokens entrada/salida y
+   resultado. Es el registro **por proyecto**: responde "¿cuánto costó este milestone y
+   quién lo trabajó?". Si el agente no tiene el dato de tokens, escribe `n/d` — la
+   línea va igual. (ADR `20260817-milestones-planes-y-sesiones-en-vault`.)
+2. **`00-System/monitor/`** — snapshots **agregados** por (cuenta, máquina), <1 KB, que
+   `souclaude monitor` publica automáticamente cada ~5 min: límites de plan y totales
+   del día. Es el registro **por cuenta**: responde "¿cómo venimos de límites hoy?".
+   (ADR `20260810-monitor-snapshots-en-vault`.)
+
+**Sigue prohibido**: telemetría cruda (`model-router.jsonl`, transcripts, eventos por
+mensaje), código, diffs, tests, logs y evidencia técnica pesada. La distinción: al
+Vault van **estado y agregados legibles por humanos**; la materia prima técnica queda
+en cada repo y en cada máquina.
 
 ## 9. Checklist de creación (primera vez)
 
-1. Crear el repo (o carpeta) `Vault/` con la estructura del §2.
-2. Sembrar `00-System/id-registry.md` con los prefijos activos (tabla del §3) y asignar
-   dueño a cada uno.
-3. Colocar `metodologia-roca.md` y `plantilla_apertura_roca.yaml` en `00-System/`.
-4. Crear `Project-<PREFIJO>/` para cada proyecto activo con un `kanban.md` semilla
-   (frontmatter `kanban-plugin: board` + columnas Backlog / En curso / En review / Hecho
-   vacías). Los YAML nacen en la próxima `/rock-plan`.
-5. Si el Vault es un vault de Obsidian: instalar el plugin **Kanban** para visualizar los
+1. Crear el repo `Vault/` con la estructura del §2.
+2. Sembrar `00-System/id-registry.md` con los prefijos activos y su dueño.
+3. Por cada proyecto activo, crear `Project-<PREFIJO>/` con `milestones.md` y
+   `kanban.md` (frontmatter `kanban-plugin: board` + columnas vacías), `plans/`,
+   `sessions.md` y `progress/history.md`. **No hace falta a mano**: si el prefijo
+   ya está en `00-System/id-registry.md`, `npx souclaude` siembra la carpeta y la
+   pushea al conectar el repo — confirma en interactivo, o `--vault-seed` sin TTY.
+   Un prefijo que no está registrado no se siembra: primero va la fila (§3).
+4. Si el Vault es un vault de Obsidian: instalar el plugin **Kanban** para ver los
    tableros.
-6. En cada repo de proyecto: correr `npx souclaude` y aceptar el paso del Vault (clona y
-   escribe `.claude/vault.local.json`). Sin interacción: `--vault-path <ruta>`.
-7. Dar escritura al equipo y a los agentes, **sin revisión obligatoria en `main`**: el push
-   directo es lo que mantiene vivo el tablero (§7).
-8. Anunciar la regla de oro: **sin ID del Vault no hay rama** — todo trabajo empieza con
-   un hito que existe aquí.
+5. En cada repo de proyecto: correr `npx souclaude` y aceptar el paso del Vault (clona
+   y escribe `.claude/vault.local.json`). Sin interacción: `--vault-path <ruta>`.
+6. Dar escritura al equipo y a los agentes, **sin revisión obligatoria en `main`**: el
+   push directo es lo que mantiene vivo el tablero (§7).
+7. Anunciar la regla de oro: **sin milestone en el Vault no hay trabajo** — todo
+   empieza con una tarjeta que existe en `milestones.md`.

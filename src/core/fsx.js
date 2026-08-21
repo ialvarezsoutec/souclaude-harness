@@ -28,6 +28,22 @@ export function writeFileLF(abs, content) {
   fs.writeFileSync(abs, normalized.endsWith('\n') ? normalized : normalized + '\n', 'utf8')
 }
 
+// Variante binaria de readIfExists: devuelve un Buffer o null. Para los assets
+// de skills (PNGs), donde una lectura utf8 corromperia los bytes.
+export function readBytesIfExists(abs) {
+  try {
+    return fs.readFileSync(abs)
+  } catch {
+    return null
+  }
+}
+
+// Escritura binaria: sin normalizacion LF ni newline final. Bytes tal cual.
+export function writeFileBytes(abs, buf) {
+  fs.mkdirSync(path.dirname(abs), { recursive: true })
+  fs.writeFileSync(abs, buf)
+}
+
 export function ensureDir(abs) {
   fs.mkdirSync(abs, { recursive: true })
 }

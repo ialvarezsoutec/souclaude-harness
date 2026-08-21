@@ -4,9 +4,8 @@ Scratchpad persistente del proyecto. Lo que aprendiste y no quieres volver a
 aprender: gotchas del stack, comandos que nunca te acuerdas, decisiones chicas que
 no merecen un ADR, cosas que probaste y no funcionaron.
 
-Lo que **no** va acá: decisiones arquitectónicas (van en `docs/decisions/`),
-requisitos de features (van en `specs/`), convenciones del proyecto (van en
-`CLAUDE.md` y `docs/constitution.md`).
+Lo que **no** va acá: decisiones arquitectónicas (van en `docs/decisions/`) ni
+convenciones del proyecto (van en `CLAUDE.md`).
 
 ---
 

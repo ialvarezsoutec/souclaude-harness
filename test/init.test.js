@@ -1,12 +1,27 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { main } from '../src/cli.js'
 import { mkRepo, read, has, tree, snapshot, replan, verdicts } from './helpers.js'
-import { NOOP } from '../src/core/plan.js'
+import { NOOP, OBSOLETE } from '../src/core/plan.js'
 import { missingVars } from '../src/core/render.js'
 import { loadManifest } from '../src/core/manifest.js'
 
 const YES = ['--yes', '--name', 'acme', '--type', 'backend', '--lang', 'es']
+
+// Las skills del catalogo 3.0. soutec-github es la unica required.
+const SKILLS = [
+  'soutec-github',
+  'it-security-review',
+  'security-report-standard',
+  'soutec-md-a-pdf',
+  'adr-new',
+  'harness-upgrade',
+  'vault-milestones',
+  'jira-sync',
+]
 
 test('init en repo vacio: emite el harness completo + scaffolding', async () => {
   const dir = mkRepo({ 'README.md': '' })
@@ -18,25 +33,22 @@ test('init en repo vacio: emite el harness completo + scaffolding', async () => 
   assert.ok(files.includes('CLAUDE.md'))
   assert.ok(files.includes('.claude/settings.json'))
   assert.ok(files.includes('.claude/harness.json'))
-  assert.ok(files.includes('docs/constitution.md'))
-  assert.ok(files.includes('docs/decisions/_template.md'))
-  assert.ok(files.includes('specs/_templates/spec-template.md'))
-  assert.ok(files.includes('specs/_templates/spec-lite-template.md'))
   assert.ok(files.includes('.gitignore'))
 
-  // Las 5 skills CCEM + los 4 comandos, project-local.
-  for (const s of ['ccem-core', 'ccem-sdd', 'ccem-research', 'ccem-stack', 'ccem-prompting']) {
+  // Sin --skills, se instalan todas las del catalogo.
+  for (const s of SKILLS) {
     assert.ok(files.includes(`.claude/skills/${s}/SKILL.md`), `falta la skill ${s}`)
   }
-  for (const c of ['spec-new', 'adr-new', 'constitution-check', 'harness-upgrade']) {
-    assert.ok(files.includes(`.claude/skills/${c}/SKILL.md`), `falta el comando ${c}`)
-  }
+  // Los archivos extra de las skills con mas de un archivo.
+  assert.ok(files.includes('.claude/skills/it-security-review/report-template.md'))
+  assert.ok(files.includes('.claude/skills/soutec-md-a-pdf/assets/soutec_logo.png'))
+  assert.ok(files.includes('docs/decisions/_template.md'))
 
-  // Los 4 agentes de orquestacion + el mapa AGENTS.md.
-  for (const a of ['orchestrator', 'spec-author', 'implementer', 'reviewer']) {
-    assert.ok(files.includes(`.claude/agents/${a}.md`), `falta el agente ${a}`)
-  }
-  assert.ok(files.includes('AGENTS.md'))
+  // El flujo SDD/CCEM ya no existe: ni agentes, ni constitucion, ni specs.
+  assert.ok(!files.some((f) => f.startsWith('.claude/agents/')), 'se emitio un agente')
+  assert.ok(!files.some((f) => f.startsWith('specs/')), 'se emitio specs/')
+  assert.ok(!files.includes('AGENTS.md'))
+  assert.ok(!files.includes('docs/constitution.md'))
 
   // Scaffolding: solo porque el repo estaba vacio.
   assert.ok(files.includes('src/.gitkeep'))
@@ -51,7 +63,7 @@ test('init: no queda ningun {{PLACEHOLDER}} sin resolver', async () => {
   const dir = mkRepo({ 'README.md': '' })
   await main(['init', ...YES], dir)
 
-  for (const rel of ['CLAUDE.md', 'docs/constitution.md', 'notes.md', 'README.md']) {
+  for (const rel of ['CLAUDE.md', 'notes.md', 'README.md']) {
     assert.deepEqual(missingVars(read(dir, rel), {}), [], `${rel} tiene placeholders sin resolver`)
   }
 })
@@ -84,37 +96,61 @@ test('init: el settings.json emitido es schema-correcto', async () => {
   assert.ok(settings.permissions.deny.includes('Read(./secrets/**)'))
 })
 
-test('la constitucion usa la numeracion canonica P1-P10', async () => {
+test('--skills: instala solo lo elegido, pero soutec-github entra siempre', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  assert.equal(await main(['init', ...YES, '--skills', 'adr-new'], dir), 0)
+
+  const files = tree(dir)
+  assert.ok(files.includes('.claude/skills/adr-new/SKILL.md'))
+  assert.ok(files.includes('docs/decisions/_template.md'))
+  // La obligatoria entra aunque no se pida.
+  assert.ok(files.includes('.claude/skills/soutec-github/SKILL.md'))
+  // Las no elegidas no se emiten.
+  assert.ok(!files.includes('.claude/skills/soutec-md-a-pdf/SKILL.md'))
+  assert.ok(!files.includes('.claude/skills/it-security-review/SKILL.md'))
+  assert.ok(!files.includes('.claude/skills/harness-upgrade/SKILL.md'))
+
+  // La seleccion queda en el lockfile, y el upgrade la respeta sin re-preguntar.
+  const lock = JSON.parse(read(dir, '.claude/harness.json'))
+  assert.deepEqual(lock.skills, ['adr-new', 'soutec-github'])
+
+  await main(['upgrade', ...YES], dir)
+  assert.ok(!has(dir, '.claude/skills/soutec-md-a-pdf/SKILL.md'), 'el upgrade instalo una skill no elegida')
+})
+
+test('--skills: una skill desconocida corta con error claro', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  assert.equal(await main(['init', ...YES, '--skills', 'no-existe'], dir), 1)
+  assert.ok(!has(dir, '.claude/harness.json'), 'con error no se escribe nada')
+})
+
+test('--skills: deseleccionar una skill instalada la marca obsoleta, no la borra', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  await main(['init', ...YES], dir)
+  assert.ok(has(dir, '.claude/skills/adr-new/SKILL.md'))
+
+  await main(['upgrade', ...YES, '--skills', 'harness-upgrade'], dir)
+
+  // Sigue en disco: borrar exige --prune + doble confirmacion (P5).
+  assert.ok(has(dir, '.claude/skills/adr-new/SKILL.md'))
+  const obsoletos = verdicts(replan(dir))[OBSOLETE] ?? []
+  assert.ok(obsoletos.includes('.claude/skills/adr-new/SKILL.md'), 'la skill deseleccionada no quedo obsoleta')
+})
+
+test('los assets binarios se copian byte a byte', async () => {
   const dir = mkRepo({ 'README.md': '' })
   await main(['init', ...YES], dir)
 
-  const c = read(dir, 'docs/constitution.md')
-
-  // La colision historica: el Kit numeraba Simplicity/Surgical como P7/P8, el doc de
-  // arquitectura como P9/P10. Canonico = P9/P10. Un plan.md que tilde "P9 Simplicity"
-  // tiene que referirse a lo mismo en todos los repos.
-  assert.match(c, /## P9 — Simplicity First \(universal — no editar\)/)
-  assert.match(c, /## P10 — Surgical Changes \(universal — no editar\)/)
-  assert.match(c, /## P1 — Contratos antes que tecnologías/)
-  assert.match(c, /## P2 — Hexagonal por defecto, con enforcement automático/)
-  assert.ok(c.includes('adapters  →  application  →  domain'))
-
-  // Y CLAUDE.md tiene que decir lo mismo, o los repos se desalinean.
-  assert.ok(read(dir, 'CLAUDE.md').includes('P1-P10'))
-})
-
-test('el enforcer de P2 se deriva del stack detectado', async () => {
-  const py = mkRepo({ 'pyproject.toml': '[project]\nname="x"\n' })
-  await main(['init', ...YES], py)
-  assert.ok(read(py, 'docs/constitution.md').includes('import-linter'))
-
-  const node = mkRepo({ 'package.json': '{"name":"x"}' })
-  await main(['init', ...YES], node)
-  assert.ok(read(node, 'docs/constitution.md').includes('dependency-cruiser'))
-
-  const java = mkRepo({ 'pom.xml': '<project/>' })
-  await main(['init', ...YES], java)
-  assert.ok(read(java, 'docs/constitution.md').includes('ArchUnit'))
+  const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
+  const rel = 'soutec_logo.png'
+  const emitted = fs.readFileSync(path.join(dir, '.claude', 'skills', 'soutec-md-a-pdf', 'assets', rel))
+  const source = fs.readFileSync(
+    path.join(REPO_ROOT, 'templates', 'base', 'claude', 'skills', 'soutec-md-a-pdf', 'assets', rel)
+  )
+  assert.ok(source.length > 0)
+  assert.ok(emitted.equals(source), 'el PNG emitido difiere del template (corrupcion utf8/LF)')
+  // Firma PNG intacta.
+  assert.equal(emitted.subarray(1, 4).toString('ascii'), 'PNG')
 })
 
 test('se emiten los archivos obligatorios de Fase 1 de la guia Git', async () => {
@@ -123,10 +159,9 @@ test('se emiten los archivos obligatorios de Fase 1 de la guia Git', async () =>
 
   assert.ok(has(dir, '.github/pull_request_template.md'))
   assert.ok(has(dir, '.github/CODEOWNERS'))
-  assert.ok(read(dir, '.github/pull_request_template.md').includes('ID del hito'))
+  assert.ok(read(dir, '.github/pull_request_template.md').includes('ID de tarea'))
 
-  // Las skills SOUTEC.
-  assert.ok(has(dir, '.claude/skills/ccem-planner/SKILL.md'))
+  // La skill SOUTEC obligatoria.
   assert.ok(has(dir, '.claude/skills/soutec-github/SKILL.md'))
   assert.ok(read(dir, '.claude/skills/soutec-github/SKILL.md').includes('Nunca `git push origin main`'))
 })
@@ -142,7 +177,7 @@ test('IDEMPOTENCIA: correr init dos veces no cambia nada la segunda vez', async 
 
   assert.equal(after, before, 'la segunda corrida modifico archivos')
 
-  // La prueba real: el plar recomputado no tiene ni una accion de escritura.
+  // La prueba real: el plan recomputado no tiene ni una accion de escritura.
   const plan = replan(dir)
   const nonNoop = plan.actions.filter((a) => a.verdict !== NOOP)
   assert.deepEqual(nonNoop.map((a) => `${a.dest}:${a.verdict}`), [], 'quedaron acciones pendientes')
@@ -181,7 +216,10 @@ test('el lockfile registra hash y policy de cada archivo emitido', async () => {
   assert.equal(lock.harnessVersion, loadManifest().harnessVersion)
   assert.equal(lock.vars.PROJECT_NAME, 'acme')
   assert.equal(lock.files['CLAUDE.md'].policy, 'user-owned')
-  assert.equal(lock.files['.claude/skills/ccem-core/SKILL.md'].policy, 'managed')
+  assert.equal(lock.files['.claude/skills/soutec-github/SKILL.md'].policy, 'managed')
+  // Los binarios se registran con su hash de bytes.
+  assert.equal(lock.files['.claude/skills/soutec-md-a-pdf/assets/soutec_logo.png'].binary, true)
+  assert.deepEqual(lock.skills, [...SKILLS].sort())
   assert.ok(lock.blocks['.gitignore'].hash, 'el bloque del .gitignore no quedo registrado')
 
   // El lockfile refleja el disco: replanificar da NOOP y nada mas.

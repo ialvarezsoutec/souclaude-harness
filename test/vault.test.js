@@ -14,6 +14,8 @@ import {
   harnessDocsUrl,
   isInsideCwd,
   ensureVault,
+  carpetaProyecto,
+  leerRegistroDePrefijos,
 } from '../src/core/vault.js'
 import { loadManifest } from '../src/core/manifest.js'
 
@@ -23,10 +25,25 @@ const YES = ['--yes', '--name', 'acme', '--type', 'backend', '--lang', 'es']
 
 // Un Vault de mentira pero real: carpeta con 00-System/, que es la senal que usa
 // looksLikeVault. No hace falta que sea un repo git para conectarlo.
-function mkVault() {
+// `filas` son pares [prefijo, proyecto] para el registro de prefijos del Vault
+// (00-System/id-registry.md). Sin filas queda solo el encabezado, que es como se
+// comportaba el Vault de prueba antes de que el registro se leyera.
+function mkVault(proyectos = [], filas = []) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'souclaude vault '))
   fs.mkdirSync(path.join(dir, '00-System', 'templates'), { recursive: true })
-  fs.writeFileSync(path.join(dir, '00-System', 'id-registry.md'), '# prefijos\n', 'utf8')
+  fs.writeFileSync(
+    path.join(dir, '00-System', 'id-registry.md'),
+    [
+      '# Registro de prefijos - fuente unica. Un prefijo = un proyecto.',
+      '',
+      '| Prefijo | Proyecto | Dueno | Fecha de alta | Estado |',
+      '|---------|----------|-------|---------------|--------|',
+      ...filas.map(([prefijo, proyecto]) => `| ${prefijo} | ${proyecto} | @x | 2026-08-20 | activo |`),
+      '',
+    ].join('\n'),
+    'utf8'
+  )
+  for (const p of proyectos) fs.mkdirSync(path.join(dir, p), { recursive: true })
   return dir
 }
 
@@ -281,4 +298,418 @@ test('camino interactivo: sin Vault detectado, una sola confirmacion y sin pregu
   assert.equal(textCalls, 0, 'pregunto la ruta pudiendo usar el default (ya afuera del repo)')
   assert.equal(confirmCalls, 1, 'el camino interactivo hizo mas de una confirmacion')
   assert.equal(abs, path.join(path.dirname(cwd), 'soubunker-vault'))
+})
+
+// --- "project": la carpeta Project-<PREFIJO> se DECLARA, no se adivina ------
+//
+// Sin este campo, carpetaProyecto() cae al respaldo "si el Vault tiene una sola
+// carpeta, es esa". Eso acierta hoy y deja de acertar -- sin error, en todas las
+// maquinas a la vez -- en cuanto el Vault tiene dos proyectos: el monitor deja
+// de publicar las lineas de sessions.md. Estos tests fijan que la respuesta
+// quede escrita, incluso cuando es obvia.
+
+test('con UNA sola carpeta Project-*, el proyecto se DECLARA en vez de quedar inferido', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  const vault = mkVault(['Project-SHS'])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-SHS')
+})
+
+// El caso que rompe hoy: con dos carpetas no hay nada que inferir, asi que sin
+// respuesta explicita no se inventa una.
+test('con VARIAS carpetas y sin --vault-project, el modo no interactivo no declara ninguna', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  const vault = mkVault(['Project-CSC', 'Project-SHS'])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault], dir), 0)
+
+  const cfg = JSON.parse(read(dir, VAULT_CONFIG))
+  assert.equal(cfg.project, undefined, 'se declaro un proyecto adivinando entre varios')
+  assert.ok(cfg.path, 'el Vault tampoco se conecto: el proyecto no puede bloquear la conexion')
+})
+
+test('--vault-project declara la carpeta pedida sin preguntar', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  const vault = mkVault(['Project-CSC', 'Project-SHS'])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-project', 'Project-CSC'], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-CSC')
+})
+
+test('--vault-project con una carpeta inexistente avisa y NO persiste el typo', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  const vault = mkVault(['Project-SHS'])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-project', 'Project-SSH'], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, undefined)
+})
+
+// "project" se usa como segmento de ruta contra la raiz del Vault, asi que la
+// forma se valida aunque no haya carpetas contra que contrastar el nombre.
+test('--vault-project rechaza cualquier cosa que no sea un nombre de carpeta de proyecto', async () => {
+  const vault = mkVault()
+
+  for (const basura of ['../fuera', 'Project-a/b', 'otra-cosa', 'Project-']) {
+    const dir = mkRepo({ 'README.md': '' })
+    assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-project', basura], dir), 0)
+    assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, undefined, `se persistio "${basura}"`)
+  }
+})
+
+// Con el Vault todavia sin carpetas (recien clonado, o antes de que T002 siembre
+// la del proyecto) un nombre bien formado si se acepta.
+test('--vault-project se acepta en un Vault sin carpetas si el nombre esta bien formado', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  const vault = mkVault()
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-project', 'Project-CSC'], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-CSC')
+})
+
+test('lo ya declarado es sticky: un upgrade sin flags no lo vuelve a resolver', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  const vault = mkVault(['Project-CSC', 'Project-SHS'])
+  await main(['init', ...YES, '--vault-path', vault, '--vault-project', 'Project-CSC'], dir)
+
+  assert.equal(await main(['upgrade', ...YES], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-CSC')
+})
+
+// Prioridad de resolveSkills: el flag explicito gana sobre lo guardado. Un flag
+// que se ignora en silencio seria el mismo problema con otra cara.
+test('--vault-project explicito corrige lo ya declarado', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  const vault = mkVault(['Project-CSC', 'Project-SHS'])
+  await main(['init', ...YES, '--vault-path', vault, '--vault-project', 'Project-CSC'], dir)
+
+  await main(['upgrade', ...YES, '--vault-project', 'Project-SHS'], dir)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-SHS')
+})
+
+test('camino interactivo: con varias carpetas se pregunta, con el repo homonimo como default', async () => {
+  const padre = fs.mkdtempSync(path.join(os.tmpdir(), 'souclaude proyecto '))
+  const cwd = path.join(padre, 'shs')
+  fs.mkdirSync(path.join(cwd, '.git'), { recursive: true })
+  const vault = mkVault(['Project-CSC', 'Project-OBS', 'Project-SHS'])
+
+  let opciones = null
+  let sugerido = null
+  const prompts = {
+    text: () => '',
+    select: ({ options, initialValue }) => {
+      opciones = options.map((o) => o.value)
+      sugerido = initialValue
+      return 'Project-OBS'
+    },
+  }
+
+  await ensureVault({
+    cwd,
+    flags: { 'vault-path': vault },
+    manifest: loadManifest(),
+    lock: null,
+    yes: false,
+    prompts,
+  })
+
+  assert.deepEqual(opciones, ['Project-CSC', 'Project-OBS', 'Project-SHS'], 'las carpetas no se ofrecieron ordenadas')
+  assert.equal(sugerido, 'Project-SHS', 'el default no salio del nombre del repo')
+  assert.equal(readVaultConfig(cwd).project, 'Project-OBS', 'se persistio el default en vez de lo elegido')
+})
+
+test('un project declarado que ya no existe en el Vault se avisa pero no se pisa', async () => {
+  const cwd = mkRepo({ 'README.md': '' })
+  const vault = mkVault(['Project-SHS'])
+  await main(['init', ...YES, '--vault-path', vault, '--vault-project', 'Project-SHS'], cwd)
+
+  fs.rmSync(path.join(vault, 'Project-SHS'), { recursive: true })
+  assert.equal(await main(['upgrade', ...YES], cwd), 0)
+
+  assert.equal(JSON.parse(read(cwd, VAULT_CONFIG)).project, 'Project-SHS', 'se borro lo declarado por el usuario')
+})
+
+test('el paso del proyecto nunca rompe la instalacion, ni con prompts inservibles', async () => {
+  const cwd = mkRepo({ 'README.md': '' })
+  const vault = mkVault(['Project-CSC', 'Project-SHS'])
+
+  const abs = await ensureVault({
+    cwd,
+    flags: { 'vault-path': vault },
+    manifest: loadManifest(),
+    lock: null,
+    yes: false,
+    prompts: {
+      text: () => '',
+      select: () => {
+        throw new Error('prompt roto')
+      },
+    },
+  })
+
+  assert.equal(abs, vault, 'un fallo del prompt tumbo la conexion con el Vault')
+  assert.equal(readVaultConfig(cwd).path, vault.split(path.sep).join('/'))
+})
+
+// --- Resolucion por el registro de prefijos del Vault (SHS-M5-T003) --------
+//
+// El registro (00-System/id-registry.md) es la fuente unica que dice que
+// proyecto es cada repo. Leerlo permite resolver SIN preguntar, que es lo unico
+// que quedaba sin cubrir: un `upgrade --yes` sobre una instalacion vieja.
+
+test('leerRegistroDePrefijos: parsea la tabla y saltea encabezado, separador y comentarios', () => {
+  const vault = mkVault([], [['SHS', 'souclaude-harness'], ['CSC', 'Chatbot Spacar']])
+
+  assert.deepEqual(leerRegistroDePrefijos(vault), [
+    { prefijo: 'SHS', proyecto: 'souclaude-harness' },
+    { prefijo: 'CSC', proyecto: 'Chatbot Spacar' },
+  ])
+})
+
+test('leerRegistroDePrefijos: un Vault sin registro devuelve [] en vez de romper', () => {
+  assert.deepEqual(leerRegistroDePrefijos(path.join(os.tmpdir(), `souclaude sin registro ${process.pid}`)), [])
+})
+
+test('el registro resuelve el proyecto sin preguntar, aun con varias carpetas', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault(['Project-CSC', 'Project-OBS', 'Project-SHS'], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-SHS')
+})
+
+// El caso que T003 vino a cerrar: hasta T001 esto solo emitia un warning y la
+// instalacion quedaba sin "project" para siempre.
+test('BACKFILL: un upgrade --yes sobre una instalacion vieja sin "project" lo completa por el registro', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault(['Project-CSC', 'Project-OBS', 'Project-SHS'], [['SHS', 'souclaude-harness']])
+  await main(['init', ...YES, '--vault-path', vault], dir)
+
+  // Se simula la instalacion previa a T001: path y repo persistidos, sin project.
+  const cfg = JSON.parse(read(dir, VAULT_CONFIG))
+  delete cfg.project
+  fs.writeFileSync(path.join(dir, ...VAULT_CONFIG.split('/')), JSON.stringify(cfg), 'utf8')
+
+  assert.equal(await main(['upgrade', ...YES], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-SHS')
+})
+
+test('si el registro apunta a una carpeta que no esta en el Vault, NO se declara la unica que hay', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault(['Project-CSC'], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault], dir), 0)
+
+  assert.equal(
+    JSON.parse(read(dir, VAULT_CONFIG)).project,
+    undefined,
+    'se declaro el proyecto de OTRO repo por ser la unica carpeta'
+  )
+})
+
+test('un repo que no figura en el registro sigue cayendo en la unica carpeta que hay', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'proyecto-sin-registrar' }) })
+  const vault = mkVault(['Project-SHS'], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-SHS')
+})
+
+// Sin fuzzy: parecerse al nombre registrado no alcanza. Una coincidencia
+// aproximada seria otra forma de adivinar, que es justo lo que se corrigio.
+test('el registro no matchea por parecido: un nombre distinto no resuelve', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude' }) })
+  const vault = mkVault(['Project-CSC', 'Project-SHS'], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, undefined)
+})
+
+
+// --- Sembrado de la carpeta del proyecto (SHS-M5-T002) ---------------------
+//
+// Si el registro de prefijos ya asocia este repo a un Project-<PREFIJO> que
+// todavia no existe en el Vault, el CLI lo crea. Es la unica escritura del
+// harness en el repo COMPARTIDO de la organizacion, asi que las dos mitades de
+// estos tests son igual de importantes: que siembre cuando corresponde y que
+// NO escriba nada en ningun otro caso.
+
+// El frontmatter exacto que el plugin Kanban de Obsidian necesita para
+// renderizar el archivo como tablero. Es contrato, no estetica.
+const FRONTMATTER = `---
+kanban-plugin: board
+---`
+
+const ARCHIVOS_BASE = ['milestones.md', 'kanban.md', 'sessions.md', 'progress/history.md']
+
+const proyectosEn = (vault) => fs.readdirSync(vault).filter((n) => n.startsWith('Project-')).sort()
+
+test('--vault-seed siembra la carpeta que el registro asocia al repo, con sus archivos base', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault(['Project-CSC'], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-seed'], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-SHS')
+  for (const rel of ARCHIVOS_BASE) assert.ok(has(vault, `Project-SHS/${rel}`), `falta ${rel}`)
+  // plans/ nace vacia y git no versiona directorios vacios: sin el .gitkeep la
+  // carpeta no sobrevive al commit.
+  assert.ok(has(vault, 'Project-SHS/plans/.gitkeep'), 'plans/ quedo sin materializar')
+})
+
+// El Vault de prueba no es un repo git, asi que pushSeguro falla de verdad. Lo
+// que se fija aca es la degradacion: la carpeta queda en el clon local y el
+// repo igual conoce su proyecto -- lo contrario seria perder el sembrado por no
+// poder publicarlo.
+test('si el push del Vault falla, la carpeta y el "project" sobreviven igual', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault([], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-seed'], dir), 0)
+
+  assert.ok(has(vault, 'Project-SHS/milestones.md'))
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-SHS')
+})
+
+test('la semilla respeta el formato de tablero del protocolo', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault([], [['SHS', 'souclaude-harness']])
+  await main(['init', ...YES, '--vault-path', vault, '--vault-seed'], dir)
+
+  const kanban = read(vault, 'Project-SHS/kanban.md')
+  const milestones = read(vault, 'Project-SHS/milestones.md')
+
+  for (const tablero of [kanban, milestones]) {
+    assert.ok(tablero.startsWith(FRONTMATTER), 'sin el frontmatter no hay tablero en Obsidian')
+    for (const columna of ['## Backlog', '## En curso', '## Hecho']) assert.ok(tablero.includes(columna))
+  }
+  // La unica diferencia entre los dos tableros: las tareas tienen review, los
+  // milestones no.
+  assert.ok(kanban.includes('## En review'))
+  assert.ok(!milestones.includes('## En review'))
+})
+
+// Escribir en el Vault de la organizacion desde una corrida desatendida seria
+// una escritura por cada build de CI. Sin el flag explicito, no se toca.
+test('desatendido sin --vault-seed: el Vault no se toca y queda el aviso', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault(['Project-CSC'], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault], dir), 0)
+
+  assert.deepEqual(proyectosEn(vault), ['Project-CSC'], 'se escribio en el Vault sin pedirlo')
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, undefined)
+})
+
+// El prefijo no se inventa: sin fila en el registro no hay carpeta que sembrar,
+// ni siquiera con el flag puesto (vault-guide §3).
+test('--vault-seed no inventa un prefijo: un repo fuera del registro no siembra nada', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'proyecto-sin-registrar' }) })
+  const vault = mkVault([], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-seed'], dir), 0)
+
+  assert.deepEqual(proyectosEn(vault), [])
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, undefined)
+})
+
+test('camino interactivo: rechazar la creacion deja el Vault intacto y sin project', async () => {
+  const cwd = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault(['Project-CSC'], [['SHS', 'souclaude-harness']])
+
+  await ensureVault({
+    cwd,
+    flags: { 'vault-path': vault },
+    manifest: loadManifest(),
+    lock: null,
+    yes: false,
+    prompts: { text: () => '', confirm: () => false, select: () => '' },
+  })
+
+  assert.deepEqual(proyectosEn(vault), ['Project-CSC'])
+  assert.equal(readVaultConfig(cwd).project, undefined)
+})
+
+test('camino interactivo: aceptar siembra y publica con pushSeguro, sobre la carpeta y nada mas', async () => {
+  const cwd = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault([], [['SHS', 'souclaude-harness']])
+  const llamadas = []
+  const git = async (args) => {
+    llamadas.push(args.slice(2))
+    return ''
+  }
+
+  await ensureVault({
+    cwd,
+    flags: { 'vault-path': vault },
+    manifest: loadManifest(),
+    lock: null,
+    yes: false,
+    prompts: { text: () => '', confirm: () => true, select: () => '' },
+    git,
+  })
+
+  assert.deepEqual(
+    llamadas.map((a) => a[0]),
+    ['add', 'commit', 'pull', 'push'],
+    'el orden de pushSeguro no se respeto'
+  )
+  assert.deepEqual(llamadas[0], ['add', 'Project-SHS'], 'el add tiene que acotarse a la carpeta sembrada')
+  assert.deepEqual(llamadas[1], ['commit', '-m', 'chore: alta de Project-SHS en el Vault'])
+  assert.deepEqual(llamadas[2], ['pull', '--rebase'])
+  assert.equal(readVaultConfig(cwd).project, 'Project-SHS')
+})
+
+// --- Regresion multi-proyecto ----------------------------------------------
+//
+// carpetaProyecto() es el punto exacto donde el monitor decide en que carpeta
+// escribir sessions.md (src/commands/monitor.js:220). Estos dos casos son el
+// escenario que rompio en silencio desde el 2026-08-19.
+
+test('carpetaProyecto: con project declarado y varias carpetas devuelve la declarada', () => {
+  const vault = mkVault(['Project-CSC', 'Project-OBS', 'Project-SHS'])
+
+  assert.equal(carpetaProyecto(vault, { project: 'Project-OBS' }), 'Project-OBS')
+})
+
+test('carpetaProyecto: sin project y con varias carpetas devuelve null — el respaldo no adivina', () => {
+  const vault = mkVault(['Project-CSC', 'Project-SHS'])
+
+  assert.equal(carpetaProyecto(vault, {}), null)
+})
+
+test('writeVaultConfig preserva project y quien al reescribir (upgrade no borra la identidad)', async () => {
+  const { writeVaultConfig } = await import('../src/core/vault.js')
+  const cwd = mkRepo({ 'README.md': '' })
+  const vault = mkVault()
+
+  fs.mkdirSync(path.join(cwd, '.claude'), { recursive: true })
+  fs.writeFileSync(
+    path.join(cwd, ...VAULT_CONFIG.split('/')),
+    JSON.stringify({ path: vault, repo: 'https://x/y.git', project: 'Project-SHS', quien: 'ignacio' }),
+    'utf8'
+  )
+
+  // Reescritura tipica de un upgrade: solo path + repo. Lo manual sobrevive.
+  writeVaultConfig(cwd, { path: vault, repo: null })
+  let config = readVaultConfig(cwd)
+  assert.equal(config.project, 'Project-SHS')
+  assert.equal(config.quien, 'ignacio')
+  assert.equal(config.repo, 'https://x/y.git')
+
+  // Pasar quien explicito lo actualiza sin tocar el resto.
+  writeVaultConfig(cwd, { path: vault, quien: 'nacho' })
+  config = readVaultConfig(cwd)
+  assert.equal(config.quien, 'nacho')
+  assert.equal(config.project, 'Project-SHS')
 })

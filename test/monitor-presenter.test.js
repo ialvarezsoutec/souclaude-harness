@@ -5,7 +5,7 @@ import path from 'node:path'
 import { presentar } from '../src/monitor/adapters/panel-presenter.js'
 import { createLimitsReader } from '../src/monitor/adapters/usage-limits-reader.js'
 import { construirVista } from '../src/monitor/domain/arbol.js'
-import { mkClaudeHome } from './helpers-monitor.js'
+import { mkClaudeHome, lineaAssistant } from './helpers-monitor.js'
 
 // Este archivo responde: "la fila del gasto Extra que arma panel-presenter.js
 // refleja el porcentaje que la API ya calculo, no un recalculo local que puede
@@ -193,4 +193,116 @@ test('SHS-H3-T105: un extra detectado hace 1h sigue como alarma viva normal, his
   assert.ok(filaExtra, 'el extra recien detectado debe seguir en las filas vivas')
   assert.equal(filaExtra.porcentaje, 100)
   assert.deepEqual(proyeccion.historico, [])
+})
+
+// ---------------------------------------------------------------------------
+// duracionDeSesion: la fila DUR reemplazo a ACT en panel-layout.js -- interesa
+// cuanto lleva corriendo la sesion, no hace cuanto escribio por ultima vez.
+// ---------------------------------------------------------------------------
+
+const AHORA_DUR = Date.UTC(2026, 7, 17, 12, 0, 0)
+
+test('sesion terminada: la duracion va del primer al ultimo evento, no hasta ahora', () => {
+  const inicio = AHORA_DUR - 90 * 60_000 // hace 90 min
+  const fin = inicio + 45 * 60_000 // duro 45 min y no volvio a escribir
+  const vista = construirVista(
+    {
+      eventos: [
+        lineaEvento({ ts: inicio }),
+        lineaEvento({ ts: fin }),
+      ],
+    },
+    { ahora: AHORA_DUR }
+  )
+  const proyeccion = presentar(vista, { ahora: AHORA_DUR })
+
+  const fila = proyeccion.sesiones.filas.find((f) => f.id === 'sess')
+  assert.ok(fila)
+  assert.equal(fila.estado, 'terminado')
+  assert.equal(fila.duracionMs, 45 * 60_000)
+})
+
+test('sesion activa (vivo): la duracion corre hasta ahora, no se congela en el ultimo evento', () => {
+  const inicio = AHORA_DUR - 30 * 60_000
+  const ultimoEvento = AHORA_DUR - 30_000 // ultimo evento hace 30s: dentro del umbral de "corriendo" (60s)
+  const vista = construirVista(
+    {
+      eventos: [
+        lineaEvento({ ts: inicio, sessionId: 'sess-viva' }),
+        lineaEvento({ ts: ultimoEvento, sessionId: 'sess-viva' }),
+      ],
+      vivos: [{ sessionId: 'sess-viva', pid: 1234, cwd: 'C:\\proyecto', procesoVivo: true, startedAt: inicio }],
+    },
+    { ahora: AHORA_DUR }
+  )
+  const proyeccion = presentar(vista, { ahora: AHORA_DUR })
+
+  const fila = proyeccion.sesiones.filas.find((f) => f.id === 'sess')
+  assert.ok(fila)
+  assert.equal(fila.estado, 'corriendo')
+  // Corre hasta AHORA_DUR (30 min desde el inicio), no se detiene en el
+  // ultimo evento (que fue hace 25 min).
+  assert.equal(fila.duracionMs, 30 * 60_000)
+})
+
+test('sesion sin eventos con ts (inicio desconocido): duracion null, no un numero inventado', () => {
+  // ts:null solo entra al universo con ventana "all" (ver ventanas.js::dentroDe):
+  // en una ventana acotada un evento sin ts no se puede ubicar y queda afuera.
+  const vista = construirVista(
+    { eventos: [lineaEvento({ ts: null, sessionId: 'sess' })] },
+    { ahora: AHORA_DUR, ventana: 'all' }
+  )
+  const proyeccion = presentar(vista, { ahora: AHORA_DUR })
+  const fila = proyeccion.sesiones.filas.find((f) => f.id === 'sess')
+  assert.ok(fila)
+  assert.equal(fila.duracionMs, null)
+})
+
+function lineaEvento({ ts, sessionId = 'sess' }) {
+  return {
+    id: `msg_${Math.random().toString(36).slice(2)}`,
+    requestId: `req_${Math.random().toString(36).slice(2)}`,
+    ts,
+    sessionId,
+    agentId: null,
+    tipoAgente: 'principal',
+    cwd: 'C:\\proyecto',
+    rama: 'main',
+    modeloId: 'claude-sonnet-5',
+    effort: 'medium',
+    esSidechain: false,
+    servicio: 'standard',
+    cuentaUuid: null,
+    cuentaAlias: null,
+    uso: { entrada: 100, salida: 50, cacheCreacion: 0, cacheLectura: 0, cache1h: 0, cache5m: 0 },
+  }
+}
+
+// --- equipo activo (SHS-M3-T005) ---
+
+test('presenter: equipo null pasa tal cual (sin Vault) y con sesiones activas arma filas con tokens sumados', () => {
+  assert.equal(presentar({ generadoEn: AHORA }, { ahora: AHORA }).equipo, null)
+
+  const vista = {
+    generadoEn: AHORA,
+    equipoActivo: [
+      {
+        sessionId: 's-1', quien: 'colega', cuentaAlias: null, cuentaUuid: 'uuid-abcdef123',
+        maquina: 'PC02', proyecto: 'souclaude', rama: 'dev',
+        tokensIn: 900, tokensOut: 100, costoUsd: 0.2, frescuraMs: 120_000,
+      },
+    ],
+  }
+  const p = presentar(vista, { ahora: AHORA })
+  assert.equal(p.equipo.filas.length, 1)
+  const fila = p.equipo.filas[0]
+  assert.equal(fila.quien, 'colega')
+  assert.equal(fila.cuenta, 'uuid-abc')
+  assert.equal(fila.tokens, 1000)
+  assert.equal(fila.frescuraMs, 120_000)
+})
+
+test('presenter: equipo con lista vacia produce filas vacias (nadie activo), no null', () => {
+  const p = presentar({ generadoEn: AHORA, equipoActivo: [] }, { ahora: AHORA })
+  assert.deepEqual(p.equipo, { filas: [] })
 })

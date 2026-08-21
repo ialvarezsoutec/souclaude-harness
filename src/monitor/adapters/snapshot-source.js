@@ -2,6 +2,7 @@ import { indexTranscripts, readAgentMeta } from './claude-home.js'
 import { createTailer } from './jsonl-tailer.js'
 import { readLiveSessions } from './session-reader.js'
 import { createLimitsReader } from './usage-limits-reader.js'
+import { normalizarCuenta } from '../domain/cuentas.js'
 
 // Composicion de todos los adaptadores de lectura en un unico puerto
 // SnapshotSource (ver application/ports.js). Un `collect` = un tick del panel.
@@ -21,6 +22,24 @@ export function createSnapshotSource({
   usageHistory,
   usageFetcher,
   accountsReader = null,
+  // Registro de consumo por sesion del Vault (00-System/monitor/usage), ya
+  // cacheado por TTL (vault-usage-reader.js::createVaultUsageReader). El panel
+  // lo usa para las ventanas de limite con consumo propio y el equipo activo
+  // (SHS-M3-T005). null = sin Vault configurado: el snapshot lo distingue de
+  // "Vault vacio" llevando registrosUsage en null, no en [].
+  usageReader = null,
+  // Otras carpetas de Claude Code EN ESTA MISMA MAQUINA (SOUCLAUDE_LOCAL_ACCOUNTS,
+  // ej. claude1/claude2 con su propio CLAUDE_CONFIG_DIR): cada una es un
+  // {paths} con la MISMA forma que `paths` (home/projectsDir/sessionsDir/
+  // configFile), pero autocontenida (ver local-accounts-reader.js::pathsDeConfigDir).
+  // Sus eventos/sesiones se mezclan en el mismo arbol, etiquetados con su
+  // propia identidad de cuenta -- a diferencia de accountsReader (Vault), que
+  // solo aporta un AGREGADO para la seccion CUENTAS, no sesiones individuales.
+  cuentasLocales = [],
+  // Un limitsReader propio por cuenta local, solo para leer su identidad
+  // (accountUuid/email/alias) de su .claude.json -- nunca sus limites de plan,
+  // que ya expone local-accounts-reader.js via CUENTAS. Inyectable para tests.
+  crearLimitsReaderLocal = () => createLimitsReader(),
 } = {}) {
   // ESTADO ENTRE TICKS. El tailer solo devuelve lo NUEVO de cada archivo, asi
   // que si `collect` devolviera solo eso el panel mostraria los ultimos 2
@@ -39,6 +58,11 @@ export function createSnapshotSource({
   // Rutas vistas, solo para poder soltar el estado del tailer en reset().
   const vistos = new Set()
 
+  // Un limitsReader por cuenta local (cacheado entre ticks, igual que el
+  // principal), para no releer+parsear su .claude.json entero solo para sacar
+  // el accountUuid en cada tick.
+  const limitsReaderPorCuentaLocal = cuentasLocales.map(() => crearLimitsReaderLocal())
+
   let ultimoIndice = 0
   let ticks = 0
 
@@ -48,9 +72,32 @@ export function createSnapshotSource({
     const avisos = []
 
     // 1. Indice podado por mtime. Es el ahorro grande: con --since 24h la mayor
-    // parte del historico ni siquiera se abre.
-    const { files, warnings: avisosIndice } = await indexTranscripts(paths, { since: ventana.desde })
+    // parte del historico ni siquiera se abre. Se indexa la carpeta principal
+    // + cada cuenta local (SOUCLAUDE_LOCAL_ACCOUNTS), etiquetando cada archivo
+    // con la identidad de su cuenta para que el arbol pueda distinguirlas.
+    const { files: filesPrincipal, warnings: avisosIndice } = await indexTranscripts(paths, { since: ventana.desde })
     avisos.push(...avisosIndice)
+
+    const filesLocales = []
+    await enPool(cuentasLocales, CONCURRENCIA, async (cuentaLocal, i) => {
+      const { files: filesCuenta, warnings: avisosCuenta } = await indexTranscripts(cuentaLocal.paths, { since: ventana.desde })
+      avisos.push(...avisosCuenta)
+
+      let cuenta = null
+      try {
+        const res = await limitsReaderPorCuentaLocal[i].read(cuentaLocal.paths.configFile, { ahora: instante })
+        cuenta = normalizarCuenta(res.cuenta)
+        avisos.push(...res.warnings)
+      } catch (err) {
+        avisos.push({ file: cuentaLocal.paths.configFile, reason: err.code ?? err.message })
+      }
+
+      for (const file of filesCuenta) {
+        filesLocales.push({ ...file, cuentaUuid: cuenta?.accountUuid ?? null, cuentaAlias: cuenta?.alias ?? null })
+      }
+    })
+
+    const files = [...filesPrincipal, ...filesLocales]
     ultimoIndice = files.length
 
     // 2. Lectura incremental de cada archivo del indice.
@@ -85,7 +132,10 @@ export function createSnapshotSource({
       if (meta) metas.set(file.agentId, { agentId: file.agentId, ...meta })
     })
 
-    // 4. Procesos vivos.
+    // 4. Procesos vivos: la carpeta principal + cada cuenta local. `vivos` no
+    // carga cuenta (arbol.js resuelve la cuenta de una sesion por sus eventos,
+    // que ya la llevan) -- aca solo importa sessionId/cwd/pid, y esos no
+    // colisionan entre cuentas porque sessionId es un UUID.
     let vivos = []
     try {
       const res = await readLiveSessions(paths)
@@ -94,6 +144,15 @@ export function createSnapshotSource({
     } catch (err) {
       avisos.push({ file: paths.sessionsDir, reason: err.code ?? err.message })
     }
+    await enPool(cuentasLocales, CONCURRENCIA, async (cuentaLocal) => {
+      try {
+        const res = await readLiveSessions(cuentaLocal.paths)
+        vivos.push(...res.live)
+        avisos.push(...res.warnings)
+      } catch (err) {
+        avisos.push({ file: cuentaLocal.paths.sessionsDir, reason: err.code ?? err.message })
+      }
+    })
 
     // 5. Limites de uso (cacheados por mtime+ttl dentro del propio reader).
     // El mismo read trae la identidad de cuenta: viene del mismo archivo y el
@@ -167,6 +226,20 @@ export function createSnapshotSource({
       }
     }
 
+    // 5c. Registro de consumo por sesion del Vault (SHS-M3-T005). Sincrono
+    // pero cacheado por TTL dentro del reader; un fallo se degrada a aviso,
+    // nunca tumba el tick (mismo trato que accountsReader).
+    let registrosUsage = null
+    if (usageReader) {
+      try {
+        const res = usageReader.leer({ ahora: instante })
+        registrosUsage = res.registros
+        avisos.push(...res.warnings)
+      } catch (err) {
+        avisos.push({ file: 'vault-usage', reason: err.code ?? err.message })
+      }
+    }
+
     ticks += 1
 
     // 6. Snapshot con la forma exacta que espera construirVista.
@@ -183,6 +256,7 @@ export function createSnapshotSource({
       registroExtra,
       cuenta,
       cuentasRemotas,
+      registrosUsage,
       avisos,
     }
   }
@@ -226,8 +300,8 @@ async function enPool(items, limite, tarea) {
     trabajadores.push(
       (async () => {
         while (siguiente < total) {
-          const item = items[siguiente++]
-          await tarea(item)
+          const indice = siguiente++
+          await tarea(items[indice], indice)
         }
       })(),
     )

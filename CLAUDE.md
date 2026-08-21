@@ -3,62 +3,25 @@
 ## Contexto
 
 Proyecto de automation. Stack: Node.js.
-Dominio: [describir en 1-2 líneas qué hace este proyecto].
+Dominio: el generador del harness de Claude Code de SOUTEC — un CLI (`npx souclaude`)
+que instala y migra la superficie Claude (skills, settings, docs) en los repos de la
+organización.
 
-## Metodología CCEM
+## Harness
 
-Harness `1.1.0`. Las skills viven **en este repo**, en `.claude/skills/`, y
-se aplican solas cuando el contexto lo amerita:
+Harness `3.0.0`. Sin agentes ni flujos fijos: el modelo trabaja directo. Las skills
+viven en `.claude/skills/` y se aplican solas cuando el contexto lo amerita (en un
+proyecto consumidor se eligen al instalar con `npx souclaude`; `soutec-github` es
+obligatoria y siempre está):
 
-`ccem-core` (6 principios rectores + selección de modelo) · `ccem-sdd` (Spec-Driven
-Development) · `ccem-planner` (trazabilidad Hito ↔ CCEM ↔ Git) · `ccem-research`
-(evaluar herramientas) · `ccem-stack` (convenciones) · `ccem-prompting` (Anti-Hack) ·
-`soutec-github` (flujo Git obligatorio) · `ccem-rocas` (capa trimestral: la roca, el
-hito y el cierre — el hito emite los IDs).
-
-Comandos: `/spec-new`, `/adr-new`, `/constitution-check`, `/harness-upgrade`; y de la
-capa de rocas: `/rock-plan`, `/rock-status`, `/rock-close`, `/export-ninety`.
-
-Agentes de orquestacion en `.claude/agents/`: `orchestrator`, `spec-author`, `implementer`,
-`reviewer`; y el especialista `security-evidence-compiler` (solo cuando `it-security-review`
-pasa el gate). El flujo completo esta en `AGENTS.md`.
-
-## Cuándo se activa el flujo SDD
-
-**Ante todo pedido que implique escribir código, clasifícalo antes de tocar nada.** El flujo
-SDD se activa **por complejidad**, no porque alguien lo pida por su nombre:
-
-- **Directo, sin ceremonia** — fix puntual, cosmético (color, copy, rename, formato), typo,
-  spike, hotfix, script one-off. *"Cambia el color de este botón"* se hace y ya. Montar SDD
-  aquí **viola P9**.
-- **SDD** — feature nueva, integración con un sistema externo, contrato o schema nuevo,
-  migración, superficie de seguridad (auth, datos sensibles), >3 archivos o >2 días. *"Agrega
-  un módulo de login con Entra ID y recuperación de cuenta"* entra por acá: adoptas
-  `orchestrator` y arrancas por `spec.md`.
-
-Anuncia la clasificación en una línea antes de arrancar, para que el humano pueda corregirte
-a tiempo; si te dice que no hace falta, le haces caso. **Ante la duda, pregunta** en vez de
-asumir. La matriz completa está en la skill `ccem-sdd` y el triaje detallado en `AGENTS.md`.
-
-**El triaje no es la única puerta.** El usuario puede pedir SDD directamente —con
-`/spec-new <ID> <slug>`, o en palabras ("hagamos esto con SDD", "actúa como
-`orchestrator`")— y entonces **se monta el flujo sin discutir la clasificación**: su pedido
-explícito gana. Si además te parece que el trabajo era simple, puedes decirlo en una línea,
-pero haces lo que te pidió.
-
-## Constitución
-
-**Siempre** leer `docs/constitution.md` antes de cualquier decisión arquitectónica o
-implementación nueva. Los principios **P1-P10** son no-negociables. **P9 (Simplicity
-First) y P10 (Surgical Changes) son universales y siempre aplican.**
-
-Las dos reglas que más se violan sin querer:
-
-- **P2 — el dominio jamás importa frameworks.** `adapters → application → domain`, nunca
-  al revés. Un framework nunca es un puerto. El enforcement (dependency-cruiser (o ESLint no-restricted-imports)) corre en
-  CI y bloquea el merge. **Modificar la config del enforcement para que un check pase es
-  hacer trampa**: se corrige el código, no la regla.
-- **P10 — cada línea cambiada traza al request.** Si no traza, no va.
+- `soutec-github` — flujo Git/GitHub obligatorio de SOUTEC.
+- `it-security-review` — security review para IT.
+- `security-report-standard` — estándar de informes de seguridad.
+- `soutec-md-a-pdf` — Markdown a PDF con identidad Soutec.
+- `adr-new` — documentar decisiones con ADRs.
+- `harness-upgrade` — actualizar el harness.
+- `vault-milestones` — análisis e iteración de milestones en el Vault.
+- `jira-sync` — espejo del tablero del Vault en Jira vía MCP de Atlassian.
 
 ## Git — reglas duras
 
@@ -66,28 +29,22 @@ Las dos reglas que más se violan sin querer:
 protocolo — ver "Los dos repos" más abajo.
 
 **Nunca** hagas commit, push ni merge directo a `main`. Todo pasa por rama + PR. Los
-hotfixes también.
+hotfixes también. **`main` solo recibe merges desde `dev`**: las ramas de trabajo
+nacen de `dev` y su PR apunta a `dev`; el paso `dev` → `main` es el release, también
+por PR.
 
-- **Toda rama nace de un hito de una roca.** Formato: `tipo/<ID-hito>-<slug>`
-  (`feature/REA-H3-captura-lead`). Tipos: `feature` `fix` `hotfix` `docs` `chore`
-  `refactor` `experiment`. El ID del hito es `<PREFIJO>-H<n>` (`REA-H3`), emitido en el
-  Paso 2 de la roca (`/rock-plan`).
-  **Excepción temporal (rocas/Planner desactivados por ahora):** mientras no se usen
-  rocas, no es obligatorio parar a pedir el ID de hito. Si no hay uno, usa el formato
-  `tipo/<slug>` (sin prefijo de ID) y seguí adelante. En cuanto se retome el uso de rocas,
-  esta excepción se revierte y vuelve a regir "si no tienes el ID, PREGUNTA. No lo
-  inventes."
-- La carpeta de spec lleva **el mismo ID (o el mismo slug, si no hay ID)** que la rama:
-  `specs/<ID-hito>-<slug>/` o, sin ID, `specs/<slug>/`. Ese identificador es el hilo que
-  amarra hito, spec, rama, commits, PR y release. Un hito puede producir varios specs
-  (mismo ID, distinto slug); cada carpeta = una rama = un PR.
+- Ramas: `tipo/<slug>` (`feature/captura-lead`). Tipos: `feature` `fix` `hotfix`
+  `docs` `chore` `refactor` `experiment`. Si hay un ID rastreable — tarea o
+  milestone del Vault (`feature/SHS-M7-T006-playbook-adopcion`) o tarea de un
+  tracker externo — va como prefijo del slug, pero **no inventes IDs**.
 - Commits: `tipo: descripción breve` (español, sin scope). Tipos: `feat` `fix` `docs`
   `chore` `refactor` `test` `style` `build` `ci` `perf` `revert`. Un hotfix se commitea
   como `fix:`. Prohibidos: `update`, `cosas`, `ahora sí`.
-- Sincronizar con main: `git fetch origin && git merge origin/main`. **Nunca
+- Sincronizar la rama: `git fetch origin && git merge origin/dev`. **Nunca
   `git push --force`.**
-- **Yo no mergeo, no apruebo PRs, no creo tags/releases, no creo repositorios.** Eso es
-  del coordinador.
+- **Yo no mergeo PRs, no los apruebo y no creo repositorios.** Eso es del coordinador.
+  Los **tags de versión** (`vX.Y.Z` + tag móvil por major) sí puedo crearlos, solo al
+  publicar y después del merge de release `dev` → `main`.
 - Al abrir el PR: completar `.github/pull_request_template.md` de verdad. Si piden
   correcciones, push a la **misma** rama — nunca un PR nuevo.
 
@@ -97,44 +54,33 @@ Trabajas contra **dos repos a la vez**, con reglas opuestas a propósito:
 
 | | Este repo (proyecto) | El Vault |
 |---|---|---|
-| Qué va | Código, tests, specs, progreso | Kanban, espejos de specs/progreso, rocas |
+| Qué va | Código, tests, progreso | Milestones, planes, kanban, sesiones |
 | Cómo se escribe | Rama + PR. **Nunca** directo a `main` | **Push directo a `main`**, sin PR |
 | Por qué | Todo cambio se revisa | El tablero refleja el ahora, no el último merge |
 
+**Trazabilidad obligatoria**: todo trabajo pertenece a un **milestone del Vault**.
+Antes de tocar código, declara al usuario sobre qué milestone vas a trabajar; si el
+pedido no corresponde a ningún milestone existente, da de alta uno en el Backlog
+(skill `vault-milestones`) **antes** de empezar. Trabajo sin milestone declarado es
+una violación del protocolo, no una omisión menor.
+
+**Espejo en Jira** (skill `jira-sync`): cada movimiento de tarjeta en el Vault se
+refleja en Jira **en el mismo momento** — Vault primero, Jira inmediatamente
+después. Si el conector no está autorizado, se reporta y el trabajo local sigue.
+
 La ruta local del Vault está en `.claude/vault.local.json` (la escribe `npx souclaude`).
-**Antes de tomar un task**: `git -C "<vault>" pull --rebase` y lee
-`Project-<PREFIJO>/kanban.md`. Si la tarjeta ya está **En curso** con otro dueño, la está
-trabajando otra máquina: **para y pregunta**. Al tomarla, muévela y pushea al Vault en ese
-momento. Protocolo completo, convención de commits y manejo de conflictos en
-`progress/README.md`. **Nunca `git push --force`, en ninguno de los dos.**
-
-## Flujo de trabajo
-
-Hasta que `spec.md`, `plan.md` y `tasks.md` estén listos, la rama **solo admite commits
-`docs:`**. Nada de código todavía.
-
-Un commit por task, **nunca en batch**: se ejecuta de a un task, con su test y su commit.
-PR draft tras 2-3 commits, no al final.
-
-Quién aprueba el paso de un task al siguiente depende del **modo de trabajo**:
-
-- **`auto` — el default.** El flujo encadena sin pedir OK: no hay que configurar nada. **Sigue
-  parando igual** ante un spec ambiguo, un `blocked`, tests rojos, un `CHANGES_REQUESTED` del
-  reviewer, o cualquier acción destructiva o sobre un sistema externo (P6: push, merge, tags,
-  releases, deploys).
-- **`manual` — opt-in** (`npx souclaude mode manual`): se **espera el OK humano** antes de
-  pasar al siguiente task y en cada checkpoint de spec/plan/tasks.
-
-El modo se lee de `.claude/mode.local.json` (local y gitignorado); si el archivo falta o es
-inválido, rige `auto`. Cambia quién aprueba el avance, no si hay control de calidad: el
-`reviewer` es obligatorio en ambos modos. Detalle completo en `AGENTS.md`.
+Antes de empezar a trabajar: `git -C "<vault>" pull --rebase` y lee
+`Project-<PREFIJO>/milestones.md` y `kanban.md`. Si el milestone o la tarea ya está
+**En curso** con otro dueño u otra máquina: **para y pregunta**. Al tomar o cerrar
+algo, mueve la tarjeta y pushea **en ese momento**; al cerrar la sesión, agrega tu
+línea (con tokens) a `sessions.md`. Protocolo completo en `progress/README.md`.
+**Nunca `git push --force`, en ninguno de los dos.**
 
 ## Language
 
 Responder siempre en **español neutro** (estándar panhispánico), **no** en español
-rioplatense/argentino. Aplica a **toda** salida: la sesión principal y **todos los
-subagentes** (`orchestrator`, `spec-author`, `implementer`, `reviewer` y cualquier otro).
-Es el estándar de la organización — aplica a toda respuesta, no solo al código.
+rioplatense/argentino. Es el estándar de la organización — aplica a toda respuesta,
+no solo al código.
 
 - **Conjugación: tuteo (tú)**, nunca voseo (vos) ni tratamiento formal (usted). Los
   imperativos van en tuteo: `usa` (no "usá"), `ten` (no "tené"), `dilo` (no "decilo"),
@@ -142,37 +88,29 @@ Es el estándar de la organización — aplica a toda respuesta, no solo al cód
 - **Evita localismos rioplatenses** en la prosa ("che", "bárbaro", "recién ahí",
   "acordate", "de una"). Prefiere vocabulario entendible en toda Hispanoamérica.
 
-**El dominio se nombra en el lenguaje del negocio (español)**: entidades, value objects,
-policies y métodos de puerto (`Ticket`, `ContextoDeNegocio`, `generar_respuesta`). Es
-deliberado — el puerto habla en lenguaje de dominio, no de framework.
-**Adaptadores, infraestructura y todo lo que toca frameworks: en inglés.**
+**El dominio se nombra en el lenguaje del negocio (español)**; adaptadores,
+infraestructura y todo lo que toca frameworks, en inglés.
 
 ## Reglas técnicas críticas
 
-Reglas que causan errores si se omiten. Agregar/quitar según el proyecto.
-
-### [Categoría — ej: API, Data, Deployment]
-- [Regla concreta 1]
-- [Regla concreta 2]
+### Generador (este repo)
+- El manifest (`templates/harness.manifest.json`) es la fuente de verdad de lo que se
+  instala. Todo archivo nuevo en `templates/base/` necesita su entry — `npx souclaude
+  verify` y el test de dogfood lo vigilan.
+- Los archivos de skills con assets binarios llevan `"binary": true` en el manifest:
+  sin eso, la lectura utf8 y la normalización LF corrompen los bytes.
+- Escritura de archivos: siempre plana (nada de write-temp-then-rename): OneDrive y
+  antivirus rompen el patrón "atómico" con EPERM.
+- Tests: `npm test` (Node >= 22.4). Quita `NO_COLOR` del entorno antes de correr los
+  tests de monitor-render.
 
 ## Economía de tokens
 
-Las sesiones re-pagan el contexto en cada mensaje. Reglas para no despilfarrar:
-
-- **`/clear` entre tasks.** Al cerrar una task (commit hecho, OK humano dado), limpia la
-  sesión antes de tomar la siguiente. El estado vive en git, `specs/`, `progress/` y el
-  Vault — no en la conversación. Una sesión que arrastra 3 tasks paga el historial de
-  las 3 en cada turno.
-- **Búsquedas amplias → subagente de solo-lectura (`Explore`).** Ubicar dónde vive algo o
-  mapear convenciones no se hace con greps y lecturas en la sesión principal: el volcado
-  queda en el subagente y a la sesión vuelve solo la conclusión.
-- **Subagentes con contexto mínimo.** El prompt de un lanzamiento lleva el bloque del
-  task y las rutas afectadas, no artefactos completos. Cada agente tiene su regla de
-  lectura mínima en `.claude/agents/`.
-- **Modelo por clase de tarea.** La matriz de `ccem-model-router` decide modelo y effort;
-  no se fuerza el tier caro por defecto. Tareas mecánicas van en `haiku`.
-- **Conectores MCP al mínimo.** Cada conector de claude.ai suma contexto fijo a cada
-  mensaje de cada sesión. Mantén conectados solo los que este proyecto usa de verdad.
+- **`/clear` entre tareas.** El estado vive en git, `progress/` y el Vault — no en la
+  conversación.
+- **Búsquedas amplias → subagente de solo-lectura (`Explore`).** El volcado queda en
+  el subagente; a la sesión vuelve solo la conclusión.
+- **Conectores MCP al mínimo.**
 
 ## Behavior expectations
 
@@ -181,6 +119,7 @@ Las sesiones re-pagan el contexto en cada mensaje. Reglas para no despilfarrar:
 - No instalar dependencias sin confirmar.
 - Reportar honestamente si algo falla. **Sin workarounds silenciosos.**
 - No modificar un test para que pase. Si el test está mal, dilo y para.
+- Cambios chicos y quirúrgicos: lo más simple que resuelva el pedido.
 
 ## Memoria
 
@@ -199,4 +138,4 @@ tokens ni contraseñas. `.claude/settings.json` ya deniega su lectura vía
 
 ## Referencias
 
-`docs/constitution.md` · `specs/` · `docs/decisions/` · `notes.md`
+`docs/decisions/` · `notes.md` · `progress/README.md`

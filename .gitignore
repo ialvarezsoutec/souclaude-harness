@@ -1,5 +1,5 @@
 # >>> souclaude-harness >>>
-# Generado por souclaude-harness v2.3.0. No editar dentro del bloque:
+# Generado por souclaude-harness v3.1.0. No editar dentro del bloque:
 # el proximo 'souclaude upgrade' lo reemplaza. Tus lineas fuera del bloque no se tocan.
 # === Variables de entorno y secretos ===
 # Guia Operativa Git & GitHub Soutec v2.0, seccion 8.2.
@@ -20,9 +20,6 @@ secrets.json
 
 # Ruta local al Vault: es de esta maquina, no del proyecto.
 .claude/vault.local.json
-
-# Modo de trabajo de los agentes (manual/auto): es de esta maquina, no del proyecto.
-.claude/mode.local.json
 
 # Propuestas del harness pendientes de merge. Son transitorias: revisalas con
 # `git diff --no-index <archivo> <archivo>.new` y borralas.

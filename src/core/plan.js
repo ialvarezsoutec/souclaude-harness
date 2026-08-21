@@ -1,7 +1,7 @@
 import path from 'node:path'
-import { hashContent, normalize } from './hash.js'
-import { readIfExists } from './fsx.js'
-import { readTemplate, readFragments } from './manifest.js'
+import { hashContent, hashBytes, normalize } from './hash.js'
+import { readIfExists, readBytesIfExists } from './fsx.js'
+import { readTemplate, readTemplateBytes, readFragments } from './manifest.js'
 import { render } from './render.js'
 import { buildBlock, upsertBlock, extractBlock } from './block.js'
 import { seedMerge, parseJson, stringifyJson } from './jsonmerge.js'
@@ -18,13 +18,20 @@ export const RESTORE = 'restore' // lo escribimos y el usuario lo borro -> reesc
 export const LOCAL_EDIT = 'local-edit' // el usuario lo edito, el template no cambio -> dejarlo
 export const OBSOLETE = 'obsolete' // estaba en el lockfile, ya no esta en el manifest -> ofrecer borrado
 
-export function computePlan({ manifest, cwd, lock, vars, detected, force = false }) {
+export function computePlan({ manifest, cwd, lock, vars, detected, force = false, skills }) {
   const actions = []
   const fromVersion = lock?.harnessVersion ?? '0.0.0'
   const seenDests = new Set()
 
+  // Seleccion de skills. Sin parametro explicito: lo que dice el lockfile; sin
+  // lockfile, todas las del catalogo (compatibilidad con repos pre-3.0 y tests).
+  const selected = resolveSkillSet({ manifest, lock, skills })
+
   for (const entry of manifest.files) {
     if (entry.when === 'empty-repo' && !detected.isEmpty) continue
+    // Skill no seleccionada: no se emite. Si estaba instalada de antes, cae al
+    // barrido de OBSOLETE de abajo y se ofrece con --prune.
+    if (entry.skill && !selected.has(entry.skill)) continue
     seenDests.add(entry.dest)
     actions.push(planFile({ entry, manifest, cwd, lock, vars, detected, fromVersion, force }))
   }
@@ -49,11 +56,21 @@ export function computePlan({ manifest, cwd, lock, vars, detected, force = false
 
   const dirs = (manifest.dirs ?? []).filter((d) => !(d.when === 'empty-repo' && !detected.isEmpty))
 
-  return { actions, dirs, fromVersion, toVersion: manifest.harnessVersion }
+  return { actions, dirs, fromVersion, toVersion: manifest.harnessVersion, skills: [...selected].sort() }
+}
+
+// Las required del catalogo entran SIEMPRE, se pidan o no: es la garantia de
+// que soutec-github no se puede desinstalar.
+export function resolveSkillSet({ manifest, lock, skills }) {
+  const catalog = manifest.skills ?? []
+  const required = catalog.filter((s) => s.required).map((s) => s.id)
+  const chosen = skills ?? lock?.skills ?? catalog.map((s) => s.id)
+  return new Set([...required, ...chosen])
 }
 
 function planFile({ entry, manifest, cwd, lock, vars, detected, fromVersion, force }) {
   const abs = path.join(cwd, ...entry.dest.split('/'))
+  if (entry.binary) return planBinaryFile({ entry, abs, lock, force })
   const raw = readIfExists(abs)
 
   // Un archivo vacio es equivalente a un archivo ausente: no hay nada del usuario que
@@ -125,6 +142,53 @@ function planFile({ entry, manifest, cwd, lock, vars, detected, fromVersion, for
   }
 
   // El usuario lo edito.
+  if (desiredHash === lockEntry.hash) {
+    action.verdict = LOCAL_EDIT
+    reasons.push('editado por ti; el template no cambio')
+    return action
+  }
+
+  action.verdict = CONFLICT
+  reasons.push('editado por ti Y el template cambio')
+  if (!force) action.writePath = `${entry.dest}.new`
+  return action
+}
+
+// La misma tabla de clasificacion que planFile, pero comparando bytes: sin
+// migraciones, sin render y sin normalizacion de newlines (corromperia un PNG).
+function planBinaryFile({ entry, abs, lock, force }) {
+  const raw = readBytesIfExists(abs)
+  const onDisk = raw != null && raw.length === 0 ? null : raw
+  const desired = readTemplateBytes(entry.src)
+  const lockEntry = lock?.files?.[entry.dest]
+  const reasons = []
+  const action = { dest: entry.dest, policy: entry.policy, reasons, content: desired, writePath: entry.dest, binary: true }
+
+  if (onDisk == null) {
+    action.verdict = lockEntry ? RESTORE : CREATE
+    return action
+  }
+
+  const diskHash = hashBytes(onDisk)
+  const desiredHash = hashBytes(desired)
+
+  if (desiredHash === diskHash) {
+    action.verdict = NOOP
+    return action
+  }
+
+  if (!lockEntry) {
+    action.verdict = FOREIGN
+    action.writePath = `${entry.dest}.new`
+    reasons.push('ya existia y no fue generado por el harness')
+    return action
+  }
+
+  if (diskHash === lockEntry.hash) {
+    action.verdict = UPDATE
+    return action
+  }
+
   if (desiredHash === lockEntry.hash) {
     action.verdict = LOCAL_EDIT
     reasons.push('editado por ti; el template no cambio')

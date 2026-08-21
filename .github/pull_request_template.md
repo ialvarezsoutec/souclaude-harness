@@ -1,9 +1,8 @@
 ## Descripción del cambio
 Explica brevemente qué se cambió y por qué.
 
-## Hito relacionado
-- ID del hito (`<PREFIJO>-H<n>`):
-- Roca / trimestre:
+## Tarea relacionada
+- ID de tarea o tarjeta del kanban (si aplica):
 
 ## Tipo de cambio
 - [ ] Nueva funcionalidad
@@ -23,6 +22,11 @@ Explica brevemente qué se cambió y por qué.
 
 ## Evidencia
 Adjuntar capturas, logs, resultados de prueba o explicación breve.
+
+## Security review
+- [ ] Corrí `/security-review` sobre este cambio antes de abrir el PR.
+- Hallazgos: (ninguno / listar hallazgos y su severidad)
+- Si hubo hallazgos: (remediados antes del PR / usuario decidió continuar sin remediar y aceptó el riesgo)
 
 ## Impacto / Riesgos
 Indicar si afecta producción, usuarios, integraciones, Odoo, APIs,

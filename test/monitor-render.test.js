@@ -328,7 +328,17 @@ test('robustez: numeros extremos (0, 1e12 tokens, costo 0) no desbordan sus colu
 // ---------------------------------------------------------------------------
 
 test('contenido: un limite al 91% muestra la marca !! y el titulo muta a incluir LIMITE', () => {
-  const vista = vistaEjemplo({ limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 91 })] })
+  // El grafico de barras vive dentro de CUENTAS (seccionCuentas en
+  // panel-layout.js): sin vista.cuentas/limitesPorCuenta no hay donde pintar
+  // la marca, aunque vista.limites (que solo alimenta el titulo/alarma) siga
+  // reportando el 91%.
+  const vista = vistaEjemplo({
+    limites: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 91 })],
+    cuentas: { filas: [{ alias: 'dev', esLocal: true, costoUsd: 1.23 }] },
+    limitesPorCuenta: [
+      { alias: 'dev', esLocal: true, filas: [limite({ etiqueta: 'sesion', modelo: 'opus', porcentaje: 91 })] },
+    ],
+  })
   const caps = detectCaps({ overrides: { unicode: true, color: false } })
   const lineas = renderPanel(vista, { cols: 100, rows: 24, modo: 'full', caps, color: false })
   assert.ok(lineas[0].includes('LIMITE'), `el titulo (linea 0) deberia mutar a incluir LIMITE: ${lineas[0]}`)
@@ -346,6 +356,72 @@ test('contenido: vista.recortes.sesiones agrega una linea "y N mas" con el numer
     lineas.some((l) => l.includes('y 5 sesiones mas')),
     `deberia haber una linea "y 5 sesiones mas" (3 filas mostradas + 5 recortadas aguas arriba):\n${lineas.join('\n')}`
   )
+})
+
+test('contenido: SESIONES muestra DUR (no ACT) con la duracion formateada', () => {
+  const vista = vistaEjemplo({
+    sesiones: { total: 1, vivas: 0, filas: [sesionFila({ duracionMs: 3 * 3600_000 + 25 * 60_000 })] },
+  })
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  const lineas = renderPanel(vista, { cols: 120, rows: 30, modo: 'full', caps, color: false })
+  const cabecera = lineas.find((l) => l.includes('TITULO'))
+  assert.ok(cabecera?.includes('DUR'), `la cabecera de SESIONES deberia decir DUR, no ACT:\n${cabecera}`)
+  assert.ok(!cabecera?.includes('ACT'), `ACT no deberia aparecer mas en la cabecera:\n${cabecera}`)
+  assert.ok(
+    lineas.some((l) => l.includes('3h25m')),
+    `deberia aparecer la duracion formateada 3h25m:\n${lineas.join('\n')}`
+  )
+})
+
+test('contenido: en pantalla ancha (cols>=140), PROYECTO y RAMA ganan el espacio libre de SESIONES', () => {
+  const vista = vistaEjemplo({
+    sesiones: {
+      total: 1,
+      vivas: 0,
+      filas: [
+        sesionFila({
+          id: 'wide',
+          proyecto: 'souclaude-harness', // 18 chars: cabe en el ancho de proyecto>=140 (22) pero no en el de cols=100 (11)
+          rama: 'feature/una-rama-larga', // 22 chars: cabe en rama>=140 (26) pero no en cols=100 (15)
+        }),
+      ],
+    },
+  })
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  const anchoStrecho = renderPanel(vista, { cols: 100, rows: 30, modo: 'full', caps, color: false })
+  const anchoAmplio = renderPanel(vista, { cols: 150, rows: 30, modo: 'full', caps, color: false })
+
+  const filaEstrecha = anchoStrecho.find((l) => l.includes('wide'))
+  const filaAmplia = anchoAmplio.find((l) => l.includes('wide'))
+  assert.ok(filaEstrecha && filaAmplia, 'deberia haber una fila de sesion (ID wide) en ambos anchos')
+  assert.ok(
+    filaAmplia.includes('souclaude-harness') && filaAmplia.includes('feature/una-rama-larga'),
+    `en cols=150 proyecto y rama deberian entrar completos, sin truncar:\n${filaAmplia}`
+  )
+  assert.ok(
+    !filaEstrecha.includes('souclaude-harness') || !filaEstrecha.includes('feature/una-rama-larga'),
+    `en cols=100 (columnas mas angostas) algo deberia seguir truncado:\n${filaEstrecha}`
+  )
+})
+
+test('robustez: en todos los anchos, cada linea del panel mide exactamente cols', () => {
+  const vista = vistaEjemplo({
+    sesiones: {
+      total: 2,
+      vivas: 1,
+      filas: [
+        sesionFila({ proyecto: 'proyecto-con-nombre-largo', rama: 'feature/una-rama-muy-larga-de-verdad' }),
+        sesionFila({ id: 'cd34', cuenta: 'dev_claude' }),
+      ],
+    },
+  })
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  for (const cols of [60, 80, 100, 110, 130, 140, 160]) {
+    const lineas = renderPanel(vista, { cols, rows: 30, modo: 'full', caps, color: false })
+    for (const linea of lineas) {
+      assert.equal(anchoVisual(linea), cols, `cols=${cols}: una linea no mide exactamente cols:\n"${linea}"`)
+    }
+  }
 })
 
 test('contenido: en modo agents aparecen todos los agentes activos, aunque sean muchos', () => {
@@ -539,4 +615,44 @@ test('color: con color:true y FORCE_COLOR=1 hay secuencias ANSI y los anchos sig
     }
   }
   assert.ok(huboAnsi, 'con color:true y un limite en alarma deberia aparecer al menos una secuencia ANSI')
+})
+
+// ---------------------------------------------------------------------------
+// EQUIPO (SHS-M3-T005)
+// ---------------------------------------------------------------------------
+
+test('full: con equipo pinta la seccion con sus datos, respetando el contrato', () => {
+  const vista = vistaEjemplo({
+    equipo: {
+      filas: [
+        { quien: 'colega', cuenta: 'ops', maquina: 'PC02', proyecto: 'otro-repo', rama: 'dev', tokens: 33_000, costoUsd: 0.4, frescuraMs: 120_000 },
+      ],
+    },
+  })
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  const lineas = renderPanel(vista, { cols: 100, rows: 40, modo: 'full', caps, color: false })
+  verificarContrato(lineas, 100, 40, 'full equipo')
+  sinAnsi(lineas, 'full equipo')
+
+  const todo = lineas.join('\n')
+  assert.match(todo, /EQUIPO/)
+  assert.match(todo, /1 activas en el Vault/)
+  assert.match(todo, /colega/)
+})
+
+test('full: con equipo null la seccion EQUIPO se omite', () => {
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  const lineas = renderPanel(vistaEjemplo(), { cols: 100, rows: 40, modo: 'full', caps, color: false })
+  const todo = lineas.join('\n')
+  assert.ok(!/EQUIPO/.test(todo), 'EQUIPO no debe aparecer sin Vault configurado')
+})
+
+test('full: equipo con filas vacias se pinta como "nadie activo" en vez de desaparecer', () => {
+  const vista = vistaEjemplo({ equipo: { filas: [] } })
+  const caps = detectCaps({ overrides: { unicode: true, color: false } })
+  const lineas = renderPanel(vista, { cols: 100, rows: 40, modo: 'full', caps, color: false })
+  const todo = lineas.join('\n')
+  assert.match(todo, /EQUIPO/)
+  assert.match(todo, /0 activas en el Vault/)
+  assert.match(todo, /sin sesiones activas del equipo/)
 })

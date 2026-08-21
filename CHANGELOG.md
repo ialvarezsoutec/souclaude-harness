@@ -2,6 +2,160 @@
 
 El harness y el CLI se versionan juntos.
 
+## [3.5.0] — 2026-08-21
+
+Primer release publicado de la serie v3. La conexión del repo con su proyecto del
+Vault queda cerrada de punta a punta (SHS-M5) y el panel en vivo se simplifica
+(SHS-M12).
+
+### Agregado
+
+- **Siembra de la carpeta del proyecto en el Vault.** Un repo cuyo prefijo ya figura
+  en `00-System/id-registry.md` pero que todavía no tiene carpeta en el Vault ahora
+  la recibe: `Project-<PREFIJO>/` con `milestones.md`, `kanban.md`, `sessions.md`,
+  `plans/` y `progress/history.md`. Antes solo se emitía un warning y el repo quedaba
+  sin tablero donde declarar sus milestones — justo lo que el protocolo exige antes
+  de tocar código. **El registro es la única autoridad**: un repo que no figura ahí
+  no se siembra, y el prefijo ni se inventa ni se agrega desde el CLI. Escribir en el
+  Vault es escribir en el repo compartido de la organización, así que nunca pasa sin
+  decisión explícita: con TTY se confirma, y en modo desatendido hace falta
+  `--vault-seed`. La publicación va por `pushSeguro` (add acotado, commit,
+  `pull --rebase`, push).
+- **Resolución del proyecto por el registro de prefijos, sin preguntar.** El CLI
+  contrasta la identidad del repo (`name` de `package.json`, remoto git, carpeta)
+  contra `00-System/id-registry.md` y persiste la carpeta si eso apunta a una sola
+  que exista. La comparación es **exacta, sin fuzzy**: parecerse al nombre registrado
+  no alcanza. Cierra el caso desatendido (`--yes`, CI) que quedaba abierto.
+- Flag `--vault-project <Project-XXX>` para declarar la carpeta del proyecto en modo
+  no interactivo (`--project` ya estaba tomado por los filtros del monitor).
+
+### Corregido
+
+- **El instalador declara la carpeta `Project-<PREFIJO>` en vez de dejar que se
+  adivine.** `carpetaProyecto()` caía a un respaldo que infiere el proyecto de
+  cuántas carpetas `Project-*` hay en el Vault: acierta con una sola y devuelve
+  `null` con dos o más. El Vault tiene tres desde el 2026-08-19, así que **toda
+  instalación sin `project` escrito a mano dejó de publicar las líneas de
+  `sessions.md` sin un error visible** — se perdía el registro de consumo por
+  contribuyente y proyecto. `asegurarProyecto()` ahora resuelve y **persiste** la
+  carpeta al conectar el Vault, con la misma prioridad que `resolveSkills`:
+  `--vault-project` explícito > lo ya declarado > una sola carpeta > preguntar.
+  Nunca bloquea: lo irresoluble queda en warning.
+- Si el registro asocia el repo a un proyecto cuya carpeta todavía no está en el
+  Vault, ya no cae en "hay una sola, debe ser esa" — eso declaraba el proyecto de
+  otro repo.
+
+### Cambiado
+
+- **El panel en vivo pierde el bloque VENTANAS.** El consumo propio por ventana
+  (5h / 7d / Fable) queda solo en `souclaude monitor --usage`; el panel en vivo se
+  reserva para el estado del momento.
+
+### Problemas conocidos
+
+- **CI no determinista en ubuntu + Node 22** (SHS-M14): el runner de `node --test`
+  se cae con "Unable to deserialize cloned data" en `test/monitor-cmd.test.js`. Es un
+  fallo del runner en esa combinación de la matriz, no del código publicado: la suite
+  completa (497 tests) pasa en el resto de la matriz. Se corrige en 3.5.1.
+
+## [3.4.0] — 2026-08-19
+
+La línea de consumo por sesión de `sessions.md` deja de depender de la disciplina
+del agente: la publica el propio monitor (SHS-M1-T002).
+
+### Agregado
+
+- **Publicación automática de `sessions.md`** desde el panel en vivo
+  (`npx souclaude monitor`): cada sesión **con consumo** del proyecto actual publica
+  su línea en `Project-<PREFIJO>/sessions.md` del Vault y la va actualizando de
+  forma recurrente mientras la sesión sigue viva — misma cadencia (~5 min),
+  backoff y filtro de secretos que los snapshots de `00-System/monitor/`.
+  Idempotente por sesión vía registro local
+  (`~/.claude/souclaude/sesiones-publicadas.json`); la línea se actualiza en el
+  lugar solo si sigue byte a byte como la escribió el monitor —
+  una línea editada a mano nunca se pisa. Autorizado por el ADR
+  `20260817-milestones-planes-y-sesiones-en-vault` (la telemetría cruda sigue
+  prohibida). `--no-publish` apaga snapshots y sesiones a la vez.
+- Campo opcional `"quien"` en `.claude/vault.local.json`: el `@quién` de la línea
+  automática (respaldo: alias de la cuenta). El milestone se infiere del nombre de
+  la rama (`feature/SHS-M1-T002-...` → `SHS-M1`); sin patrón reconocible, `n/d`.
+
+### Cambiado
+
+- `progress/README.md` (managed) documenta la línea automática como piso del
+  protocolo manual, no reemplazo.
+
+## [3.1.0] — 2026-08-17
+
+El Vault pasa de tablero de tareas a estado vivo de tres niveles por proyecto:
+milestones (con claim entre máquinas), planes por milestone y registro de sesiones
+con consumo de tokens.
+
+### Agregado
+
+- **`Project-<PREFIJO>/milestones.md`**: tablero Kanban de milestones
+  (`<PREFIJO>-M<n>`). La tarjeta En curso lleva dueño **y máquina**; es la unidad de
+  anti-solapamiento — un agente que encuentra el milestone En curso con otro
+  dueño/máquina para y pregunta, antes incluso de mirar el kanban de tareas.
+- **`Project-<PREFIJO>/plans/`**: un archivo por plan (`<PREFIJO>-M<n>-P<n>-<slug>.md`),
+  espejado al adoptarlo. Los planes descartados no se borran: la tarjeta del milestone
+  apunta al vigente.
+- **`Project-<PREFIJO>/sessions.md`**: append-only, una línea por sesión al cerrarla —
+  fecha, rama/sesión, milestone, quién, máquina, tokens entrada/salida y resultado.
+  Amplía la excepción de telemetría del ADR 20260810 (ADR
+  `20260817-milestones-planes-y-sesiones-en-vault`); la telemetría cruda sigue
+  prohibida.
+- **Skill `vault-milestones`** (opcional): analiza el tablero de milestones del Vault
+  (foto, consistencia, diagnóstico) y guía su iteración — alta de milestones nuevos
+  con ID secuencial, división y re-secuencia, cierre y cambio de plan — respetando el
+  anti-solapamiento y el push inmediato del protocolo.
+
+### Cambiado
+
+- `progress/README.md` (managed) reescribe el protocolo del Vault con los tres niveles
+  y el claim en dos pasos (milestone → tarea); `templates/base/CLAUDE.md` resume el
+  flujo nuevo en "Los dos repos".
+- `docs/vault-guide.md` se reescribe para el harness 3.x: se elimina la deriva del
+  flujo SDD/rocas (agentes y comandos `/rock-*` que ya no existen) y se documentan los
+  dos canales de consumo (sesiones por proyecto + snapshots del monitor por cuenta).
+
+## [3.0.0] — 2026-08-17
+
+El harness se simplifica por completo: se eliminan los agentes y el flujo SDD/CCEM
+para que el modelo trabaje sin ataduras, y quedan solo las skills personalizadas de
+SOUTEC, ahora seleccionables desde el CLI.
+
+### Cambiado (breaking)
+
+- **Sin agentes ni flujo SDD**: se eliminan `.claude/agents/` (orchestrator,
+  spec-author, implementer, reviewer, security-evidence-compiler), `AGENTS.md`,
+  `docs/constitution.md`, `specs/` (README y templates full/lite) y todas las skills
+  CCEM (`ccem-core`, `ccem-sdd`, `ccem-planner`, `ccem-research`, `ccem-stack`,
+  `ccem-prompting`, `ccem-model-router`, `ccem-rocas`, `rock-*`, `export-ninety`,
+  `spec-new`, `constitution-check`). En un upgrade quedan marcados obsoletos y
+  `--prune` ofrece borrarlos — nunca se borran solos.
+- **Catálogo de skills reducido**: `soutec-github` (obligatoria), `it-security-review`,
+  `security-report-standard`, `soutec-md-a-pdf` (nueva en el harness, antes solo
+  repo-local), `adr-new` y `harness-upgrade`.
+- **Comando `mode` eliminado**: sin flujo de agentes no hay modos `auto`/`manual`.
+- `it-security-review` ya no delega en agentes: la remediación y la compilación de
+  evidencia las hace el propio modelo, con el PDF vía `soutec-md-a-pdf`.
+- Ramas sin ID de hito: formato `tipo/<slug>`; el ID de tracker es opcional.
+- **Flujo de release `dev` → `main`**: las ramas de trabajo nacen de `dev` y su PR
+  apunta a `dev`; `main` solo recibe merges desde `dev` (el PR de release). Los
+  **tags de versión los puede crear el agente** tras ese merge (`vX.Y.Z` + tag móvil
+  por major); `git tag` sale de `permissions.ask` en el settings emitido.
+
+### Agregado
+
+- **Selección de skills en el CLI**: `init` pregunta con un checkbox qué skills
+  instalar (todas marcadas por defecto; `soutec-github` entra siempre). Sin modo
+  interactivo, `--skills a,b`. La selección se persiste en `.claude/harness.json`
+  y los upgrades la respetan; deseleccionar marca la skill obsoleta (`--prune`).
+- **Soporte de archivos binarios en el manifest** (`"binary": true`): los assets PNG
+  de `soutec-md-a-pdf` se copian y comparan byte a byte, sin normalización LF. El
+  backup también copia bytes tal cual.
+
 ## [2.4.0] — 2026-08-11
 
 `souclaude vault-sync`: la sincronización con el Vault deja de ser prosa y pasa a ser un

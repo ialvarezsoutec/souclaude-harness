@@ -23,10 +23,21 @@
     "ask": [
       "Bash(git push:*)",
       "Bash(git merge:*)",
-      "Bash(git tag:*)",
       "Bash(git reset --hard:*)",
       "Bash(gh pr merge:*)",
       "Bash(gh release:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/declarar-milestone.mjs"
+          }
+        ]
+      }
     ]
   }
 }

@@ -49,7 +49,7 @@ export function presentar(vista, { ahora, top } = {}) {
 
   const totales = v.totales ?? null
   const proyectos = Array.isArray(v.proyectos) ? v.proyectos : []
-  const sesiones = aplanarSesiones(proyectos)
+  const sesiones = aplanarSesiones(proyectos, instante, v.cuenta?.alias ?? null)
 
   const recortes = normalizarRecortes(v.recortes)
   const sesionesVisibles = corte != null && sesiones.length > corte ? sesiones.slice(0, corte) : sesiones
@@ -65,6 +65,11 @@ export function presentar(vista, { ahora, top } = {}) {
     cuenta: v.cuenta ? { alias: v.cuenta.alias, email: v.cuenta.email } : null,
     cuentas: seccionCuentas(v.cuentas),
     limites: filasDeLimites(v.limites),
+    // Un bloque de filas por cada cuenta con datos (SOUCLAUDE_LOCAL_ACCOUNTS +
+    // Vault), para que la seccion CUENTAS grafique todas las cuentas
+    // identificadas, no solo la local. La local trae 5h/7d/Fable/extra; las
+    // demas solo 5h/7d/extra (ver filasDeLimitesPorCuenta).
+    limitesPorCuenta: filasDeLimitesPorCuenta(v.cuentas, v.limites),
     historico: seccionHistorico(v.historico),
     agentes: seccionAgentes(v.agentesActivos, proyectos),
     consumo: seccionConsumo(v, totales),
@@ -73,6 +78,10 @@ export function presentar(vista, { ahora, top } = {}) {
     sesiones: seccionSesiones(sesionesVisibles, sesiones, v.recortes),
     proyectos: seccionProyectos(proyectos, totales, v.recortes),
     recortes,
+    // Equipo activo del registro del Vault (SHS-M3-T005). `equipo` null
+    // significa "sin Vault configurado" (el layout omite la seccion); una
+    // lista vacia significa "nadie activo" y si se pinta.
+    equipo: seccionEquipo(v.equipoActivo),
     avisos: seccionAvisos(v.avisos),
     // Llamadas cuyo modelo no esta en la tabla de precios: el pie las declara
     // para que el costo mostrado no se lea como el total.
@@ -115,6 +124,7 @@ function seccionCuentas(cuentas) {
       costoUsd: numeroONull(c.totalesDia?.costoUsd),
       frescuraMs: numeroONull(c.frescuraMs),
       vieja: !c.esLocal && Number.isFinite(c.frescuraMs) && c.frescuraMs > FRESCURA_VIEJA_MS,
+      hayActividad: c.hayActividad === true,
     })),
   }
 }
@@ -159,6 +169,7 @@ function filasDeLimites(limites) {
     if (yaEmitidos.includes(clave)) continue
     filas.push({
       etiqueta: etiquetaDeGrupo(g),
+      tipo: g.tipo ?? null,
       modelo: g.modelo ?? null,
       porcentaje: g.porcentaje,
       reseteaEn,
@@ -185,6 +196,43 @@ function filasDeLimites(limites) {
   // El peor caso arriba, siempre. El panel vuelve a ordenar por su cuenta, pero el
   // orden es parte del contrato de esta proyeccion y no de la suya.
   return filas.sort((a, b) => b.porcentaje - a.porcentaje)
+}
+
+// Un {alias, esLocal, costoUsd, filas} por cada cuenta en vista.cuentas
+// (dominio/cuentas.js ya la trae consolidada: local + Vault +
+// SOUCLAUDE_LOCAL_ACCOUNTS). La cuenta LOCAL reusa filasDeLimites(vista.limites)
+// -- el modelo de dominio completo. Las demas cuentas usan su propio
+// c.limites con el mismo filasDeLimites: las de SOUCLAUDE_LOCAL_ACCOUNTS
+// (local-accounts-reader.js::construirSnapshotLocal) traen porGrupo completo
+// -- nunca salen de la maquina -- y muestran Fable igual que la local. Las
+// del Vault solo traen 5h/7d/extra: el snapshot que se publica
+// (vault-monitor-publisher.js::construirSnapshot) es una whitelist
+// deliberada que no incluye porGrupo, asi que filasDeLimites no encuentra
+// nada en limites.porGrupo y la fila Fable se omite sola, sin caso especial.
+function filasDeLimitesPorCuenta(cuentas, limitesLocal) {
+  if (!Array.isArray(cuentas)) return []
+  return cuentas
+    .map((c) => {
+      const crudas = c.esLocal ? filasDeLimites(limitesLocal) : filasDeLimites(c.limites)
+      return {
+        alias: c.alias ?? (typeof c.accountUuid === 'string' ? c.accountUuid.slice(0, 8) : '?'),
+        esLocal: c.esLocal === true,
+        costoUsd: numeroONull(c.totalesDia?.costoUsd),
+        // Orden fijo para la seccion CUENTAS: 7d, 5h, Fable/semanal, Extra --
+        // a diferencia de vista.limites (que ordena por severidad, porque de
+        // ahi sale la alarma del titulo del panel), aca importa la lectura
+        // consistente entre cuentas, no cual limite esta peor.
+        filas: [...crudas].sort((a, b) => ordenLimiteCuenta(a) - ordenLimiteCuenta(b)),
+      }
+    })
+    .filter((bloque) => bloque.filas.length > 0)
+}
+
+function ordenLimiteCuenta(l) {
+  if (l.tipo === 'weekly_all') return 0 // Ventana 7d
+  if (l.tipo === 'session') return 1 // Ventana 5h
+  if (typeof l.etiqueta === 'string' && l.etiqueta.startsWith('Extra')) return 3
+  return 2 // Fable / semanal por modelo (weekly_scoped y afines, ya tipados)
 }
 
 function agregarVentana(filas, ventana, etiqueta, tipo) {
@@ -349,7 +397,7 @@ function seccionModelos(proyectos) {
 
 // --- sesiones ---
 
-function aplanarSesiones(proyectos) {
+function aplanarSesiones(proyectos, ahora, aliasCuentaLocal) {
   const filas = []
   for (const p of proyectos) {
     for (const s of p.sesiones ?? []) {
@@ -362,7 +410,17 @@ function aplanarSesiones(proyectos) {
         tokens: tokensDe(s.consumo),
         costoUsd: numero(s.consumo?.costoUsd),
         ultimaActividad: s.ultimoTs ?? null,
+        // Cuanto lleva corriendo la sesion: del primer evento hasta el
+        // ultimo si ya termino, o hasta AHORA si sigue activa (una sesion
+        // viva sin eventos nuevos en el ultimo minuto sigue "durando").
+        duracionMs: duracionDeSesion(s, ahora),
         estado: s.estado ?? null,
+        // arbol.js solo etiqueta cuentaAlias en sesiones de una cuenta local
+        // ADICIONAL (SOUCLAUDE_LOCAL_ACCOUNTS): las de la cuenta principal
+        // llegan con cuentaAlias null. Se completa aca con el alias real de
+        // la cuenta local para que la columna CUENTA siempre identifique de
+        // quien es cada sesion, nunca un generico "local".
+        cuenta: s.cuentaAlias ?? aliasCuentaLocal,
       })
     }
   }
@@ -373,6 +431,12 @@ function aplanarSesiones(proyectos) {
     const vb = esActivo(b.estado) ? 1 : 0
     return vb - va || b.tokens - a.tokens
   })
+}
+
+function duracionDeSesion(s, ahora) {
+  if (!Number.isFinite(s.inicio)) return null
+  const fin = esActivo(s.estado) && Number.isFinite(ahora) ? ahora : (s.ultimoTs ?? s.inicio)
+  return Math.max(0, fin - s.inicio)
 }
 
 function seccionSesiones(visibles, todas, recortesDominio) {
@@ -420,6 +484,27 @@ function seccionProyectos(proyectos, totales, recortesDominio) {
     totalTokens,
     filas,
     otros,
+  }
+}
+
+// --- equipo activo (SHS-M3-T005) ---
+
+// Sesiones activas del equipo (domain/actividad-equipo.js). null pasa tal
+// cual: es la marca de "sin Vault configurado", no una lista vacia.
+function seccionEquipo(equipoActivo) {
+  if (equipoActivo === null || equipoActivo === undefined) return null
+  const lista = Array.isArray(equipoActivo) ? equipoActivo : []
+  return {
+    filas: lista.map((s) => ({
+      quien: s.quien ?? null,
+      cuenta: s.cuentaAlias ?? idCorto(s.cuentaUuid, 8),
+      maquina: s.maquina ?? null,
+      proyecto: s.proyecto ?? null,
+      rama: s.rama ?? null,
+      tokens: numero(s.tokensIn) + numero(s.tokensOut),
+      costoUsd: numero(s.costoUsd),
+      frescuraMs: numeroONull(s.frescuraMs),
+    })),
   }
 }
 

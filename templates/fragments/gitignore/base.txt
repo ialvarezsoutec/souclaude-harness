@@ -18,9 +18,6 @@ secrets.json
 # Ruta local al Vault: es de esta maquina, no del proyecto.
 .claude/vault.local.json
 
-# Modo de trabajo de los agentes (manual/auto): es de esta maquina, no del proyecto.
-.claude/mode.local.json
-
 # Propuestas del harness pendientes de merge. Son transitorias: revisalas con
 # `git diff --no-index <archivo> <archivo>.new` y borralas.
 *.new

@@ -1,71 +1,281 @@
 {
-  "harnessVersion": "2.4.0",
+  "harnessVersion": "3.5.0",
   "vault": {
     "repo": "https://github.com/ialvarezsoutec/soubunker-vault.git"
   },
+  "skills": [
+    {
+      "id": "soutec-github",
+      "label": "soutec-github — flujo Git/GitHub de SOUTEC (obligatoria)",
+      "required": true
+    },
+    {
+      "id": "it-security-review",
+      "label": "it-security-review — workflow de security review para IT"
+    },
+    {
+      "id": "security-report-standard",
+      "label": "security-report-standard — estándar de informes de seguridad"
+    },
+    {
+      "id": "soutec-md-a-pdf",
+      "label": "soutec-md-a-pdf — Markdown a PDF con identidad Soutec"
+    },
+    {
+      "id": "adr-new",
+      "label": "adr-new — documentar decisiones con ADRs"
+    },
+    {
+      "id": "harness-upgrade",
+      "label": "harness-upgrade — actualizar el harness desde Claude"
+    },
+    {
+      "id": "vault-milestones",
+      "label": "vault-milestones — análisis e iteración de milestones en el Vault"
+    },
+    {
+      "id": "jira-sync",
+      "label": "jira-sync — espejo del tablero del Vault en Jira vía MCP de Atlassian"
+    }
+  ],
   "files": [
-    { "id": "claude-md", "src": "base/CLAUDE.md", "dest": "CLAUDE.md", "render": true, "policy": "user-owned", "critical": true },
-    { "id": "constitution", "src": "base/docs/constitution.md", "dest": "docs/constitution.md", "render": true, "policy": "user-owned", "critical": true },
-    { "id": "notes", "src": "base/notes.md", "dest": "notes.md", "render": true, "policy": "user-owned", "critical": true },
-    { "id": "agents-md", "src": "base/AGENTS.md", "dest": "AGENTS.md", "policy": "managed" },
-
-    { "id": "readme", "src": "base/README.md", "dest": "README.md", "render": true, "policy": "user-owned", "when": "empty-repo" },
-    { "id": "env-example", "src": "base/env.example", "dest": ".env.example", "policy": "user-owned", "when": "empty-repo" },
-
-    { "id": "settings", "src": "base/claude/settings.json", "dest": ".claude/settings.json", "policy": "merge-json" },
-    { "id": "gitignore", "src": "fragments/gitignore", "dest": ".gitignore", "policy": "append-block" },
-
-    { "id": "pr-template", "src": "base/github/pull_request_template.md", "dest": ".github/pull_request_template.md", "policy": "user-owned" },
-    { "id": "codeowners", "src": "base/github/CODEOWNERS", "dest": ".github/CODEOWNERS", "policy": "user-owned" },
-
-    { "id": "skill-ccem-core", "src": "base/claude/skills/ccem-core/SKILL.md", "dest": ".claude/skills/ccem-core/SKILL.md", "policy": "managed" },
-    { "id": "skill-ccem-sdd", "src": "base/claude/skills/ccem-sdd/SKILL.md", "dest": ".claude/skills/ccem-sdd/SKILL.md", "policy": "managed" },
-    { "id": "skill-ccem-planner", "src": "base/claude/skills/ccem-planner/SKILL.md", "dest": ".claude/skills/ccem-planner/SKILL.md", "policy": "managed" },
-    { "id": "skill-ccem-research", "src": "base/claude/skills/ccem-research/SKILL.md", "dest": ".claude/skills/ccem-research/SKILL.md", "policy": "managed" },
-    { "id": "skill-ccem-stack", "src": "base/claude/skills/ccem-stack/SKILL.md", "dest": ".claude/skills/ccem-stack/SKILL.md", "policy": "managed" },
-    { "id": "skill-ccem-prompting", "src": "base/claude/skills/ccem-prompting/SKILL.md", "dest": ".claude/skills/ccem-prompting/SKILL.md", "policy": "managed" },
-    { "id": "skill-soutec-github", "src": "base/claude/skills/soutec-github/SKILL.md", "dest": ".claude/skills/soutec-github/SKILL.md", "policy": "managed" },
-    { "id": "skill-ccem-model-router", "src": "base/claude/skills/ccem-model-router/SKILL.md", "dest": ".claude/skills/ccem-model-router/SKILL.md", "policy": "managed" },
-
-    { "id": "skill-spec-new", "src": "base/claude/skills/spec-new/SKILL.md", "dest": ".claude/skills/spec-new/SKILL.md", "policy": "managed" },
-    { "id": "skill-adr-new", "src": "base/claude/skills/adr-new/SKILL.md", "dest": ".claude/skills/adr-new/SKILL.md", "policy": "managed" },
-    { "id": "skill-constitution-check", "src": "base/claude/skills/constitution-check/SKILL.md", "dest": ".claude/skills/constitution-check/SKILL.md", "policy": "managed" },
-    { "id": "skill-harness-upgrade", "src": "base/claude/skills/harness-upgrade/SKILL.md", "dest": ".claude/skills/harness-upgrade/SKILL.md", "policy": "managed" },
-
-    { "id": "skill-ccem-rocas", "src": "base/claude/skills/ccem-rocas/SKILL.md", "dest": ".claude/skills/ccem-rocas/SKILL.md", "policy": "managed" },
-    { "id": "skill-rock-plan", "src": "base/claude/skills/rock-plan/SKILL.md", "dest": ".claude/skills/rock-plan/SKILL.md", "policy": "managed" },
-    { "id": "skill-rock-status", "src": "base/claude/skills/rock-status/SKILL.md", "dest": ".claude/skills/rock-status/SKILL.md", "policy": "managed" },
-    { "id": "skill-rock-close", "src": "base/claude/skills/rock-close/SKILL.md", "dest": ".claude/skills/rock-close/SKILL.md", "policy": "managed" },
-    { "id": "skill-export-ninety", "src": "base/claude/skills/export-ninety/SKILL.md", "dest": ".claude/skills/export-ninety/SKILL.md", "policy": "managed" },
-
-    { "id": "agent-orchestrator", "src": "base/claude/agents/orchestrator.md", "dest": ".claude/agents/orchestrator.md", "policy": "managed" },
-    { "id": "agent-spec-author", "src": "base/claude/agents/spec-author.md", "dest": ".claude/agents/spec-author.md", "policy": "managed" },
-    { "id": "agent-implementer", "src": "base/claude/agents/implementer.md", "dest": ".claude/agents/implementer.md", "policy": "managed" },
-    { "id": "agent-reviewer", "src": "base/claude/agents/reviewer.md", "dest": ".claude/agents/reviewer.md", "policy": "managed" },
-    { "id": "agent-security-evidence-compiler", "src": "base/claude/agents/security-evidence-compiler.md", "dest": ".claude/agents/security-evidence-compiler.md", "policy": "managed" },
-
-    { "id": "skill-it-security-review", "src": "base/claude/skills/it-security-review/SKILL.md", "dest": ".claude/skills/it-security-review/SKILL.md", "policy": "managed" },
-    { "id": "skill-it-security-review-report-template", "src": "base/claude/skills/it-security-review/report-template.md", "dest": ".claude/skills/it-security-review/report-template.md", "policy": "managed" },
-    { "id": "skill-security-report-standard", "src": "base/claude/skills/security-report-standard/SKILL.md", "dest": ".claude/skills/security-report-standard/SKILL.md", "policy": "managed" },
-
-    { "id": "specs-readme", "src": "base/specs/README.md", "dest": "specs/README.md", "policy": "managed" },
-    { "id": "tmpl-spec", "src": "base/specs/_templates/spec-template.md", "dest": "specs/_templates/spec-template.md", "policy": "managed" },
-    { "id": "tmpl-plan", "src": "base/specs/_templates/plan-template.md", "dest": "specs/_templates/plan-template.md", "policy": "managed" },
-    { "id": "tmpl-tasks", "src": "base/specs/_templates/tasks-template.md", "dest": "specs/_templates/tasks-template.md", "policy": "managed" },
-    { "id": "tmpl-spec-lite", "src": "base/specs/_templates/spec-lite-template.md", "dest": "specs/_templates/spec-lite-template.md", "policy": "managed" },
-    { "id": "tmpl-plan-lite", "src": "base/specs/_templates/plan-lite-template.md", "dest": "specs/_templates/plan-lite-template.md", "policy": "managed" },
-    { "id": "tmpl-tasks-lite", "src": "base/specs/_templates/tasks-lite-template.md", "dest": "specs/_templates/tasks-lite-template.md", "policy": "managed" },
-
-    { "id": "adr-readme", "src": "base/docs/decisions/README.md", "dest": "docs/decisions/README.md", "policy": "managed" },
-    { "id": "adr-template", "src": "base/docs/decisions/_template.md", "dest": "docs/decisions/_template.md", "policy": "managed" },
-
-    { "id": "progress-readme", "src": "base/progress/README.md", "dest": "progress/README.md", "policy": "managed" },
-    { "id": "progress-history", "src": "base/progress/history.md", "dest": "progress/history.md", "policy": "user-owned" }
+    {
+      "id": "claude-md",
+      "src": "base/CLAUDE.md",
+      "dest": "CLAUDE.md",
+      "render": true,
+      "policy": "user-owned",
+      "critical": true
+    },
+    {
+      "id": "notes",
+      "src": "base/notes.md",
+      "dest": "notes.md",
+      "render": true,
+      "policy": "user-owned",
+      "critical": true
+    },
+    {
+      "id": "readme",
+      "src": "base/README.md",
+      "dest": "README.md",
+      "render": true,
+      "policy": "user-owned",
+      "when": "empty-repo"
+    },
+    {
+      "id": "env-example",
+      "src": "base/env.example",
+      "dest": ".env.example",
+      "policy": "user-owned",
+      "when": "empty-repo"
+    },
+    {
+      "id": "settings",
+      "src": "base/claude/settings.json",
+      "dest": ".claude/settings.json",
+      "policy": "merge-json"
+    },
+    {
+      "id": "hook-declarar-milestone",
+      "src": "base/claude/hooks/declarar-milestone.mjs",
+      "dest": ".claude/hooks/declarar-milestone.mjs",
+      "policy": "managed"
+    },
+    {
+      "id": "gitignore",
+      "src": "fragments/gitignore",
+      "dest": ".gitignore",
+      "policy": "append-block"
+    },
+    {
+      "id": "pr-template",
+      "src": "base/github/pull_request_template.md",
+      "dest": ".github/pull_request_template.md",
+      "policy": "user-owned"
+    },
+    {
+      "id": "codeowners",
+      "src": "base/github/CODEOWNERS",
+      "dest": ".github/CODEOWNERS",
+      "policy": "user-owned"
+    },
+    {
+      "id": "skill-soutec-github",
+      "src": "base/claude/skills/soutec-github/SKILL.md",
+      "dest": ".claude/skills/soutec-github/SKILL.md",
+      "policy": "managed",
+      "skill": "soutec-github"
+    },
+    {
+      "id": "skill-it-security-review",
+      "src": "base/claude/skills/it-security-review/SKILL.md",
+      "dest": ".claude/skills/it-security-review/SKILL.md",
+      "policy": "managed",
+      "skill": "it-security-review"
+    },
+    {
+      "id": "skill-it-security-review-report-template",
+      "src": "base/claude/skills/it-security-review/report-template.md",
+      "dest": ".claude/skills/it-security-review/report-template.md",
+      "policy": "managed",
+      "skill": "it-security-review"
+    },
+    {
+      "id": "skill-security-report-standard",
+      "src": "base/claude/skills/security-report-standard/SKILL.md",
+      "dest": ".claude/skills/security-report-standard/SKILL.md",
+      "policy": "managed",
+      "skill": "security-report-standard"
+    },
+    {
+      "id": "skill-soutec-md-a-pdf",
+      "src": "base/claude/skills/soutec-md-a-pdf/SKILL.md",
+      "dest": ".claude/skills/soutec-md-a-pdf/SKILL.md",
+      "policy": "managed",
+      "skill": "soutec-md-a-pdf"
+    },
+    {
+      "id": "skill-soutec-md-a-pdf-guia",
+      "src": "base/claude/skills/soutec-md-a-pdf/references/guia-autoria-md.md",
+      "dest": ".claude/skills/soutec-md-a-pdf/references/guia-autoria-md.md",
+      "policy": "managed",
+      "skill": "soutec-md-a-pdf"
+    },
+    {
+      "id": "skill-soutec-md-a-pdf-core",
+      "src": "base/claude/skills/soutec-md-a-pdf/scripts/soutec_md.py",
+      "dest": ".claude/skills/soutec-md-a-pdf/scripts/soutec_md.py",
+      "policy": "managed",
+      "skill": "soutec-md-a-pdf"
+    },
+    {
+      "id": "skill-soutec-md-a-pdf-script",
+      "src": "base/claude/skills/soutec-md-a-pdf/scripts/md_to_pdf.py",
+      "dest": ".claude/skills/soutec-md-a-pdf/scripts/md_to_pdf.py",
+      "policy": "managed",
+      "skill": "soutec-md-a-pdf"
+    },
+    {
+      "id": "skill-soutec-md-a-pdf-docx",
+      "src": "base/claude/skills/soutec-md-a-pdf/scripts/md_to_docx.py",
+      "dest": ".claude/skills/soutec-md-a-pdf/scripts/md_to_docx.py",
+      "policy": "managed",
+      "skill": "soutec-md-a-pdf"
+    },
+    {
+      "id": "skill-soutec-md-a-pdf-launcher",
+      "src": "base/claude/skills/soutec-md-a-pdf/scripts/md_to_soutec.py",
+      "dest": ".claude/skills/soutec-md-a-pdf/scripts/md_to_soutec.py",
+      "policy": "managed",
+      "skill": "soutec-md-a-pdf"
+    },
+    {
+      "id": "skill-soutec-md-a-pdf-isotipo-color",
+      "src": "base/claude/skills/soutec-md-a-pdf/assets/soutec_isotipo_3d_color.png",
+      "dest": ".claude/skills/soutec-md-a-pdf/assets/soutec_isotipo_3d_color.png",
+      "policy": "managed",
+      "skill": "soutec-md-a-pdf",
+      "binary": true
+    },
+    {
+      "id": "skill-soutec-md-a-pdf-isotipo-white",
+      "src": "base/claude/skills/soutec-md-a-pdf/assets/soutec_isotipo_3d_white.png",
+      "dest": ".claude/skills/soutec-md-a-pdf/assets/soutec_isotipo_3d_white.png",
+      "policy": "managed",
+      "skill": "soutec-md-a-pdf",
+      "binary": true
+    },
+    {
+      "id": "skill-soutec-md-a-pdf-logo",
+      "src": "base/claude/skills/soutec-md-a-pdf/assets/soutec_logo.png",
+      "dest": ".claude/skills/soutec-md-a-pdf/assets/soutec_logo.png",
+      "policy": "managed",
+      "skill": "soutec-md-a-pdf",
+      "binary": true
+    },
+    {
+      "id": "skill-adr-new",
+      "src": "base/claude/skills/adr-new/SKILL.md",
+      "dest": ".claude/skills/adr-new/SKILL.md",
+      "policy": "managed",
+      "skill": "adr-new"
+    },
+    {
+      "id": "adr-readme",
+      "src": "base/docs/decisions/README.md",
+      "dest": "docs/decisions/README.md",
+      "policy": "managed",
+      "skill": "adr-new"
+    },
+    {
+      "id": "adr-template",
+      "src": "base/docs/decisions/_template.md",
+      "dest": "docs/decisions/_template.md",
+      "policy": "managed",
+      "skill": "adr-new"
+    },
+    {
+      "id": "skill-harness-upgrade",
+      "src": "base/claude/skills/harness-upgrade/SKILL.md",
+      "dest": ".claude/skills/harness-upgrade/SKILL.md",
+      "policy": "managed",
+      "skill": "harness-upgrade"
+    },
+    {
+      "id": "skill-vault-milestones",
+      "src": "base/claude/skills/vault-milestones/SKILL.md",
+      "dest": ".claude/skills/vault-milestones/SKILL.md",
+      "policy": "managed",
+      "skill": "vault-milestones"
+    },
+    {
+      "id": "skill-jira-sync",
+      "src": "base/claude/skills/jira-sync/SKILL.md",
+      "dest": ".claude/skills/jira-sync/SKILL.md",
+      "policy": "managed",
+      "skill": "jira-sync"
+    },
+    {
+      "id": "jira-config",
+      "src": "base/claude/jira.json",
+      "dest": ".claude/jira.json",
+      "policy": "user-owned",
+      "skill": "jira-sync"
+    },
+    {
+      "id": "mcp-config",
+      "src": "base/mcp.json",
+      "dest": ".mcp.json",
+      "policy": "merge-json",
+      "skill": "jira-sync"
+    },
+    {
+      "id": "progress-readme",
+      "src": "base/progress/README.md",
+      "dest": "progress/README.md",
+      "policy": "managed"
+    },
+    {
+      "id": "progress-history",
+      "src": "base/progress/history.md",
+      "dest": "progress/history.md",
+      "policy": "user-owned"
+    }
   ],
   "dirs": [
-    { "dest": "src", "when": "empty-repo" },
-    { "dest": "tests", "when": "empty-repo" },
-    { "dest": "scripts", "when": "empty-repo" }
+    {
+      "dest": "src",
+      "when": "empty-repo"
+    },
+    {
+      "dest": "tests",
+      "when": "empty-repo"
+    },
+    {
+      "dest": "scripts",
+      "when": "empty-repo"
+    }
   ],
   "obsolete": [
     {
@@ -73,20 +283,128 @@
       "reason": "Claude Code nunca soporto .claudeignore: el archivo se ignora en silencio. La exclusion real se configura en permissions.deny de .claude/settings.json, que este harness ya emite."
     },
     {
+      "dest": "AGENTS.md",
+      "reason": "El harness 3.0 elimino el flujo SDD/CCEM con agentes: el modelo trabaja sin orquestacion fija."
+    },
+    {
+      "dest": ".claude/agents/orchestrator.md",
+      "reason": "Agente del flujo SDD, eliminado en el harness 3.0."
+    },
+    {
+      "dest": ".claude/agents/spec-author.md",
+      "reason": "Agente del flujo SDD, eliminado en el harness 3.0."
+    },
+    {
+      "dest": ".claude/agents/implementer.md",
+      "reason": "Agente del flujo SDD, eliminado en el harness 3.0."
+    },
+    {
+      "dest": ".claude/agents/reviewer.md",
+      "reason": "Agente del flujo SDD, eliminado en el harness 3.0."
+    },
+    {
+      "dest": ".claude/agents/security-evidence-compiler.md",
+      "reason": "Agente del flujo SDD, eliminado en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/ccem-core/SKILL.md",
+      "reason": "Skill CCEM eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/ccem-sdd/SKILL.md",
+      "reason": "Skill CCEM eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/ccem-planner/SKILL.md",
+      "reason": "Skill CCEM eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/ccem-research/SKILL.md",
+      "reason": "Skill CCEM eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/ccem-stack/SKILL.md",
+      "reason": "Skill CCEM eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/ccem-prompting/SKILL.md",
+      "reason": "Skill CCEM eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/ccem-model-router/SKILL.md",
+      "reason": "Skill CCEM eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/ccem-rocas/SKILL.md",
+      "reason": "Skill CCEM eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/rock-plan/SKILL.md",
+      "reason": "Capa de rocas eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/rock-status/SKILL.md",
+      "reason": "Capa de rocas eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/rock-close/SKILL.md",
+      "reason": "Capa de rocas eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/export-ninety/SKILL.md",
+      "reason": "Capa de rocas eliminada en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/spec-new/SKILL.md",
+      "reason": "Comando del flujo SDD, eliminado en el harness 3.0."
+    },
+    {
+      "dest": ".claude/skills/constitution-check/SKILL.md",
+      "reason": "Comando del flujo SDD, eliminado en el harness 3.0."
+    },
+    {
+      "dest": "specs/README.md",
+      "reason": "El harness 3.0 ya no instala la carpeta specs/ del flujo SDD."
+    },
+    {
+      "dest": "specs/_templates/spec-template.md",
+      "reason": "Plantilla SDD eliminada en el harness 3.0."
+    },
+    {
+      "dest": "specs/_templates/plan-template.md",
+      "reason": "Plantilla SDD eliminada en el harness 3.0."
+    },
+    {
+      "dest": "specs/_templates/tasks-template.md",
+      "reason": "Plantilla SDD eliminada en el harness 3.0."
+    },
+    {
+      "dest": "specs/_templates/spec-lite-template.md",
+      "reason": "Plantilla SDD eliminada en el harness 3.0."
+    },
+    {
+      "dest": "specs/_templates/plan-lite-template.md",
+      "reason": "Plantilla SDD eliminada en el harness 3.0."
+    },
+    {
+      "dest": "specs/_templates/tasks-lite-template.md",
+      "reason": "Plantilla SDD eliminada en el harness 3.0."
+    },
+    {
       "dest": ".claude/skills/ccem-rocas/rock-plan/SKILL.md",
-      "reason": "Claude Code descubre skills de proyecto a un solo nivel (.claude/skills/<nombre>/SKILL.md); una skill anidada a dos niveles nunca se carga. Se aplano a .claude/skills/rock-plan/SKILL.md (SHS-H2)."
+      "reason": "Skill anidada a dos niveles que Claude Code nunca cargo; la capa de rocas ademas se elimino en el harness 3.0."
     },
     {
       "dest": ".claude/skills/ccem-rocas/rock-status/SKILL.md",
-      "reason": "Mismo motivo que rock-plan: aplanada a .claude/skills/rock-status/SKILL.md (SHS-H2)."
+      "reason": "Mismo motivo que rock-plan."
     },
     {
       "dest": ".claude/skills/ccem-rocas/rock-close/SKILL.md",
-      "reason": "Mismo motivo que rock-plan: aplanada a .claude/skills/rock-close/SKILL.md (SHS-H2)."
+      "reason": "Mismo motivo que rock-plan."
     },
     {
       "dest": ".claude/skills/ccem-rocas/export-ninety/SKILL.md",
-      "reason": "Mismo motivo que rock-plan: aplanada a .claude/skills/export-ninety/SKILL.md (SHS-H2)."
+      "reason": "Mismo motivo que rock-plan."
     }
   ]
 }

@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { hashContent } from './hash.js'
-import { writeFileLF, ensureDir, readIfExists } from './fsx.js'
+import { hashContent, hashBytes } from './hash.js'
+import { writeFileLF, writeFileBytes, ensureDir, readBytesIfExists } from './fsx.js'
 import { extractBlock } from './block.js'
 import { writeLockfile } from './lockfile.js'
 import { CREATE, UPDATE, RESTORE, CONFLICT, FOREIGN, NOOP, OBSOLETE, writeActions } from './plan.js'
@@ -60,7 +60,9 @@ export function apply({ plan, cwd, manifest, vars, detected, lock, prune = false
       if (saved) backedUp.push(saved)
     }
 
-    writeFileLF(path.join(cwd, ...action.writePath.split('/')), action.content)
+    const target = path.join(cwd, ...action.writePath.split('/'))
+    if (action.binary) writeFileBytes(target, action.content)
+    else writeFileLF(target, action.content)
     written.push({ dest: action.writePath, verdict: action.verdict })
   }
 
@@ -70,11 +72,13 @@ export function apply({ plan, cwd, manifest, vars, detected, lock, prune = false
   return { written, backedUp, removed, backupRoot: backedUp.length ? backupRoot : null, lock: nextLock }
 }
 
+// El backup copia bytes tal cual: sin normalizacion LF, para no corromper
+// binarios y para que el respaldo sea una copia fiel, no una version "arreglada".
 function saveBackup(cwd, backupRoot, dest) {
   const src = path.join(cwd, ...dest.split('/'))
-  const content = readIfExists(src)
+  const content = readBytesIfExists(src)
   if (content == null) return null
-  writeFileLF(path.join(backupRoot, ...dest.split('/')), content)
+  writeFileBytes(path.join(backupRoot, ...dest.split('/')), content)
   return dest
 }
 
@@ -85,6 +89,9 @@ function buildLockfile({ plan, manifest, vars, detected, lock, prune, cwd, now }
     installedAt: (now ?? new Date()).toISOString(),
     // Sticky: se decide en la primera instalacion y no se recalcula nunca mas.
     greenfield: lock?.greenfield ?? detected.isEmpty,
+    // Seleccion de skills de este repo. computePlan la resolvio (flags, lockfile
+    // previo o catalogo completo); se persiste para que el proximo upgrade la respete.
+    skills: plan.skills ?? lock?.skills,
     vars,
     detected: { stacks: detected.stacks, packageManager: detected.packageManager },
     files: {},
@@ -103,6 +110,8 @@ function buildLockfile({ plan, manifest, vars, detected, lock, prune, cwd, now }
         if (action.policy === 'append-block') {
           const block = extractBlock(action.content)
           if (block) next.blocks[action.dest] = { hash: hashContent(block) }
+        } else if (action.binary) {
+          next.files[action.dest] = { policy: action.policy, hash: hashBytes(action.content), binary: true }
         } else {
           next.files[action.dest] = { policy: action.policy, hash: hashContent(action.content) }
         }

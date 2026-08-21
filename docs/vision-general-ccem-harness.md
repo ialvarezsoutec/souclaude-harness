@@ -337,7 +337,7 @@ CLI para instalar y migrar el harness CCEM en cualquier repo — uno nuevo, uno 
 cinco años, o uno con una versión vieja del harness. Se distribuye sin registry ni token:
 
 ```bash
-npx github:ialvarezsoutec/souclaude-harness#v1
+npx github:ialvarezsoutec/souclaude-harness#v3
 ```
 
 Solo hace falta git y Node ≥20. **El harness y las skills son project-local**: se commitean
@@ -451,8 +451,8 @@ cada día generaba `.new` espurios).
 ### 4.6 Versionado y publicación
 
 El harness y el CLI **se versionan juntos** (`package.json` y `harness.manifest.json` en la
-misma versión). La organización consume el tag móvil `#v1` y recibe los parches sin hacer
-nada. Publicar: `git tag vX.Y.Z && git tag -f v1 && git push …`.
+misma versión). La organización consume el tag móvil `#v3` y recibe los parches sin hacer
+nada. Publicar: `git tag vX.Y.Z && git tag -f v3 && git push …`.
 
 ---
 
@@ -502,8 +502,11 @@ CCEM/SDD funcionando de verdad.
 
 ## 7. Estado actual y pendientes conocidos
 
-- **Versión:** harness/CLI en **1.1.0**. La v1.1.0 figura como "no publicado" en el
-  CHANGELOG (los tags `v1.1.0`/`#v1` se crean al publicar; el trabajo ya está mergeado).
+- **Versión:** harness/CLI en **3.5.0**, publicado bajo los tags `v3.5.0` y el móvil
+  `v3`. El resto de este documento describe la arquitectura de la era 1.x: los
+  mecanismos (manifest, motor de plan, migraciones) siguen vigentes, pero los ejemplos
+  y el recorrido de un caso real no se actualizaron a la v3 — para el flujo de trabajo
+  vigente, `docs/GUIA-DESARROLLADOR.md` y `docs/onboarding-desarrollador.md`.
 - **P7 y P8 de la constitución** son placeholders: cada proyecto los completa con su
   principio propio.
 - **P2** deja pendiente completar la ruta del archivo de config del enforcement en cada repo.

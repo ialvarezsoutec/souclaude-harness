@@ -9,7 +9,7 @@ disable-model-invocation: true
 Estado actual del harness:
 
 ```!
-npx -y github:ialvarezsoutec/souclaude-harness#v1 status
+npx -y github:ialvarezsoutec/souclaude-harness#v3 status
 ```
 
 ## Qué hacer
@@ -20,7 +20,7 @@ npx -y github:ialvarezsoutec/souclaude-harness#v1 status
 2. Corre el upgrade en seco primero. **Siempre en seco primero.**
 
    ```
-   npx -y github:ialvarezsoutec/souclaude-harness#v1 upgrade --dry-run
+   npx -y github:ialvarezsoutec/souclaude-harness#v3 upgrade --dry-run
    ```
 
 3. Muéstrale el plan y **espera su OK**. No apliques nada sin confirmación (P5).
@@ -28,7 +28,7 @@ npx -y github:ialvarezsoutec/souclaude-harness#v1 status
 4. Con el OK, aplicá:
 
    ```
-   npx -y github:ialvarezsoutec/souclaude-harness#v1 upgrade
+   npx -y github:ialvarezsoutec/souclaude-harness#v3 upgrade
    ```
 
 5. Si el upgrade dejó archivos `.new`, es porque esos archivos los editaste tú y el

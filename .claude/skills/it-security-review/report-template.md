@@ -1,15 +1,15 @@
 ---
-title: Revisión de Seguridad
-header: Revisión de Seguridad – {{PROJECT}}
-subtitle: Proyecto — {{PROJECT}}
+title: Revisión de Seguridad — {{PROJECT}}
+header: Revisión de Seguridad – IT
+subtitle: {{PROJECT}}
 date: {{DATE}}
-author: Innovación y Desarrollo
-confidential: false
+author: Centro de Monitoreo Soutec
+confidential: true
 url: www.soutec-group.com
 ---
 
 <!--
-Referencia estructural para el agente `security-evidence-compiler`. El estilo (portada con
+Referencia estructural del informe de evidencia. El estilo (portada con
 isotipo, banners cyan, índice con folios, contraportada) lo pone la skill `soutec-md-a-pdf`
 al renderizar; aquí va Markdown limpio. Reglas de autoría: la guía de esa skill
 (`references/guia-autoria-md.md`). Contenido y trazabilidad: `security-report-standard`.
@@ -33,7 +33,7 @@ al renderizar; aquí va Markdown limpio. Reglas de autoría: la guía de esa ski
 > [!CONFORME] Resumen general
 > {{EXECUTIVE_CONCLUSION}}
 
-## Estado de la revisión
+# Estado de la revisión
 
 | Campo | Valor |
 |---|---|
@@ -46,7 +46,7 @@ al renderizar; aquí va Markdown limpio. Reglas de autoría: la guía de esa ski
 | Alcance | {{SCOPE}} |
 | Aprobación de IT | PENDING |
 
-## Resumen para IT
+# Resumen para IT
 
 {{EXECUTIVE_SUMMARY}}
 
@@ -55,11 +55,11 @@ al renderizar; aquí va Markdown limpio. Reglas de autoría: la guía de esa ski
 > infraestructura de producción. Es un insumo para que IT tome su propia decisión
 > informada sobre el paso a producción.
 
-## Sobre el proyecto
+# Sobre el proyecto
 
 {{PROJECT_IDENTIFICATION}}
 
-## Qué se revisó y metodología
+# Qué se revisó y metodología
 
 {{ATTACK_SURFACE}}
 
@@ -67,15 +67,15 @@ al renderizar; aquí va Markdown limpio. Reglas de autoría: la guía de esa ski
 - **Ciclos de remediación SDD ejecutados**: {{REMEDIATION_CYCLES}}.
 - **Pruebas obligatorias**: {{TEST_SUMMARY}}.
 
-## Alcance y limitaciones
+# Alcance y limitaciones
 
 {{SCOPE_AND_LIMITATIONS}}
 
-## Resultado de la revisión final
+# Resultado de la revisión final
 
 {{FINAL_REVIEW}}
 
-## Hallazgos por severidad
+# Hallazgos por severidad
 
 | Severidad | Iniciales | Remediados | Abiertos |
 |---|---:|---:|---:|
@@ -88,7 +88,7 @@ al renderizar; aquí va Markdown limpio. Reglas de autoría: la guía de esa ski
 > [!CONFORME]
 > Ningún hallazgo `Critical` o `High` queda abierto al cierre de esta revisión.
 
-## Trazabilidad Critical/High
+# Trazabilidad Critical/High
 
 Registro técnico de cada hallazgo grave detectado y su remediación. No se elimina un
 hallazgo de esta tabla por haber sido corregido — el historial de corrección es parte
@@ -101,29 +101,29 @@ de la evidencia.
 > [!NOTA]
 > {{REMEDIATION_TRACEABILITY_NOTE}}
 
-## Evidencia de pruebas
+# Evidencia de pruebas
 
 | Comando | Propósito | Resultado | Evidencia |
 |---|---|---|---|
 | {{COMMAND}} | {{PURPOSE}} | PASSED | {{EVIDENCE}} |
 
-## Hallazgos Medium/Low/Info
+# Hallazgos Medium/Low/Info
 
 {{REMAINING_FINDINGS}}
 
-## Riesgo residual y condiciones
+# Riesgo residual y condiciones
 
 {{RESIDUAL_RISK}}
 
-## Recomendación para IT
+# Recomendación para IT
 
 {{IT_RECOMMENDATION}}
 
-## Índice de evidencia
+# Índice de evidencia
 
 {{EVIDENCE_INDEX}}
 
-## Declaración de assurance
+# Declaración de assurance
 
 > [!NOTA]
 > En la revisión final automatizada no se identificaron hallazgos Critical o High dentro
