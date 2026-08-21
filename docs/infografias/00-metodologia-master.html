@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metodología SOUTEC — infografía master</title>
+<style>
+  /* Identidad Soutec (formato 2026) — misma paleta que soutec-md-a-pdf */
+  :root{
+    --cyan:#00A5BC; --blue:#00688F; --deep:#004F64; --carbon:#3D4543;
+    --body:#2C3331; --grey:#6B7472; --rule:#D8DDE0; --zebra:#F3F7F8;
+    --codebg:#F1F4F5; --green:#47B45A; --yellow:#F2D13F; --magenta:#C81E54;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--body);
+       background:#fff;max-width:1000px;margin:0 auto;padding:0 0 48px}
+  .marca{display:flex;align-items:center;gap:10px;padding:18px 40px 10px}
+  .marca svg{height:30px}
+  .banner{background:var(--blue);color:#fff;padding:22px 40px}
+  .banner h1{font-size:26px;font-weight:600;letter-spacing:.2px}
+  .banner p{margin-top:4px;font-size:14px;color:#CFE6EE}
+  main{padding:0 40px}
+  h2{color:var(--blue);font-size:17px;margin:34px 0 14px;padding-bottom:6px;
+     border-bottom:2px solid var(--rule);text-transform:uppercase;letter-spacing:.6px}
+  .tag{display:inline-block;background:var(--cyan);color:#fff;border-radius:3px;
+       font-size:11px;font-weight:600;padding:2px 8px;vertical-align:2px;margin-left:8px}
+  /* tres piezas */
+  .piezas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .pieza{border:1px solid var(--rule);border-top:5px solid var(--blue);border-radius:6px;
+         padding:16px 16px 14px;background:#fff}
+  .pieza.vault{border-top-color:var(--cyan)}
+  .pieza.jira{border-top-color:var(--deep)}
+  .pieza h3{font-size:15px;color:var(--carbon);margin-bottom:6px}
+  .pieza .que{font-size:12.5px;color:var(--grey);min-height:52px}
+  .pieza .regla{margin-top:10px;font-size:12px;font-weight:600;border-radius:4px;
+                padding:7px 9px;background:var(--zebra);color:var(--deep)}
+  .flujo{display:flex;align-items:center;justify-content:center;gap:10px;margin:14px 0 4px;
+         font-size:12.5px;color:var(--grey)}
+  .flujo b{color:var(--deep)}
+  .flecha{color:var(--cyan);font-size:18px;font-weight:700}
+  /* niveles del vault */
+  .niveles{display:flex;gap:0;align-items:stretch;margin-top:4px}
+  .nivel{flex:1;padding:12px 14px;border:1px solid var(--rule);background:var(--zebra)}
+  .nivel:first-child{border-radius:6px 0 0 6px;background:var(--blue);color:#fff}
+  .nivel:first-child .n-sub{color:#CFE6EE}
+  .nivel:nth-child(2){background:#E2F2F5}
+  .nivel:last-child{border-radius:0 6px 6px 0}
+  .nivel .n-t{font-size:13.5px;font-weight:600}
+  .n-sub{font-size:11.5px;color:var(--grey);margin-top:3px}
+  /* regla central */
+  .central{background:var(--deep);color:#fff;border-radius:6px;padding:18px 20px;
+           display:flex;gap:16px;align-items:center}
+  .central .icono{font-size:26px}
+  .central b{color:#8FD8E4}
+  .central p{font-size:13.5px;line-height:1.5}
+  /* ciclo */
+  .ciclo{counter-reset:paso;display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+  .paso{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--rule);
+        border-radius:6px;padding:11px 13px;background:#fff}
+  .paso::before{counter-increment:paso;content:counter(paso);flex:0 0 26px;height:26px;
+        background:var(--cyan);color:#fff;border-radius:50%;font-weight:700;font-size:13px;
+        display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .paso div{font-size:12.5px;line-height:1.45}
+  .paso b{color:var(--deep)}
+  code{font-family:Consolas,monospace;font-size:11.5px;background:var(--codebg);
+       color:var(--deep);padding:1px 5px;border-radius:3px}
+  /* dos columnas hace/no hace */
+  .dos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .caja{border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+  .caja .cab{padding:9px 14px;font-size:13px;font-weight:600;color:#fff}
+  .caja.si .cab{background:var(--green)}
+  .caja.no .cab{background:var(--magenta)}
+  .caja ul{list-style:none;padding:10px 14px}
+  .caja li{font-size:12.5px;padding:4px 0 4px 18px;position:relative;line-height:1.4}
+  .caja.si li::before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:700}
+  .caja.no li::before{content:"✗";position:absolute;left:0;color:var(--magenta);font-weight:700}
+  footer{margin-top:38px;padding:14px 40px;background:var(--blue);color:#CFE6EE;
+         font-size:11.5px;display:flex;justify-content:space-between}
+  @media (max-width:760px){.piezas,.ciclo,.dos{grid-template-columns:1fr}.niveles{flex-direction:column}}
+  @media print{
+    @page{size:A4;margin:8mm}
+    body{max-width:none}
+    .banner,.central,.nivel:first-child,footer,.caja .cab,.paso::before,.tag
+      {-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<div class="marca">
+  <svg viewBox="0 0 300 64" role="img" aria-label="Soutec">
+    <path d="M30 6 C14 8 6 20 8 32 C10 22 20 16 30 18 C40 20 44 30 38 38 C48 34 52 22 46 14 C42 8 36 5 30 6 Z" fill="#00A5BC"/>
+    <path d="M18 58 C34 56 42 44 40 32 C38 42 28 48 18 46 C8 44 4 34 10 26 C0 30 -4 42 2 50 C6 56 12 59 18 58 Z" fill="#00A5BC"/>
+    <circle cx="33" cy="15" r="5" fill="#00688F"/>
+    <circle cx="15" cy="49" r="5" fill="#00688F"/>
+    <text x="58" y="48" font-family="Segoe UI,system-ui,sans-serif" font-size="44" font-weight="700" fill="#3D4543" letter-spacing="1">soutec</text>
+  </svg>
+</div>
+
+<div class="banner">
+  <h1>La metodología SOUTEC con el harness</h1>
+  <p>Cómo se organiza el trabajo asistido por agentes: arquitectura, trazabilidad y ciclo diario · infografía master</p>
+</div>
+
+<main>
+
+<h2>Las tres piezas <span class="tag">arquitectura</span></h2>
+<div class="piezas">
+  <div class="pieza">
+    <h3>&#128193; Repo del proyecto</h3>
+    <div class="que">Código, tests y progreso. El harness (<code>npx souclaude</code>) instala aquí la superficie Claude: <code>CLAUDE.md</code>, skills, hooks y la config del conector Jira.</div>
+    <div class="regla">Todo cambio por rama + PR contra dev. Nunca directo a main.</div>
+  </div>
+  <div class="pieza vault">
+    <h3>&#128451; El Vault</h3>
+    <div class="que">El tablero vivo de TODOS los proyectos: milestones, planes, kanban y sesiones. Repo aparte (<code>soubunker-vault</code>), fuente de verdad del progreso.</div>
+    <div class="regla">Push directo a main, sin PR: el tablero refleja el ahora.</div>
+  </div>
+  <div class="pieza jira">
+    <h3>&#128202; Jira</h3>
+    <div class="que">El espejo del Vault para la organización: cada milestone es una épica y cada tarea un issue hijo, sincronizados al mover cada tarjeta.</div>
+    <div class="regla">Se deriva del Vault, nunca al revés. Jira jamás bloquea el trabajo.</div>
+  </div>
+</div>
+<div class="flujo">
+  <b>Repo</b> <span class="flecha">&#8646;</span> progreso
+  <b>Vault</b> <span class="flecha">&#8594;</span> espejo inmediato
+  <b>Jira</b>
+</div>
+
+<h2>El Vault: tres niveles <span class="tag">Project-&lt;PREFIJO&gt;/</span></h2>
+<div class="niveles">
+  <div class="nivel"><div class="n-t">milestones.md</div><div class="n-sub">El claim de nivel alto: qué se comprometió · unidad de anti-solapamiento entre máquinas</div></div>
+  <div class="nivel"><div class="n-t">plans/ + kanban.md</div><div class="n-sub">Un plan por archivo (P1, P2…) y sus tareas como tarjetas: Backlog / En curso / En review / Hecho</div></div>
+  <div class="nivel"><div class="n-t">sessions.md</div><div class="n-sub">Append-only: una línea por sesión con quién, máquina, tokens y resultado (el monitor la escribe solo)</div></div>
+</div>
+
+<h2>La regla central</h2>
+<div class="central">
+  <div class="icono">&#128204;</div>
+  <p><b>Todo trabajo pertenece a un milestone del Vault. Sin excepciones.</b><br>
+  Un hook de sesión muestra el tablero al arrancar y el agente declara sobre qué milestone trabaja antes de tocar código. Si no existe, se da de alta en el Backlog primero. Milestone En curso con otro dueño u otra máquina → se para y se pregunta.</p>
+</div>
+
+<h2>El ciclo de trabajo diario</h2>
+<div class="ciclo">
+  <div class="paso"><div><b>Sincroniza el Vault</b>: <code>git pull --rebase</code> y lee <code>milestones.md</code> + <code>kanban.md</code>.</div></div>
+  <div class="paso"><div><b>Toma la tarjeta</b>: a En curso con <code>@quién · máquina</code> y push del Vault en ese momento, no al final.</div></div>
+  <div class="paso"><div><b>Espeja el plan</b>: todo milestone En curso tiene su plan en <code>plans/</code>. Los descartados no se borran.</div></div>
+  <div class="paso"><div><b>Trabaja en el repo</b>: rama <code>tipo/&lt;ID&gt;-slug</code> desde <code>dev</code>, commits <code>tipo: descripción</code> en español.</div></div>
+  <div class="paso"><div><b>Espeja Jira al momento</b> (skill <code>jira-sync</code>): tomar = In Progress, cerrar = Done. Vault primero, Jira después.</div></div>
+  <div class="paso"><div><b>Antes del PR</b>: <code>/security-review</code>, plantilla completada de verdad, PR contra <code>dev</code>. Mergea el coordinador.</div></div>
+  <div class="paso"><div><b>Al cerrar la sesión</b>: línea en <code>sessions.md</code> (tokens incluidos) — el monitor la publica solo si está corriendo.</div></div>
+  <div class="paso"><div><b>Release</b>: <code>dev</code> → <code>main</code> también por PR; el tag <code>vX.Y.Z</code> se crea después del merge.</div></div>
+</div>
+
+<h2>Qué hace el agente — y qué no se delega</h2>
+<div class="dos">
+  <div class="caja si">
+    <div class="cab">El agente lo hace automáticamente</div>
+    <ul>
+      <li>Declarar el milestone al arrancar la sesión</li>
+      <li>Mover tarjetas y pushear el Vault al momento</li>
+      <li>Espejar cada movimiento en Jira</li>
+      <li>Security review antes de cada PR</li>
+      <li>Registrar la sesión con su consumo de tokens</li>
+    </ul>
+  </div>
+  <div class="caja no">
+    <div class="cab">Decisiones de personas, nunca del agente</div>
+    <ul>
+      <li>Mergear o aprobar PRs, crear repositorios (coordinador)</li>
+      <li>Visibilidad del repo y prefijo del proyecto (para siempre)</li>
+      <li>Alcance de cada milestone: el agente propone, tú apruebas</li>
+      <li>El OAuth del conector Jira (una vez por máquina)</li>
+    </ul>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <span>SOUTEC · metodología con harness souclaude · SHS-M7-T008</span>
+  <span>Referencias: docs/onboarding-desarrollador.md · progress/README.md</span>
+</footer>
+
+</body>
+</html>
