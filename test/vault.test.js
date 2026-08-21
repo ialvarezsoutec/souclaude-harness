@@ -535,6 +535,141 @@ test('el registro no matchea por parecido: un nombre distinto no resuelve', asyn
   assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, undefined)
 })
 
+
+// --- Sembrado de la carpeta del proyecto (SHS-M5-T002) ---------------------
+//
+// Si el registro de prefijos ya asocia este repo a un Project-<PREFIJO> que
+// todavia no existe en el Vault, el CLI lo crea. Es la unica escritura del
+// harness en el repo COMPARTIDO de la organizacion, asi que las dos mitades de
+// estos tests son igual de importantes: que siembre cuando corresponde y que
+// NO escriba nada en ningun otro caso.
+
+// El frontmatter exacto que el plugin Kanban de Obsidian necesita para
+// renderizar el archivo como tablero. Es contrato, no estetica.
+const FRONTMATTER = `---
+kanban-plugin: board
+---`
+
+const ARCHIVOS_BASE = ['milestones.md', 'kanban.md', 'sessions.md', 'progress/history.md']
+
+const proyectosEn = (vault) => fs.readdirSync(vault).filter((n) => n.startsWith('Project-')).sort()
+
+test('--vault-seed siembra la carpeta que el registro asocia al repo, con sus archivos base', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault(['Project-CSC'], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-seed'], dir), 0)
+
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-SHS')
+  for (const rel of ARCHIVOS_BASE) assert.ok(has(vault, `Project-SHS/${rel}`), `falta ${rel}`)
+  // plans/ nace vacia y git no versiona directorios vacios: sin el .gitkeep la
+  // carpeta no sobrevive al commit.
+  assert.ok(has(vault, 'Project-SHS/plans/.gitkeep'), 'plans/ quedo sin materializar')
+})
+
+// El Vault de prueba no es un repo git, asi que pushSeguro falla de verdad. Lo
+// que se fija aca es la degradacion: la carpeta queda en el clon local y el
+// repo igual conoce su proyecto -- lo contrario seria perder el sembrado por no
+// poder publicarlo.
+test('si el push del Vault falla, la carpeta y el "project" sobreviven igual', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault([], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-seed'], dir), 0)
+
+  assert.ok(has(vault, 'Project-SHS/milestones.md'))
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, 'Project-SHS')
+})
+
+test('la semilla respeta el formato de tablero del protocolo', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault([], [['SHS', 'souclaude-harness']])
+  await main(['init', ...YES, '--vault-path', vault, '--vault-seed'], dir)
+
+  const kanban = read(vault, 'Project-SHS/kanban.md')
+  const milestones = read(vault, 'Project-SHS/milestones.md')
+
+  for (const tablero of [kanban, milestones]) {
+    assert.ok(tablero.startsWith(FRONTMATTER), 'sin el frontmatter no hay tablero en Obsidian')
+    for (const columna of ['## Backlog', '## En curso', '## Hecho']) assert.ok(tablero.includes(columna))
+  }
+  // La unica diferencia entre los dos tableros: las tareas tienen review, los
+  // milestones no.
+  assert.ok(kanban.includes('## En review'))
+  assert.ok(!milestones.includes('## En review'))
+})
+
+// Escribir en el Vault de la organizacion desde una corrida desatendida seria
+// una escritura por cada build de CI. Sin el flag explicito, no se toca.
+test('desatendido sin --vault-seed: el Vault no se toca y queda el aviso', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault(['Project-CSC'], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault], dir), 0)
+
+  assert.deepEqual(proyectosEn(vault), ['Project-CSC'], 'se escribio en el Vault sin pedirlo')
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, undefined)
+})
+
+// El prefijo no se inventa: sin fila en el registro no hay carpeta que sembrar,
+// ni siquiera con el flag puesto (vault-guide §3).
+test('--vault-seed no inventa un prefijo: un repo fuera del registro no siembra nada', async () => {
+  const dir = mkRepo({ 'package.json': JSON.stringify({ name: 'proyecto-sin-registrar' }) })
+  const vault = mkVault([], [['SHS', 'souclaude-harness']])
+
+  assert.equal(await main(['init', ...YES, '--vault-path', vault, '--vault-seed'], dir), 0)
+
+  assert.deepEqual(proyectosEn(vault), [])
+  assert.equal(JSON.parse(read(dir, VAULT_CONFIG)).project, undefined)
+})
+
+test('camino interactivo: rechazar la creacion deja el Vault intacto y sin project', async () => {
+  const cwd = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault(['Project-CSC'], [['SHS', 'souclaude-harness']])
+
+  await ensureVault({
+    cwd,
+    flags: { 'vault-path': vault },
+    manifest: loadManifest(),
+    lock: null,
+    yes: false,
+    prompts: { text: () => '', confirm: () => false, select: () => '' },
+  })
+
+  assert.deepEqual(proyectosEn(vault), ['Project-CSC'])
+  assert.equal(readVaultConfig(cwd).project, undefined)
+})
+
+test('camino interactivo: aceptar siembra y publica con pushSeguro, sobre la carpeta y nada mas', async () => {
+  const cwd = mkRepo({ 'package.json': JSON.stringify({ name: 'souclaude-harness' }) })
+  const vault = mkVault([], [['SHS', 'souclaude-harness']])
+  const llamadas = []
+  const git = async (args) => {
+    llamadas.push(args.slice(2))
+    return ''
+  }
+
+  await ensureVault({
+    cwd,
+    flags: { 'vault-path': vault },
+    manifest: loadManifest(),
+    lock: null,
+    yes: false,
+    prompts: { text: () => '', confirm: () => true, select: () => '' },
+    git,
+  })
+
+  assert.deepEqual(
+    llamadas.map((a) => a[0]),
+    ['add', 'commit', 'pull', 'push'],
+    'el orden de pushSeguro no se respeto'
+  )
+  assert.deepEqual(llamadas[0], ['add', 'Project-SHS'], 'el add tiene que acotarse a la carpeta sembrada')
+  assert.deepEqual(llamadas[1], ['commit', '-m', 'chore: alta de Project-SHS en el Vault'])
+  assert.deepEqual(llamadas[2], ['pull', '--rebase'])
+  assert.equal(readVaultConfig(cwd).project, 'Project-SHS')
+})
+
 // --- Regresion multi-proyecto ----------------------------------------------
 //
 // carpetaProyecto() es el punto exacto donde el monitor decide en que carpeta

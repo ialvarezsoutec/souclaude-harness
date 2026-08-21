@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
 import * as ui from '../ui.js'
 import { exists, readIfExists, writeFileLF, toPosix } from './fsx.js'
+import { pushSeguro, gitReal } from './vault-sync.js'
+import { SEMILLAS_PROYECTO, renderSemilla } from './vault-seeds.js'
 
 const PACKAGE_JSON = fileURLToPath(new URL('../../package.json', import.meta.url))
 
@@ -235,14 +237,14 @@ function manualHint(repo) {
 // no una dependencia dura para tener el harness instalado.
 // prompts (default: el modulo real de UI) se puede inyectar en tests para
 // ejercer el camino interactivo sin una TTY real ni mockear el modulo entero.
-export async function ensureVault({ cwd, flags = {}, manifest, lock, yes, prompts = ui }) {
+export async function ensureVault({ cwd, flags = {}, manifest, lock, yes, prompts = ui, git = gitReal }) {
   const abs = await conectarVault({ cwd, flags, manifest, lock, yes, prompts })
   if (!abs) return null
   // El contrato de arriba ("nunca lanza") tiene que valer tambien para los pasos
   // que completan la identidad del repo: son datos de conveniencia, no un
   // requisito para tener el harness instalado.
   try {
-    await asegurarProyecto(cwd, abs, { flags, yes, prompts })
+    await asegurarProyecto(cwd, abs, { flags, yes, prompts, git })
     await asegurarQuien(cwd, { yes, prompts })
   } catch (err) {
     ui.log.warn(`No se pudo completar la config del Vault: ${err.message}`)
@@ -258,10 +260,12 @@ export async function ensureVault({ cwd, flags = {}, manifest, lock, yes, prompt
 // declarada no depende de como quede el Vault manana.
 //
 // Prioridad, la misma que resolveSkills: --vault-project explicito > lo ya
-// declarado en la config (sticky, como quien) > una sola carpeta > preguntar.
+// declarado en la config (sticky, como quien) > el registro de prefijos del
+// Vault (que ademas puede SEMBRAR la carpeta si todavia no existe) > una sola
+// carpeta > preguntar.
 // No bloqueante en ningun caso: lo que no se puede resolver termina en un
 // warning, nunca en un fallo de la instalacion.
-async function asegurarProyecto(cwd, vaultPath, { flags = {}, yes, prompts }) {
+async function asegurarProyecto(cwd, vaultPath, { flags = {}, yes, prompts, git = gitReal }) {
   const config = leerConfigDeArchivo(cwd)
   const carpetas = carpetasProyecto(vaultPath)
   const disponibles = () => `Carpetas disponibles: ${carpetas.join(', ')}.`
@@ -295,22 +299,28 @@ async function asegurarProyecto(cwd, vaultPath, { flags = {}, yes, prompts }) {
     return declarado
   }
 
-  if (!carpetas.length) {
-    ui.log.warn(`El Vault todavia no tiene una carpeta ${PREFIJO_PROYECTO}<PREFIJO> para este repo: ${VAULT_CONFIG} queda sin "project".`)
-    return null
-  }
-
   // El registro de prefijos manda sobre cualquier heuristica de conteo: es la
   // fuente unica de que proyecto es cada repo. Resuelve sin preguntar, asi que
   // tambien completa un `upgrade --yes` sobre una instalacion vieja, que es lo
   // unico que quedaba sin cubrir.
+  //
+  // Se consulta ANTES del corte por "el Vault no tiene carpetas": un Vault
+  // recien clonado que todavia no tiene NINGUNA es justamente el caso que hay
+  // que poder sembrar, y cortar antes lo dejaba sin salida.
   const { carpeta: porRegistro, esperada } = resolverPorRegistro(cwd, vaultPath, carpetas)
   if (porRegistro) return persistirProyecto(cwd, vaultPath, porRegistro)
 
   if (esperada) {
     // El registro sabe cual es su proyecto y su carpeta no esta en el Vault.
-    // Caer al "hay una sola, debe ser esa" aca declararia el proyecto de OTRO.
-    ui.log.warn(`${REGISTRO} asocia este repo a ${esperada}, que todavia no existe en el Vault: ${VAULT_CONFIG} queda sin "project".`)
+    // Es el UNICO caso en que sembrarla no inventa nada: el prefijo ya figura
+    // en el registro y apunta a este repo. Caer al "hay una sola, debe ser
+    // esa" aca declararia el proyecto de OTRO.
+    const sembrada = await sembrarProyecto(vaultPath, esperada, { flags, yes, prompts, git })
+    return sembrada ? persistirProyecto(cwd, vaultPath, esperada) : null
+  }
+
+  if (!carpetas.length) {
+    ui.log.warn(`El Vault todavia no tiene una carpeta ${PREFIJO_PROYECTO}<PREFIJO> para este repo: ${VAULT_CONFIG} queda sin "project".`)
     return null
   }
 
@@ -334,6 +344,67 @@ async function asegurarProyecto(cwd, vaultPath, { flags = {}, yes, prompts }) {
   })
   const nombre = String(elegido ?? '').trim()
   return nombre ? persistirProyecto(cwd, vaultPath, nombre) : null
+}
+
+// Alta de la carpeta del proyecto en el Vault. Solo se llama cuando el registro
+// de prefijos YA asocia este repo a `carpeta`: el prefijo no se inventa ni se
+// agrega la fila desde el CLI (vault-guide §3).
+//
+// Esto ESCRIBE en el repo compartido de la organizacion, asi que no pasa nunca
+// sin una decision explicita: interactivo, una confirmacion; desatendido, solo
+// con --vault-seed. Un `init --yes` de CI no siembra -- correria en cada
+// corrida. Nunca lanza: devuelve la carpeta sembrada o null.
+async function sembrarProyecto(vaultPath, carpeta, { flags = {}, yes, prompts, git = gitReal }) {
+  if (yes) {
+    if (!flags['vault-seed']) {
+      ui.log.warn(
+        `${REGISTRO} asocia este repo a ${carpeta}, que todavia no existe en el Vault. Pasa --vault-seed para crearla; ${VAULT_CONFIG} queda sin "project".`
+      )
+      return null
+    }
+  } else {
+    const acepta = await prompts.confirm({
+      message: `${carpeta}/ no existe en el Vault. Crearla y pushearla?`,
+      initialValue: true,
+    })
+    if (!acepta) {
+      ui.log.warn(`${carpeta} no se creo: ${VAULT_CONFIG} queda sin "project".`)
+      return null
+    }
+  }
+
+  const raiz = path.join(vaultPath, carpeta)
+  const escritos = []
+  for (const [rel, contenido] of Object.entries(SEMILLAS_PROYECTO)) {
+    const abs = path.join(raiz, ...rel.split('/'))
+    // Una carpeta a medio sembrar (un push que quedo por la mitad) se completa
+    // sin pisar lo que ya tenga: el Vault es estado vivo, no un destino de
+    // plantillas que se re-aplica.
+    if (exists(abs)) continue
+    writeFileLF(abs, renderSemilla(contenido, carpeta))
+    escritos.push(rel)
+  }
+
+  if (!escritos.length) {
+    ui.log.warn(`${carpeta} ya tenia sus archivos base: no se sembro nada.`)
+    return carpeta
+  }
+
+  const push = await pushSeguro({
+    vaultPath,
+    mensaje: `chore: alta de ${carpeta} en el Vault`,
+    paths: [carpeta],
+    git,
+  })
+
+  if (push.ok) {
+    ui.log.success(`${carpeta} sembrada en el Vault y pusheada (${escritos.join(', ')}).`)
+  } else {
+    // Los archivos ya estan en el clon local: el proximo push del Vault los
+    // empuja. Avisar es obligatorio -- el tablero todavia no lo ve nadie mas.
+    ui.log.warn(`${carpeta} se creo en el clon local del Vault pero no se pudo publicar (${push.motivo}). Pushea el Vault a mano.`)
+  }
+  return carpeta
 }
 
 // Default de la pregunta: la carpeta cuyo prefijo coincide con el nombre del

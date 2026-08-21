@@ -36,6 +36,10 @@ const OPTIONS = {
   // interactivo. Se llama --vault-project y no --project porque ese ya es el
   // filtro por proyecto del monitor (mas abajo).
   'vault-project': { type: 'string' },
+  // Sembrar la carpeta Project-<PREFIJO> en el Vault sin preguntar. Solo hace
+  // falta en modo desatendido: con TTY se confirma. Sin este flag, un --yes
+  // nunca escribe en el repo compartido de la organizacion.
+  'vault-seed': { type: 'boolean' },
   'assume-version': { type: 'string' },
   // monitor. --interval y --top solo pueden ser 'string' en parseArgs (no hay tipo
   // numerico): el comando los convierte y valida.
@@ -186,6 +190,10 @@ ${pc.bold('FLAGS')}
                        repo (ej: Project-SHS). Sin el flag: si el Vault tiene una
                        sola, se declara esa; si tiene varias, init pregunta y el
                        modo no interactivo avisa y no declara ninguna.
+  --vault-seed         Con --yes, siembra la carpeta Project-<PREFIJO> en el Vault
+                       si el id-registry ya asocia este repo a un prefijo y la
+                       carpeta todavia no existe (por defecto, --yes no escribe en
+                       el Vault compartido). Con TTY se pregunta y el flag sobra.
   --no-vault           Omite el paso del Vault por completo.
   --assume-version     (adopt) Version del harness que se asume instalada.
   --strict             (verify) Los warnings (huerfanos) tambien hacen fallar el comando.
