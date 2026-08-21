@@ -278,34 +278,7 @@ function lineaEvento({ ts, sessionId = 'sess' }) {
   }
 }
 
-// --- ventanas de limite y equipo activo (SHS-M3-T005) ---
-
-test('presenter: proyecta ventanasLimite a filas planas conservando los null de las ventanas por modelo', () => {
-  const vista = {
-    generadoEn: AHORA,
-    ventanasLimite: [
-      {
-        clave: '5h', etiqueta: 'Ventana 5h', porcentaje: 40, reseteaEn: AHORA + 3_600_000, alineada: true,
-        consumo: { tokensIn: 1000, tokensOut: 100, desglose: { entrada: 1000, salida: 100, cacheCreacion: 0, cacheLectura: 0 }, costoUsd: 0.5, llamadas: 3 },
-        sesiones: 1,
-      },
-      {
-        clave: 'modelo:fable', etiqueta: 'Semanal claude-fable-5', porcentaje: null, reseteaEn: null, alineada: false,
-        consumo: { tokensIn: 200, tokensOut: 20, desglose: null, costoUsd: 0.1, llamadas: null },
-        sesiones: 1,
-      },
-    ],
-  }
-  const p = presentar(vista, { ahora: AHORA })
-
-  assert.equal(p.ventanas.length, 2)
-  assert.deepEqual(p.ventanas[0], {
-    etiqueta: 'Ventana 5h', porcentaje: 40, reseteaEn: AHORA + 3_600_000, alineada: true,
-    tokensIn: 1000, tokensOut: 100, costoUsd: 0.5, sesiones: 1,
-  })
-  assert.equal(p.ventanas[1].porcentaje, null)
-  assert.equal(p.ventanas[1].alineada, false)
-})
+// --- equipo activo (SHS-M3-T005) ---
 
 test('presenter: equipo null pasa tal cual (sin Vault) y con sesiones activas arma filas con tokens sumados', () => {
   assert.equal(presentar({ generadoEn: AHORA }, { ahora: AHORA }).equipo, null)

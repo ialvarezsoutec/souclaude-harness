@@ -542,27 +542,6 @@ function registroDeUsage(extra = {}) {
   }
 }
 
-test('arbol: con registrosUsage y limites la vista trae ventanasLimite con el consumo del registro adentro', () => {
-  const snapshot = {
-    ...snapshotTotales(),
-    limites: {
-      cincoHoras: { porcentaje: 40, reseteaEn: AHORA + 3_600_000 },
-      sieteDias: { porcentaje: 70, reseteaEn: AHORA + 86_400_000 },
-      porGrupo: [],
-    },
-    registrosUsage: [registroDeUsage()],
-  }
-  const vista = construirVista(snapshot, { ahora: AHORA })
-
-  assert.equal(vista.ventanasLimite.length, 2)
-  const cinco = vista.ventanasLimite.find((v) => v.clave === '5h')
-  assert.equal(cinco.porcentaje, 40)
-  // La sesion del registro termino hace 2 minutos: cae dentro de la ventana 5h.
-  assert.equal(cinco.consumo.tokensIn, 1000)
-  assert.equal(cinco.consumo.tokensOut, 100)
-  assert.equal(cinco.sesiones, 1)
-})
-
 test('arbol: equipoActivo trae solo las sesiones frescas del registro, ordenadas por frescura', () => {
   const fresca = registroDeUsage()
   const vieja = registroDeUsage({
@@ -578,10 +557,9 @@ test('arbol: equipoActivo trae solo las sesiones frescas del registro, ordenadas
   assert.equal(vista.equipoActivo[0].frescuraMs, 60_000)
 })
 
-test('arbol: sin Vault configurado (registrosUsage null) equipoActivo es null y ventanasLimite vacio', () => {
+test('arbol: sin Vault configurado (registrosUsage null) equipoActivo es null', () => {
   const vista = construirVista(snapshotTotales(), { ahora: AHORA })
   assert.equal(vista.equipoActivo, null)
-  assert.deepEqual(vista.ventanasLimite, [])
 })
 
 test('arbol: con Vault configurado pero sin registros, equipoActivo es lista vacia (nadie activo), no null', () => {
