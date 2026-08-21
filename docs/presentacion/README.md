@@ -4,6 +4,10 @@ Deck de 15 láminas que explica cómo se usa `souclaude-harness`: en un proyecto
 uno que ya existe, y cómo el tablero compartido y el monitor de tokens hacen visible el
 trabajo del equipo.
 
+> **¿Regenerar el deck desde cero?** [BRIEF-DECK.md](BRIEF-DECK.md) tiene el contenido
+> completo de las 13 láminas y el sistema visual, listo para pegar en claude.ai. Para
+> cambios puntuales, edita los archivos de acá — no regeneres.
+
 ## Qué hay acá
 
 | Archivo | Qué es |
