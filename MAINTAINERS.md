@@ -141,7 +141,11 @@ función chica. **Nada de un DSL de migraciones.**
    ```
 6. Los devs corren `npx github:ialvarezsoutec/souclaude-harness#v3 upgrade` y reciben la
    nueva versión. No hay registry ni publicación de npm. Para cambiar de major, editan
-   la ref (`#v2` → `#v3`) y corren `upgrade --prune`.
+   la ref y corren `upgrade --prune`.
+
+   **La migración real de la organización es `#v1` → `#v3`.** El tag móvil `v2` nunca
+   se creó: la serie 2 solo tiene el inmutable `v2.4.0`, así que todo proyecto
+   instalado antes de la v3 apunta a `#v1`.
 
 ---
 

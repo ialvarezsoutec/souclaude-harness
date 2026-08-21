@@ -116,7 +116,7 @@ Confírmame desde qué ref vas a instalar antes de hacerlo.
 
 **Debe quedar:** `CLAUDE.md`, `.claude/` (settings, skills, hook, lockfile), `.github/` (plantilla de PR y CODEOWNERS), `docs/decisions/`, `progress/`, `notes.md`, y el bloque gestionado añadido al `.gitignore` sin tocar tus líneas.
 
-> **Problema conocido.** El README del harness documenta `npx github:...#v3`, pero ese tag **no existe** (verificado 19-ago-2026, HTTP 422). Los tags publicados llegan a `v2.4.0`; v3.x vive en la rama `dev`. Instala desde `dev` hasta que se publique el tag, y después repunta con `souclaude upgrade`.
+> **Nota de versión.** El tag `v3` existe desde el release **v3.5.0** (21-ago-2026) y es el que hay que usar. Antes de esa fecha no existía —los tags publicados llegaban a `v2.4.0` y v3.x vivía en `dev`—, así que un proyecto instalado desde `dev` en ese período debe repuntar a `#v3` y correr `souclaude upgrade --prune`. Lo mismo para los que quedaron en `#v1`: el tag móvil `v2` nunca se creó.
 
 ---
 
