@@ -76,20 +76,40 @@ export function looksLikeVault(abs) {
   return exists(path.join(abs, '00-System'))
 }
 
+const PREFIJO_PROYECTO = 'Project-'
+
+// Forma valida de una carpeta de proyecto. Sin separadores de ruta ni puntos
+// sueltos: el valor se usa como segmento de path contra la raiz del Vault.
+const NOMBRE_PROYECTO = /^Project-[A-Za-z0-9_-]+$/
+
+// Las carpetas Project-* que existen hoy en el Vault, ordenadas: el orden de
+// readdir depende del sistema de archivos y no puede ser lo que decida cual
+// queda como default de una pregunta.
+export function carpetasProyecto(vaultPath) {
+  try {
+    return fs
+      .readdirSync(vaultPath, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && d.name.startsWith(PREFIJO_PROYECTO))
+      .map((d) => d.name)
+      .sort()
+  } catch {
+    return []
+  }
+}
+
 // Carpeta Project-<PREFIJO> del proyecto: la declarada en vault.local.json
 // ("project") o, si el Vault tiene una sola, esa. Mismo criterio que el hook
 // declarar-milestone.mjs del template (que no puede importar de src/).
+//
+// El segundo camino es un RESPALDO para las instalaciones anteriores a
+// asegurarProyecto(), que nunca llegaron a escribir "project": acierta mientras
+// el Vault tenga un solo proyecto y devuelve null -- en silencio y en todas las
+// maquinas a la vez -- en cuanto aparece el segundo. Lo retira T003, una vez que
+// la migracion de upgrade haya completado los vault.local.json viejos.
 export function carpetaProyecto(vaultPath, config) {
   if (config?.project) return config.project
-  try {
-    const carpetas = fs
-      .readdirSync(vaultPath, { withFileTypes: true })
-      .filter((d) => d.isDirectory() && d.name.startsWith('Project-'))
-      .map((d) => d.name)
-    return carpetas.length === 1 ? carpetas[0] : null
-  } catch {
-    return null
-  }
+  const carpetas = carpetasProyecto(vaultPath)
+  return carpetas.length === 1 ? carpetas[0] : null
 }
 
 // Clonar el Vault -- otro repo git, con la memoria de TODOS los proyectos de la
@@ -141,8 +161,106 @@ function manualHint(repo) {
 // ejercer el camino interactivo sin una TTY real ni mockear el modulo entero.
 export async function ensureVault({ cwd, flags = {}, manifest, lock, yes, prompts = ui }) {
   const abs = await conectarVault({ cwd, flags, manifest, lock, yes, prompts })
-  if (abs) await asegurarQuien(cwd, { yes, prompts })
+  if (!abs) return null
+  // El contrato de arriba ("nunca lanza") tiene que valer tambien para los pasos
+  // que completan la identidad del repo: son datos de conveniencia, no un
+  // requisito para tener el harness instalado.
+  try {
+    await asegurarProyecto(cwd, abs, { flags, yes, prompts })
+    await asegurarQuien(cwd, { yes, prompts })
+  } catch (err) {
+    ui.log.warn(`No se pudo completar la config del Vault: ${err.message}`)
+  }
   return abs
+}
+
+// El "project" de vault.local.json es la carpeta Project-<PREFIJO> a la que
+// pertenece este repo. Sin el, carpetaProyecto() lo ADIVINA a partir de cuantas
+// carpetas hay en el Vault -- y esa cuenta no la controla este repo: el Vault
+// existe justamente para juntar todos los proyectos de la organizacion. Por eso
+// se persiste SIEMPRE, incluso cuando hoy la respuesta es obvia: una respuesta
+// declarada no depende de como quede el Vault manana.
+//
+// Prioridad, la misma que resolveSkills: --vault-project explicito > lo ya
+// declarado en la config (sticky, como quien) > una sola carpeta > preguntar.
+// No bloqueante en ningun caso: lo que no se puede resolver termina en un
+// warning, nunca en un fallo de la instalacion.
+async function asegurarProyecto(cwd, vaultPath, { flags = {}, yes, prompts }) {
+  const config = leerConfigDeArchivo(cwd)
+  const carpetas = carpetasProyecto(vaultPath)
+  const disponibles = () => `Carpetas disponibles: ${carpetas.join(', ')}.`
+
+  const pedido = typeof flags['vault-project'] === 'string' ? flags['vault-project'].trim() : ''
+  if (pedido) {
+    // Un Vault sin carpetas todavia (recien clonado, o antes de que T002 siembre
+    // la del proyecto) no da contra que contrastar el nombre, asi que al menos
+    // la FORMA tiene que ser la de una carpeta de proyecto: "project" termina
+    // como segmento de ruta en el monitor, y un "../algo" se saldria del Vault.
+    if (!NOMBRE_PROYECTO.test(pedido)) {
+      ui.log.warn(`--vault-project: "${pedido}" no es un nombre de carpeta de proyecto (${PREFIJO_PROYECTO}<PREFIJO>). No se declaro proyecto.`)
+      return null
+    }
+    // Un typo persistido es exactamente el bug que este paso viene a cerrar.
+    if (carpetas.length && !carpetas.includes(pedido)) {
+      ui.log.warn(`--vault-project: "${pedido}" no existe en el Vault. ${disponibles()} No se declaro proyecto.`)
+      return null
+    }
+    return persistirProyecto(cwd, vaultPath, pedido)
+  }
+
+  const declarado = typeof config?.project === 'string' ? config.project.trim() : ''
+  if (declarado) {
+    // Un puntero que quedo apuntando a una carpeta que ya no esta es el mismo
+    // fallo silencioso, con otra causa: se avisa, pero no se pisa lo declarado
+    // -- corregirlo es una decision del usuario, con --vault-project.
+    if (carpetas.length && !carpetas.includes(declarado)) {
+      ui.log.warn(`${VAULT_CONFIG} declara "${declarado}", que no existe en el Vault. ${disponibles()}`)
+    }
+    return declarado
+  }
+
+  if (!carpetas.length) {
+    ui.log.warn(`El Vault todavia no tiene una carpeta ${PREFIJO_PROYECTO}<PREFIJO> para este repo: ${VAULT_CONFIG} queda sin "project".`)
+    return null
+  }
+
+  // Una sola carpeta se ESCRIBE igual. Es el caso que hoy "funciona" por el
+  // respaldo de carpetaProyecto() y el que deja de funcionar sin avisar.
+  if (carpetas.length === 1) return persistirProyecto(cwd, vaultPath, carpetas[0])
+
+  // Solo `yes`, sin repetir ui.isCI(): vaultStep ya lo pliega ahi
+  // (_shared.js), y volver a mirarlo aca haria el camino interactivo
+  // intesteable, que es como termino asegurarQuien. Mismo criterio que
+  // conectarVault.
+  if (yes) {
+    ui.log.warn(`El Vault tiene ${carpetas.length} proyectos y ninguno declarado. ${disponibles()} Pasa --vault-project <${PREFIJO_PROYECTO}XXX>.`)
+    return null
+  }
+
+  const elegido = await prompts.select({
+    message: 'A que proyecto del Vault pertenece este repo?',
+    options: carpetas.map((c) => ({ value: c, label: c })),
+    initialValue: sugerirProyecto(cwd, carpetas),
+  })
+  const nombre = String(elegido ?? '').trim()
+  return nombre ? persistirProyecto(cwd, vaultPath, nombre) : null
+}
+
+// Default de la pregunta: la carpeta cuyo prefijo coincide con el nombre del
+// repo (un repo "shs" sugiere Project-SHS). Sin coincidencia devuelve undefined
+// y la lista se muestra tal cual: adivinar un default a partir de nada es
+// justamente lo que se esta corrigiendo.
+function sugerirProyecto(cwd, carpetas) {
+  const base = path.basename(cwd).toLowerCase()
+  return carpetas.find((c) => c.slice(PREFIJO_PROYECTO.length).toLowerCase() === base)
+}
+
+function persistirProyecto(cwd, vaultPath, project) {
+  // Sin repo explicito: writeVaultConfig preserva el que finish() acaba de
+  // escribir, igual que preserva quien.
+  writeVaultConfig(cwd, { path: vaultPath, project })
+  ui.log.success(`Proyecto del Vault declarado: ${project} (${VAULT_CONFIG})`)
+  return project
 }
 
 // El "quien" de vault.local.json es el eje CONTRIBUYENTE del registro de
