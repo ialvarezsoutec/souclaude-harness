@@ -32,6 +32,10 @@ const OPTIONS = {
   'vault-path': { type: 'string' },
   'vault-repo': { type: 'string' },
   'vault-clone': { type: 'boolean' },
+  // A que carpeta Project-<PREFIJO> del Vault pertenece este repo, sin modo
+  // interactivo. Se llama --vault-project y no --project porque ese ya es el
+  // filtro por proyecto del monitor (mas abajo).
+  'vault-project': { type: 'string' },
   'assume-version': { type: 'string' },
   // monitor. --interval y --top solo pueden ser 'string' en parseArgs (no hay tipo
   // numerico): el comando los convierte y valida.
@@ -178,6 +182,10 @@ ${pc.bold('FLAGS')}
   --vault-repo <url>   Repo del Vault a clonar. Por defecto, el del manifest.
   --vault-clone        Con --yes, clona el Vault si no esta conectado (por defecto,
                        --yes nunca clona). Rechaza cualquier destino dentro de este repo.
+  --vault-project <P>  Carpeta Project-<PREFIJO> del Vault a la que pertenece este
+                       repo (ej: Project-SHS). Sin el flag: si el Vault tiene una
+                       sola, se declara esa; si tiene varias, init pregunta y el
+                       modo no interactivo avisa y no declara ninguna.
   --no-vault           Omite el paso del Vault por completo.
   --assume-version     (adopt) Version del harness que se asume instalada.
   --strict             (verify) Los warnings (huerfanos) tambien hacen fallar el comando.
