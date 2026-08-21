@@ -78,11 +78,9 @@ export function presentar(vista, { ahora, top } = {}) {
     sesiones: seccionSesiones(sesionesVisibles, sesiones, v.recortes),
     proyectos: seccionProyectos(proyectos, totales, v.recortes),
     recortes,
-    // Vistas del registro del Vault (SHS-M3-T005): el consumo propio dentro
-    // de cada ventana de rate limit y el equipo activo. `equipo` null significa
-    // "sin Vault configurado" (el layout omite la seccion); una lista vacia
-    // significa "nadie activo" y si se pinta.
-    ventanas: seccionVentanas(v.ventanasLimite),
+    // Equipo activo del registro del Vault (SHS-M3-T005). `equipo` null
+    // significa "sin Vault configurado" (el layout omite la seccion); una
+    // lista vacia significa "nadie activo" y si se pinta.
     equipo: seccionEquipo(v.equipoActivo),
     avisos: seccionAvisos(v.avisos),
     // Llamadas cuyo modelo no esta en la tabla de precios: el pie las declara
@@ -489,24 +487,7 @@ function seccionProyectos(proyectos, totales, recortesDominio) {
   }
 }
 
-// --- ventanas de limite / equipo activo (SHS-M3-T005) ---
-
-// Una fila por ventana de domain/ventanas-limite.js::consumoPorVentana. El
-// desglose y las llamadas de las ventanas por modelo llegan en null (el
-// esquema v1 no los trae por modelo): se propagan tal cual, nunca como 0.
-function seccionVentanas(ventanas) {
-  const lista = Array.isArray(ventanas) ? ventanas : []
-  return lista.map((v) => ({
-    etiqueta: v.etiqueta ?? null,
-    porcentaje: numeroONull(v.porcentaje),
-    reseteaEn: numeroONull(v.reseteaEn),
-    alineada: v.alineada === true,
-    tokensIn: numero(v.consumo?.tokensIn),
-    tokensOut: numero(v.consumo?.tokensOut),
-    costoUsd: numero(v.consumo?.costoUsd),
-    sesiones: numero(v.sesiones),
-  }))
-}
+// --- equipo activo (SHS-M3-T005) ---
 
 // Sesiones activas del equipo (domain/actividad-equipo.js). null pasa tal
 // cual: es la marca de "sin Vault configurado", no una lista vacia.

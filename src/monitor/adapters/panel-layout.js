@@ -976,58 +976,6 @@ function seccionProyectos(ctx, vista) {
   }
 }
 
-// Consumo propio (registro del Vault) dentro de cada ventana de rate limit,
-// junto al porcentaje que informa la API (SHS-M3-T005). El porcentaje es el
-// dato de la API sobre SU limite; los tokens son lo que el equipo midio: dos
-// fuentes distintas en la misma fila, a proposito.
-function seccionVentanas(ctx, vista) {
-  const filas = Array.isArray(vista?.ventanas) ? vista.ventanas.filter(Boolean) : []
-  const ancha = ctx.interior >= 92
-  const anchoBarra = Math.max(6, Math.min(14, ctx.interior - 58))
-
-  function filaVentana(v) {
-    const sev = severidad(num(v.porcentaje))
-    const pct = Number.isFinite(v.porcentaje) ? pctTexto(v.porcentaje) : 'n/d'
-    // Sin reset alineado la ventana es rodante: decirlo vale mas que una hora
-    // de reset inventada.
-    const resetea = v.alineada
-      ? Number.isFinite(v.reseteaEn) && v.reseteaEn > ctx.ahora
-        ? `resetea ${fmtDuracionMin(v.reseteaEn - ctx.ahora)}`
-        : ''
-      : 'rodante'
-    return lineaCaja(
-      ctx,
-      [
-        { texto: texto(v.etiqueta, 'ventana'), ancho: ancha ? 20 : 14 },
-        { texto: pct, ancho: 4, alinear: 'd', tinte: tinteDeNivel(sev.nivel) },
-        {
-          texto: barra(num(v.porcentaje), anchoBarra, { lleno: ctx.chars.bar.full, vacio: ctx.chars.bar.empty }),
-          ancho: anchoBarra,
-        },
-        { texto: `in ${fmtTokens(num(v.tokensIn))}`, ancho: 9, alinear: 'd' },
-        { texto: `out ${fmtTokens(num(v.tokensOut))}`, ancho: 10, alinear: 'd' },
-        ancha ? { texto: `${num(v.sesiones)} ses`, ancho: 7, alinear: 'd', tinte: 'dim' } : null,
-        { texto: resetea, ancho: RESTO, alinear: 'd', tinte: 'dim' },
-      ],
-      ctx.tinteMarco
-    )
-  }
-
-  return {
-    id: 'ventanas',
-    min: Math.min(2, 1 + filas.length),
-    max: 1 + filas.length,
-    build(n) {
-      const lineas = [
-        regla(ctx, ctx.chars.frame.ml, ctx.chars.frame.mr, 'VENTANAS', 'consumo propio del Vault', ctx.tinteMarco),
-      ]
-      const huecos = Math.max(0, n - 1)
-      for (const v of filas.slice(0, huecos)) lineas.push(filaVentana(v))
-      return lineas
-    },
-  }
-}
-
 // Sesiones activas del EQUIPO segun el registro del Vault (SHS-M3-T005): quien
 // esta consumiendo ahora en cualquier maquina, no solo en esta. La seccion se
 // pinta aun sin filas ("nadie activo" es informacion); si no hay Vault
@@ -1151,12 +1099,10 @@ function renderFull(ctx, vista) {
     ...(hayCuentas ? [seccionCuentas(ctx, vista)] : []),
     seccionAhora(ctx, vista),
     seccionConsumo(ctx, vista),
-    // VENTANAS solo con datos (sin registro o sin limites no hay fila que
-    // valga); EQUIPO tambien sin filas — "nadie activo" es informacion — pero
-    // nunca sin Vault configurado (equipo null).
-    ...((vista?.ventanas?.length ?? 0) > 0 ? [seccionVentanas(ctx, vista)] : []),
     seccionDesglose(ctx, vista),
     seccionSesiones(ctx, vista),
+    // EQUIPO se pinta aun sin filas — "nadie activo" es informacion — pero
+    // nunca sin Vault configurado (equipo null).
     ...(vista?.equipo ? [seccionEquipo(ctx, vista)] : []),
     seccionProyectos(ctx, vista),
   ]

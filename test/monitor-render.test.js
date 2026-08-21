@@ -618,29 +618,11 @@ test('color: con color:true y FORCE_COLOR=1 hay secuencias ANSI y los anchos sig
 })
 
 // ---------------------------------------------------------------------------
-// VENTANAS y EQUIPO (SHS-M3-T005)
+// EQUIPO (SHS-M3-T005)
 // ---------------------------------------------------------------------------
 
-function ventanaFila(overrides = {}) {
-  return {
-    etiqueta: 'Ventana 5h',
-    porcentaje: 40,
-    reseteaEn: AHORA + 3_600_000,
-    alineada: true,
-    tokensIn: 120_000,
-    tokensOut: 8_000,
-    costoUsd: 1.2,
-    sesiones: 2,
-    ...overrides,
-  }
-}
-
-test('full: con ventanas y equipo pinta las dos secciones con sus datos, respetando el contrato', () => {
+test('full: con equipo pinta la seccion con sus datos, respetando el contrato', () => {
   const vista = vistaEjemplo({
-    ventanas: [
-      ventanaFila(),
-      ventanaFila({ etiqueta: 'Semanal claude-fable-5', porcentaje: 91, alineada: false, tokensIn: 500_000 }),
-    ],
     equipo: {
       filas: [
         { quien: 'colega', cuenta: 'ops', maquina: 'PC02', proyecto: 'otro-repo', rama: 'dev', tokens: 33_000, costoUsd: 0.4, frescuraMs: 120_000 },
@@ -649,24 +631,19 @@ test('full: con ventanas y equipo pinta las dos secciones con sus datos, respeta
   })
   const caps = detectCaps({ overrides: { unicode: true, color: false } })
   const lineas = renderPanel(vista, { cols: 100, rows: 40, modo: 'full', caps, color: false })
-  verificarContrato(lineas, 100, 40, 'full ventanas+equipo')
-  sinAnsi(lineas, 'full ventanas+equipo')
+  verificarContrato(lineas, 100, 40, 'full equipo')
+  sinAnsi(lineas, 'full equipo')
 
   const todo = lineas.join('\n')
-  assert.match(todo, /VENTANAS/)
-  assert.match(todo, /consumo propio del Vault/)
-  assert.match(todo, /Ventana 5h/)
-  assert.match(todo, /rodante/)
   assert.match(todo, /EQUIPO/)
   assert.match(todo, /1 activas en el Vault/)
   assert.match(todo, /colega/)
 })
 
-test('full: sin ventanas la seccion VENTANAS se omite, y con equipo null la seccion EQUIPO tambien', () => {
+test('full: con equipo null la seccion EQUIPO se omite', () => {
   const caps = detectCaps({ overrides: { unicode: true, color: false } })
   const lineas = renderPanel(vistaEjemplo(), { cols: 100, rows: 40, modo: 'full', caps, color: false })
   const todo = lineas.join('\n')
-  assert.ok(!/VENTANAS/.test(todo), 'VENTANAS no debe aparecer sin datos')
   assert.ok(!/EQUIPO/.test(todo), 'EQUIPO no debe aparecer sin Vault configurado')
 })
 
