@@ -2,6 +2,62 @@
 
 El harness y el CLI se versionan juntos.
 
+## [3.5.0] — 2026-08-21
+
+Primer release publicado de la serie v3. La conexión del repo con su proyecto del
+Vault queda cerrada de punta a punta (SHS-M5) y el panel en vivo se simplifica
+(SHS-M12).
+
+### Agregado
+
+- **Siembra de la carpeta del proyecto en el Vault.** Un repo cuyo prefijo ya figura
+  en `00-System/id-registry.md` pero que todavía no tiene carpeta en el Vault ahora
+  la recibe: `Project-<PREFIJO>/` con `milestones.md`, `kanban.md`, `sessions.md`,
+  `plans/` y `progress/history.md`. Antes solo se emitía un warning y el repo quedaba
+  sin tablero donde declarar sus milestones — justo lo que el protocolo exige antes
+  de tocar código. **El registro es la única autoridad**: un repo que no figura ahí
+  no se siembra, y el prefijo ni se inventa ni se agrega desde el CLI. Escribir en el
+  Vault es escribir en el repo compartido de la organización, así que nunca pasa sin
+  decisión explícita: con TTY se confirma, y en modo desatendido hace falta
+  `--vault-seed`. La publicación va por `pushSeguro` (add acotado, commit,
+  `pull --rebase`, push).
+- **Resolución del proyecto por el registro de prefijos, sin preguntar.** El CLI
+  contrasta la identidad del repo (`name` de `package.json`, remoto git, carpeta)
+  contra `00-System/id-registry.md` y persiste la carpeta si eso apunta a una sola
+  que exista. La comparación es **exacta, sin fuzzy**: parecerse al nombre registrado
+  no alcanza. Cierra el caso desatendido (`--yes`, CI) que quedaba abierto.
+- Flag `--vault-project <Project-XXX>` para declarar la carpeta del proyecto en modo
+  no interactivo (`--project` ya estaba tomado por los filtros del monitor).
+
+### Corregido
+
+- **El instalador declara la carpeta `Project-<PREFIJO>` en vez de dejar que se
+  adivine.** `carpetaProyecto()` caía a un respaldo que infiere el proyecto de
+  cuántas carpetas `Project-*` hay en el Vault: acierta con una sola y devuelve
+  `null` con dos o más. El Vault tiene tres desde el 2026-08-19, así que **toda
+  instalación sin `project` escrito a mano dejó de publicar las líneas de
+  `sessions.md` sin un error visible** — se perdía el registro de consumo por
+  contribuyente y proyecto. `asegurarProyecto()` ahora resuelve y **persiste** la
+  carpeta al conectar el Vault, con la misma prioridad que `resolveSkills`:
+  `--vault-project` explícito > lo ya declarado > una sola carpeta > preguntar.
+  Nunca bloquea: lo irresoluble queda en warning.
+- Si el registro asocia el repo a un proyecto cuya carpeta todavía no está en el
+  Vault, ya no cae en "hay una sola, debe ser esa" — eso declaraba el proyecto de
+  otro repo.
+
+### Cambiado
+
+- **El panel en vivo pierde el bloque VENTANAS.** El consumo propio por ventana
+  (5h / 7d / Fable) queda solo en `souclaude monitor --usage`; el panel en vivo se
+  reserva para el estado del momento.
+
+### Problemas conocidos
+
+- **CI no determinista en ubuntu + Node 22** (SHS-M14): el runner de `node --test`
+  se cae con "Unable to deserialize cloned data" en `test/monitor-cmd.test.js`. Es un
+  fallo del runner en esa combinación de la matriz, no del código publicado: la suite
+  completa (497 tests) pasa en el resto de la matriz. Se corrige en 3.5.1.
+
 ## [3.4.0] — 2026-08-19
 
 La línea de consumo por sesión de `sessions.md` deja de depender de la disciplina
