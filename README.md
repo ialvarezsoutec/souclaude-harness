@@ -290,7 +290,11 @@ git tag vX.Y.Z && git tag -f v3
 git push origin vX.Y.Z && git push -f origin v3
 ```
 
-### Migrar un proyecto de 2.x a 3.0
+### Migrar un proyecto a la serie 3
+
+Cambiar de major es un acto explícito: se edita la ref y se corre el `upgrade`. Los
+proyectos instalados antes de la v3 apuntan a **`#v1`** — el tag móvil `v2` nunca se
+creó, la serie 2 solo tiene el inmutable `v2.4.0`.
 
 ```bash
 npx github:ialvarezsoutec/souclaude-harness#v3 upgrade --dry-run   # ver el plan
