@@ -163,10 +163,12 @@ en cada repo y en cada máquina.
 
 1. Crear el repo `Vault/` con la estructura del §2.
 2. Sembrar `00-System/id-registry.md` con los prefijos activos y su dueño.
-3. Por cada proyecto activo, crear `Project-<PREFIJO>/` con `milestones.md` (los
-   milestones del proyecto en Backlog) y `kanban.md` semilla (frontmatter
-   `kanban-plugin: board` + columnas vacías). `plans/`, `sessions.md` y `progress/`
-   nacen con el primer trabajo.
+3. Por cada proyecto activo, crear `Project-<PREFIJO>/` con `milestones.md` y
+   `kanban.md` (frontmatter `kanban-plugin: board` + columnas vacías), `plans/`,
+   `sessions.md` y `progress/history.md`. **No hace falta a mano**: si el prefijo
+   ya está en `00-System/id-registry.md`, `npx souclaude` siembra la carpeta y la
+   pushea al conectar el repo — confirma en interactivo, o `--vault-seed` sin TTY.
+   Un prefijo que no está registrado no se siembra: primero va la fila (§3).
 4. Si el Vault es un vault de Obsidian: instalar el plugin **Kanban** para ver los
    tableros.
 5. En cada repo de proyecto: correr `npx souclaude` y aceptar el paso del Vault (clona
