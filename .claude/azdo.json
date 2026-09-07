@@ -1,8 +1,8 @@
 {
   "_comentario": "Proyecto Azure DevOps destino del espejo del Vault (skill azdo-sync). No es secreto: se commitea. La autenticacion (PAT o az login) va en variables de entorno, nunca aqui.",
-  "organization": "<org>",
-  "project": "<proyecto-ADO>",
-  "areaPath": "<proyecto-ADO>",
+  "organization": "soutec",
+  "project": "Prueba CCEM",
+  "areaPath": "Prueba CCEM",
   "epicWorkItemType": "Epic",
   "taskWorkItemType": "Task"
 }

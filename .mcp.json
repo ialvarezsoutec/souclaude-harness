@@ -6,7 +6,7 @@
     },
     "azure-devops": {
       "command": "npx",
-      "args": ["-y", "@azure-devops/mcp", "<org>", "--authentication", "azcli"]
+      "args": ["-y", "@azure-devops/mcp", "soutec", "--authentication", "azcli"]
     }
   }
 }
