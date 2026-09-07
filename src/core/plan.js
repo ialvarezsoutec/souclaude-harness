@@ -20,6 +20,7 @@ export const OBSOLETE = 'obsolete' // estaba en el lockfile, ya no esta en el ma
 
 export function computePlan({ manifest, cwd, lock, vars, detected, force = false, skills }) {
   const actions = []
+  const skippedByStack = []
   const fromVersion = lock?.harnessVersion ?? '0.0.0'
   const seenDests = new Set()
 
@@ -29,6 +30,18 @@ export function computePlan({ manifest, cwd, lock, vars, detected, force = false
 
   for (const entry of manifest.files) {
     if (entry.when === 'empty-repo' && !detected.isEmpty) continue
+    // "when": "stack:<id>" -- el entry asume un lenguaje/runtime concreto (ej.
+    // tag-release.mjs necesita Node para correr). Si el repo no trae esa senal,
+    // no se instala: instalarlo igual dejaria un script que nadie puede ejecutar.
+    // Se recuerda en skippedByStack para que el CLI avise que hay una instruccion
+    // (skill harness-upgrade) para generarlo a mano segun el stack real.
+    if (entry.when?.startsWith('stack:')) {
+      const stack = entry.when.slice('stack:'.length)
+      if (!detected.stacks.includes(stack)) {
+        skippedByStack.push({ dest: entry.dest, stack })
+        continue
+      }
+    }
     // Skill no seleccionada: no se emite. Si estaba instalada de antes, cae al
     // barrido de OBSOLETE de abajo y se ofrece con --prune.
     if (entry.skill && !selected.has(entry.skill)) continue
@@ -56,7 +69,7 @@ export function computePlan({ manifest, cwd, lock, vars, detected, force = false
 
   const dirs = (manifest.dirs ?? []).filter((d) => !(d.when === 'empty-repo' && !detected.isEmpty))
 
-  return { actions, dirs, fromVersion, toVersion: manifest.harnessVersion, skills: [...selected].sort() }
+  return { actions, dirs, fromVersion, toVersion: manifest.harnessVersion, skills: [...selected].sort(), skippedByStack }
 }
 
 // Las required del catalogo entran SIEMPRE, se pidan o no: es la garantia de
