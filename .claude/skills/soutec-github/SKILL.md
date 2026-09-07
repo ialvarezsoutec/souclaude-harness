@@ -176,7 +176,9 @@ SemVer con prefijo `v`: `v1.2.3`.
 | Cambio incompatible | MAJOR · `v1.1.0 → v2.0.0` |
 
 El desarrollador **propone** la versión editando `version` en `package.json` como
-parte del PR de release. Tras el merge `dev` → `main`, el workflow `tag-release.yml`
+parte del PR de release. Ese bump se commitea **directo en `dev`** — nunca en una
+rama `chore` aparte solo para el bump; el PR de release `dev` → `main` ya lo lleva.
+Tras el merge `dev` → `main`, el workflow `tag-release.yml`
 lee esa versión del commit de merge y crea/pushea el tag inmutable `vX.Y.Z` y el
 tag móvil de la serie (`v3`) — es idempotente: si el tag ya existe, no falla ni
 duplica. Los releases de GitHub siguen siendo del coordinador; el workflow no los
