@@ -22,6 +22,8 @@ obligatoria y siempre está):
 - `harness-upgrade` — actualizar el harness.
 - `vault-milestones` — análisis e iteración de milestones en el Vault.
 - `jira-sync` — espejo del tablero del Vault en Jira vía MCP de Atlassian.
+- `azdo-sync` — espejo del tablero del Vault en Azure DevOps Boards vía MCP
+  (en prueba, alternativa a `jira-sync`; no se usan ambas a la vez).
 
 ## Git — reglas duras
 
@@ -74,6 +76,11 @@ una violación del protocolo, no una omisión menor.
 **Espejo en Jira** (skill `jira-sync`): cada movimiento de tarjeta en el Vault se
 refleja en Jira **en el mismo momento** — Vault primero, Jira inmediatamente
 después. Si el conector no está autorizado, se reporta y el trabajo local sigue.
+
+**Espejo en Azure Boards** (skill `azdo-sync`, en prueba): mismo criterio que
+`jira-sync`, con Azure DevOps Boards como destino. Mientras se evalúa el
+reemplazo, no sincronices en las dos herramientas a la vez para la misma
+tarjeta — usa la que el usuario indique como activa en cada sesión.
 
 La ruta local del Vault está en `.claude/vault.local.json` (la escribe `npx souclaude`).
 Antes de empezar a trabajar: `git -C "<vault>" pull --rebase` y lee

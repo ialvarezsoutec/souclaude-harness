@@ -21,6 +21,7 @@ const SKILLS = [
   'harness-upgrade',
   'vault-milestones',
   'jira-sync',
+  'azdo-sync',
 ]
 
 test('init en repo vacio: emite el harness completo + scaffolding', async () => {
