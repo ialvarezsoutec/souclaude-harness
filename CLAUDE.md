@@ -78,7 +78,7 @@ las dos a la vez): cada movimiento de tarjeta en el Vault se refleja en la
 herramienta de tablero externa **en el mismo momento** — Vault primero, espejo
 inmediatamente después. El Vault es la única fuente de verdad; la herramienta
 externa es intercambiable y la define la skill activa (usa la que el usuario
-indique en cada sesión; por defecto, `jira-sync`). Si el conector no está
+indique en cada sesión). Si el conector no está
 autorizado, se reporta y el trabajo local sigue.
 
 La ruta local del Vault está en `.claude/vault.local.json` (la escribe `npx souclaude`).
