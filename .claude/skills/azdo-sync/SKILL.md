@@ -92,9 +92,10 @@ tareas ya desglosadas:
 | Vault | Azure Boards |
 |---|---|
 | Milestone (`<PREFIJO>-M<n>`) | Un **Epic** (`epicWorkItemType` de `azdo.json`) |
-| Title | `<PREFIJO>-M<n> · <título del milestone>` |
-| Description | La descripción del milestone en `milestones.md` |
-| Tags | `<PREFIJO>-M<n>` |
+| Title | `<título corto del milestone>` (sin el ID — el ID va solo como badge; si `milestones.md` trae `:` tras el título, usa solo la parte antes del `:`) |
+| Description | El texto completo del milestone en `milestones.md` (título + toda la elaboración tras el `:`) |
+| Tags | `<PREFIJO>-M<n>` (es el badge que muestra el tablero, y la clave de idempotencia) |
+| Dueño | `System.AssignedTo` = por defecto quien crea el Epic (la identidad autenticada del conector), salvo que el usuario pida asignarlo a otra persona |
 | Sus tareas | Work items **hijos** del Epic (vínculo `System.LinkTypes.Hierarchy-Forward`) |
 | Columna en `milestones.md` (Backlog / En curso / Hecho) | State **New** / **Active** / **Closed** (nombres reales según la plantilla del proyecto — ver abajo) |
 
@@ -104,12 +105,14 @@ tareas ya desglosadas:
 |---|---|
 | Tarea del kanban (`<PREFIJO>-M<n>-T<m>`) | Un work item de `taskWorkItemType` con **parent = el Epic de su milestone** |
 | Milestone de la tarea | El **parent** + tag `<PREFIJO>-M<n>` (redundancia útil para consultas WIQL) |
-| Title | `<PREFIJO>-M<n>-T<m> · <descripción de la tarjeta>` |
+| Title | `T<m> · <resumen corto>` (unas pocas palabras — nunca el texto completo de la tarjeta; sin el prefijo del milestone, ya está el parent Epic y el tag) |
+| Description | El texto completo de la tarjeta del kanban (si es largo, va entero acá, nunca solo en el Title) |
+| Identidad completa de la tarea | Tag `<PREFIJO>-M<n>-T<m>` (ID completo; clave de idempotencia, no vive en el Title) |
 | Columna Backlog | State **New** (o **To Do** en Basic) |
 | Columna En curso | State **Active** (o **Doing** en Basic) |
 | Columna En review | State **Resolved** si el proceso lo tiene; si no, se queda en Active con un comentario |
 | Columna Hecho | State **Closed** (o **Done** en Basic) |
-| Dueño de la tarjeta (`@quién`) | `System.AssignedTo`, si se puede resolver el usuario en la organización; si no, se omite |
+| Dueño de la tarjeta (`@quién`) | `System.AssignedTo` = el `@quién` de la tarjeta si se puede resolver en la organización; si la tarjeta no trae `@quién` (o no se puede resolver), **por defecto va a quien crea el work item** (la identidad autenticada del conector) — solo se deja sin asignar o a otra persona si el usuario lo pide explícitamente |
 
 **Estados por plantilla de proceso** — Azure DevOps no tiene estados fijos: varían
 según Basic / Agile / Scrum / CMMI. **No asumas los nombres**: la primera vez que
@@ -122,11 +125,12 @@ Los estados son **independientes**: mover una tarea nunca mueve el Epic, y
 viceversa. El Epic espeja la columna del **milestone** en `milestones.md`; las
 tareas espejan su columna en `kanban.md`.
 
-El **ID en el Title es la clave de idempotencia** — para las dos clases: antes de
-crear, consulta con WIQL un work item del proyecto cuyo Title empiece con ese ID
-(`<PREFIJO>-M<n> ·` para milestones, `<PREFIJO>-M<n>-T<m> ·` para tareas — el `·`
-tras el ID evita que `M1` matchee `M11`). Si existe, se actualiza/transiciona; si
-no, se crea. **Nunca dupliques** work items.
+La **clave de idempotencia es el Tag con el ID completo, no el Title** (el Title
+ahora solo lleva el título del milestone o el `T<m>` de la tarea, para que el
+tablero se lea limpio): antes de crear, consulta con WIQL un work item del
+proyecto cuyos Tags contengan ese ID exacto (`<PREFIJO>-M<n>` para milestones,
+`<PREFIJO>-M<n>-T<m>` para tareas). Si existe, se actualiza/transiciona; si no,
+se crea. **Nunca dupliques** work items.
 
 ## Herramientas del conector
 
@@ -135,7 +139,7 @@ están diferidas — los nombres pueden variar de versión a versión, confírma
 la lista de tools disponible en runtime antes de asumirlos):
 
 - Consulta / idempotencia: la tool de **WIQL** del dominio de work items (query
-  por `[System.TeamProject] = '<proyecto>' AND [System.Title] CONTAINS '<ID> ·'`).
+  por `[System.TeamProject] = '<proyecto>' AND [System.Tags] CONTAINS '<ID>'`).
 - Lectura: **get** / **get_batch** de work items, **list_comments**.
 - Escritura: **create** / **update** (para setear `System.State`,
   `System.AssignedTo`, `System.Tags`, `System.Description`), **add_child** para
@@ -171,9 +175,9 @@ En el mismo flujo en que tocas el Vault — el orden es siempre Vault primero
   "igualar" el tablero de Azure. Si detectas divergencia (alguien movió el work
   item en Azure Boards), repórtala al usuario y deja que él decida — el Vault
   manda.
-- **No toques work items ajenos**: solo los que tienen Title que empieza con un
-  ID del proyecto (`<PREFIJO>-M<n> ·` o `<PREFIJO>-M<n>-T<m> ·`). El resto del
-  proyecto de Azure DevOps no es territorio de esta skill.
+- **No toques work items ajenos**: solo los que tienen el Tag con un ID del
+  proyecto (`<PREFIJO>-M<n>` o `<PREFIJO>-M<n>-T<m>`). El resto del proyecto de
+  Azure DevOps no es territorio de esta skill.
 - No borres work items. Una tarea eliminada del Vault se comenta en su work item
   y se transiciona al state que el usuario indique (o al más parecido a
   "descartado" que tenga el proceso) — nunca delete.
