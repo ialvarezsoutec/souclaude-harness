@@ -18,19 +18,34 @@ la que corresponda a la herramienta real del equipo.
 1. **Conector**: `.mcp.json` ya tiene un único dueño en el manifest del harness
    (la entrada de `jira-sync`), así que el servidor de Azure DevOps **no se
    distribuye automáticamente** — se agrega a mano una vez por repo, al bloque
-   `mcpServers` de `.mcp.json`:
+   `mcpServers` de `.mcp.json`. Es el paquete oficial de Microsoft
+   (`@azure-devops/mcp`), corre local por `stdio` (no es un endpoint HTTP alojado
+   como el de Atlassian) y necesita Node.js 20+.
+
+   **Autenticación — PAT es el método por defecto**, no `az login`: en tenants de
+   Entra ID donde la app "Azure CLI" está restringida a usuarios asignados
+   (política común en orgs corporativas), `az login` falla con "Se inició sesión
+   correctamente, pero no tiene permiso para obtener acceso a este recurso" aunque
+   la cuenta sí tenga acceso normal a Azure DevOps — son dos permisos distintos.
+   El PAT evita esa dependencia: solo necesita acceso a la organización de Azure
+   DevOps, nada de Entra ID.
 
    ```json
    "azure-devops": {
      "command": "npx",
-     "args": ["-y", "@azure-devops/mcp", "<org>", "--authentication", "azcli"]
+     "args": ["-y", "@azure-devops/mcp", "<org>", "--authentication", "pat"],
+     "env": {
+       "PERSONAL_ACCESS_TOKEN": "${AZURE_DEVOPS_PAT_B64}"
+     }
    }
    ```
 
-   Es el paquete oficial de Microsoft (`@azure-devops/mcp`), corre local por
-   `stdio` (no es un endpoint HTTP alojado como el de Atlassian) y necesita
-   Node.js 20+. Con `--authentication azcli` no hay secretos en el archivo: usa
-   la sesión activa de `az login` de quien lo corre.
+   `AZURE_DEVOPS_PAT_B64` es una variable de entorno local (nunca se commitea):
+   `PERSONAL_ACCESS_TOKEN` debe ser la codificación base64 de `<email>:<pat>`.
+   Generar el PAT en Azure DevOps → ícono de usuario → **Personal Access
+   Tokens** → **New Token**, scope **Work Items (Read, Write, & Manage)**. Si el
+   tenant sí permite la app "Azure CLI" en Entra ID, `--authentication azcli`
+   (sesión de `az login`, sin secretos en el archivo) es una alternativa válida.
 2. **Destino**: `.claude/azdo.json` (commiteado, no es secreto) define la
    organización y el proyecto:
 
