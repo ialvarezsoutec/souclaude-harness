@@ -22,26 +22,35 @@ la que corresponda a la herramienta real del equipo.
    (`@azure-devops/mcp`), corre local por `stdio` (no es un endpoint HTTP alojado
    como el de Atlassian) y necesita Node.js 20+.
 
-   **Autenticación — PAT es el método por defecto**, no `az login`: en tenants de
-   Entra ID donde la app "Azure CLI" está restringida a usuarios asignados
-   (política común en orgs corporativas), `az login` falla con "Se inició sesión
-   correctamente, pero no tiene permiso para obtener acceso a este recurso" aunque
-   la cuenta sí tenga acceso normal a Azure DevOps — son dos permisos distintos.
-   El PAT evita esa dependencia: solo necesita acceso a la organización de Azure
-   DevOps, nada de Entra ID.
+   **Autenticación — `envvar` con PAT es el método usado por SOUTEC.** El
+   servidor MCP local oficial se ejecuta con:
+
+   ```
+   npx -y @azure-devops/mcp <org> --authentication envvar
+   ```
+
+   El PAT se proporciona mediante la variable de entorno `ADO_MCP_AUTH_TOKEN`,
+   en texto original (no en base64). Nunca guardar ni commitear el PAT en
+   `.mcp.json`, `.claude/azdo.json` ni ningún archivo del repositorio; el
+   proceso de Claude debe heredarla del entorno.
+
+   Ejemplo `.mcp.json`:
 
    ```json
    "azure-devops": {
-     "command": "npx",
-     "args": ["-y", "@azure-devops/mcp", "<org>", "--authentication", "pat"],
-     "env": {
-       "PERSONAL_ACCESS_TOKEN": "${AZURE_DEVOPS_PAT_B64}"
-     }
+     "command": "cmd",
+     "args": [
+       "/c",
+       "npx",
+       "-y",
+       "@azure-devops/mcp",
+       "<org>",
+       "--authentication",
+       "envvar"
+     ]
    }
    ```
 
-   `AZURE_DEVOPS_PAT_B64` es una variable de entorno local (nunca se commitea):
-   `PERSONAL_ACCESS_TOKEN` debe ser la codificación base64 de `<email>:<pat>`.
    Generar el PAT en Azure DevOps → ícono de usuario → **Personal Access
    Tokens** → **New Token**, scope **Work Items (Read, Write, & Manage)**. Si el
    tenant sí permite la app "Azure CLI" en Entra ID, `--authentication azcli`
