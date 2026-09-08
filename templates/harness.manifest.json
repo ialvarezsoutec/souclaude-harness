@@ -1,5 +1,5 @@
 {
-  "harnessVersion": "3.9.2",
+  "harnessVersion": "3.10.0",
   "vault": {
     "repo": "https://github.com/ialvarezsoutec/soubunker-vault.git"
   },
@@ -120,13 +120,15 @@
       "id": "tag-release",
       "src": "base/scripts/tag-release.mjs",
       "dest": "scripts/tag-release.mjs",
-      "policy": "managed"
+      "policy": "managed",
+      "when": "stack:node"
     },
     {
       "id": "workflow-tag-release",
       "src": "base/github/workflows/tag-release.yml",
       "dest": ".github/workflows/tag-release.yml",
-      "policy": "managed"
+      "policy": "managed",
+      "when": "stack:node"
     },
     {
       "id": "skill-soutec-github",

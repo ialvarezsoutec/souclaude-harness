@@ -199,12 +199,12 @@ SemVer con prefijo `v`: `v1.2.3`.
 El desarrollador **propone** la versión editando `version` en `package.json` como
 parte del PR de release. Ese bump se commitea **directo en `dev`** — nunca en una
 rama `chore` aparte solo para el bump; el PR de release `dev` → `main` ya lo lleva.
-Tras el merge `dev` → `main`, en repos con el workflow
-`tag-release.yml` instalado, este lee esa versión del commit de merge y
-crea/pushea el tag inmutable `vX.Y.Z` y el tag móvil de la serie (`v3`) — es
-idempotente: si el tag ya existe, no falla ni duplica. En repos sin el workflow,
-el agente puede crearlos y pushearlos a mano en el mismo momento. Los releases de
-GitHub siguen siendo del coordinador; ni el workflow ni el agente los crean.
+Tras el merge `dev` → `main`, en repos con el workflow `tag-release.yml` instalado,
+este lee esa versión del commit de merge y crea/pushea el tag inmutable `vX.Y.Z` y
+el tag móvil de la serie (`v3`) — es idempotente: si el tag ya existe, no falla ni
+duplica. En repos sin el workflow, el agente puede crearlos y pushearlos a mano en
+el mismo momento. Los releases de GitHub siguen siendo del coordinador; ni el
+workflow ni el agente los crean.
 
 ## Ficha del Observatorio (`OBSERVATORIO.md` en el Vault)
 
