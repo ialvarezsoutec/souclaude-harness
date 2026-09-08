@@ -18,14 +18,14 @@
     ],
     "allow": [
       "Bash(node bin/cli.mjs vault-sync:*)",
-      "Bash(npx souclaude vault-sync:*)"
-    ],
-    "ask": [
+      "Bash(npx souclaude vault-sync:*)",
       "Bash(git push:*)",
       "Bash(git merge:*)",
-      "Bash(git reset --hard:*)",
       "Bash(gh pr merge:*)",
       "Bash(gh release:*)"
+    ],
+    "ask": [
+      "Bash(git reset --hard:*)"
     ]
   },
   "hooks": {

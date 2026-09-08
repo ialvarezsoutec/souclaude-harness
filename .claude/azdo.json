@@ -1,0 +1,8 @@
+{
+  "_comentario": "Proyecto Azure DevOps destino del espejo del Vault (skill azdo-sync). No es secreto: se commitea. La autenticacion (PAT o az login) va en variables de entorno, nunca aqui.",
+  "organization": "soutec",
+  "project": "Harness",
+  "areaPath": "Harness",
+  "epicWorkItemType": "Epic",
+  "taskWorkItemType": "Issue"
+}
