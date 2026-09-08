@@ -155,7 +155,25 @@ export async function planAndApply({ manifest, cwd, lock, vars, detected, flags,
   })
 
   report(result, plan, manifest)
+  reportSkippedByStack(plan)
   return 0
+}
+
+// SHS-M28: entries con "when": "stack:<id>" (ej. tag-release, atado a Node) no
+// se instalan si el repo no trae esa senal. No es un error -- es la senal de que
+// el agente tiene que generar el equivalente para el stack real del proyecto,
+// siguiendo la instruccion de la skill harness-upgrade.
+function reportSkippedByStack(plan) {
+  if (!plan.skippedByStack?.length) return
+  ui.log.warn(
+    [
+      'No se instalaron por stack (requieren un lenguaje/runtime que este repo no tiene):',
+      ...plan.skippedByStack.map((s) => `    ${s.dest} (requiere stack: ${s.stack})`),
+      '',
+      'Ver skill harness-upgrade -- seccion "Tag-release fuera de Node" -- para generar',
+      'el equivalente segun el stack real del proyecto.',
+    ].join('\n')
+  )
 }
 
 // El paso del Vault corre DESPUES de planAndApply y fuera del motor de plan a

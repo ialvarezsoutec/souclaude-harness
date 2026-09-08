@@ -4,6 +4,23 @@ El harness y el CLI se versionan juntos.
 
 ## [Unreleased]
 
+## [3.10.0] — 2026-09-08
+
+### Agregado
+
+- **`tag-release` deja de instalarse fijo en Node** (SHS-M28-T001). La skill
+  `harness-upgrade` detecta el lenguaje/framework y la fuente de versión del
+  proyecto consumidor al hacer init/upgrade, y genera/adapta ahí mismo el script y
+  el workflow de tag-release para ese stack en vez de distribuir siempre la
+  variante Node.
+
+### Cambiado
+
+- **La skill `vault-milestones` reconcilia los milestones cerrados antes de listar**
+  y responde corto al pedir los pendientes (Backlog + En curso).
+- **El bump de versión del release se documenta como directo en `dev`**, sin rama
+  `chore` aparte solo para el bump.
+
 ## [3.9.2] — 2026-09-02
 
 ### Cambiado
