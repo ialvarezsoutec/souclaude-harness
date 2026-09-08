@@ -33,7 +33,8 @@ Cuando el usuario pida los **milestones pendientes** (o "qué falta", "qué sigu
 
 1. **Reconciliar primero**: revisa cuáles ya están cerrados —tareas con PR
    mergeado o entregable a la vista— y muévelos a **Hecho** en `kanban.md` y
-   `milestones.md`, con push al Vault en el momento (§4) y espejo en Jira. Cerrar
+   `milestones.md`, con push al Vault en el momento (§4) y espejo del tablero
+   (skill de sincronización instalada). Cerrar
    lo terminado es parte del pedido, no un paso opcional. Respeta la regla dura:
    una tarjeta En curso de **otro dueño u otra máquina** no se cierra sin
    preguntar.

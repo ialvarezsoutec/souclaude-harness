@@ -67,8 +67,8 @@ function cuerpoProteccion() {
 // diferencia de vaultStep, esto no es una escritura local reversible por git,
 // pero SOUTEC ya decidio que la regla "main solo desde dev" es no-negociable,
 // asi que hacerla cumplir en GitHub tampoco lo es. No rompe init/upgrade si
-// falla: se reporta y se sigue (mismo criterio que jira-sync cuando el
-// conector no esta autorizado).
+// falla: se reporta y se sigue (mismo criterio que las skills de espejo del
+// tablero cuando el conector no esta autorizado).
 export function protegeBranchMain({ cwd }) {
   if (!ghDisponible(cwd)) {
     ui.log.warn(

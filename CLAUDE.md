@@ -21,9 +21,9 @@ obligatoria y siempre está):
 - `adr-new` — documentar decisiones con ADRs.
 - `harness-upgrade` — actualizar el harness.
 - `vault-milestones` — análisis e iteración de milestones en el Vault.
-- `jira-sync` — espejo del tablero del Vault en Jira vía MCP de Atlassian.
-- `azdo-sync` — espejo del tablero del Vault en Azure DevOps Boards vía MCP
-  (en prueba, alternativa a `jira-sync`; no se usan ambas a la vez).
+- Skills de **espejo del tablero** (una sola activa a la vez; la herramienta
+  externa es intercambiable, el protocolo no cambia): `jira-sync` (Jira vía MCP
+  de Atlassian) o `azdo-sync` (Azure DevOps Boards vía MCP, en prueba).
 
 ## Git — reglas duras
 
@@ -73,14 +73,13 @@ pedido no corresponde a ningún milestone existente, da de alta uno en el Backlo
 (skill `vault-milestones`) **antes** de empezar. Trabajo sin milestone declarado es
 una violación del protocolo, no una omisión menor.
 
-**Espejo en Jira** (skill `jira-sync`): cada movimiento de tarjeta en el Vault se
-refleja en Jira **en el mismo momento** — Vault primero, Jira inmediatamente
-después. Si el conector no está autorizado, se reporta y el trabajo local sigue.
-
-**Espejo en Azure Boards** (skill `azdo-sync`, en prueba): mismo criterio que
-`jira-sync`, con Azure DevOps Boards como destino. Mientras se evalúa el
-reemplazo, no sincronices en las dos herramientas a la vez para la misma
-tarjeta — usa la que el usuario indique como activa en cada sesión.
+**Espejo del tablero** (skill de espejo activa: `jira-sync` o `azdo-sync`, nunca
+las dos a la vez): cada movimiento de tarjeta en el Vault se refleja en la
+herramienta de tablero externa **en el mismo momento** — Vault primero, espejo
+inmediatamente después. El Vault es la única fuente de verdad; la herramienta
+externa es intercambiable y la define la skill activa (usa la que el usuario
+indique en cada sesión; por defecto, `jira-sync`). Si el conector no está
+autorizado, se reporta y el trabajo local sigue.
 
 La ruta local del Vault está en `.claude/vault.local.json` (la escribe `npx souclaude`).
 Antes de empezar a trabajar: `git -C "<vault>" pull --rebase` y lee

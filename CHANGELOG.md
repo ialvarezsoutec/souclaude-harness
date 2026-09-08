@@ -4,6 +4,16 @@ El harness y el CLI se versionan juntos.
 
 ## [Unreleased]
 
+### Cambiado
+
+- **El harness es agnóstico de la herramienta de tablero externa** (SHS-M30-T001).
+  Las instrucciones compartidas (CLAUDE.md distribuido, skill `vault-milestones`,
+  `progress/README.md`, hook `declarar-milestone`) ya no nombran Jira ni Azure
+  DevOps: hablan del «espejo del tablero» y delegan en la skill de sincronización
+  instalada (`jira-sync` o `azdo-sync`), de modo que cambiar de herramienta sea
+  solo cambiar de skill. Las skills de sync y sus configs siguen nombrando su
+  herramienta: son los adaptadores.
+
 ## [3.11.0] — 2026-09-08
 
 ### Agregado

@@ -75,7 +75,7 @@ test('hook detecta PR mergeado (merge commit) en tarjeta En review y ordena move
   const salida = correrHook(dir)
   assert.match(salida, /PRs ya mergeados con tarjeta todavia En review/)
   assert.match(salida, /SHS-M7-T004 .*<- PR #21 mergeado/)
-  assert.match(salida, /sincroniza Jira/)
+  assert.match(salida, /sincroniza el espejo del tablero/)
 })
 
 test('hook detecta PR mergeado por squash ("titulo (#N)")', () => {

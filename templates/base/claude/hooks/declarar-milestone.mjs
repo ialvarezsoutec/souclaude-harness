@@ -115,14 +115,15 @@ function tarjetasConPrMergeado(root, enReview) {
 
 // Aviso de tarjetas En review con PR ya mergeado. Devuelve lineas para la
 // salida del hook; el hook solo detecta y ordena — mover la tarjeta (Vault
-// primero, Jira despues) es del agente, que es quien puede espejar en Jira.
+// primero, espejo despues) es del agente, que es quien puede espejar el tablero
+// en la herramienta externa via la skill de sincronizacion instalada.
 function seccionPrsMergeados(root, vaultPath, proyecto) {
   const columnas = tablero(path.join(vaultPath, proyecto, 'kanban.md'))
   const detectadas = tarjetasConPrMergeado(root, columnas?.['En review'] ?? [])
   if (detectadas.length === 0) return []
   const lineas = ['PRs ya mergeados con tarjeta todavia En review — muevelas a Hecho:']
   for (const { tarjeta, pr } of detectadas) lineas.push(`  ${tarjeta}  <- PR #${pr} mergeado`)
-  lineas.push('Mueve cada tarjeta a Hecho en el kanban del Vault (push inmediato) y sincroniza Jira (skill jira-sync).')
+  lineas.push('Mueve cada tarjeta a Hecho en el kanban del Vault (push inmediato) y sincroniza el espejo del tablero (skill de sincronizacion instalada: jira-sync o azdo-sync).')
   return lineas
 }
 
