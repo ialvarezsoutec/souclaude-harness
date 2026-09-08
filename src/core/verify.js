@@ -107,15 +107,22 @@ export function findDuplicateIds(manifest) {
   return errors
 }
 
+// Dos entries con el mismo dest son un error salvo que TODOS los que comparten
+// ese dest sean policy merge-json: computePlan los funde en una sola accion
+// (ver src/core/plan.js) antes de escribir, asi que no hay riesgo de que uno
+// pise al otro. Cualquier otra policy duplicada si es un bug del manifest.
 export function findDuplicateDests(manifest) {
-  const seen = new Map()
-  const errors = []
+  const byDest = new Map()
   for (const entry of manifest.files) {
-    const count = (seen.get(entry.dest) ?? 0) + 1
-    seen.set(entry.dest, count)
-    if (count === 2) {
-      errors.push({ type: ERROR, code: 'duplicate-dest', message: `manifest.files[] tiene mas de un entry con dest "${entry.dest}".` })
-    }
+    const group = byDest.get(entry.dest) ?? []
+    group.push(entry)
+    byDest.set(entry.dest, group)
+  }
+  const errors = []
+  for (const [dest, group] of byDest) {
+    if (group.length < 2) continue
+    if (group.every((e) => e.policy === 'merge-json')) continue
+    errors.push({ type: ERROR, code: 'duplicate-dest', message: `manifest.files[] tiene mas de un entry con dest "${dest}".` })
   }
   return errors
 }

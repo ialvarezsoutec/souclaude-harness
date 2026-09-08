@@ -4,6 +4,17 @@ El harness y el CLI se versionan juntos.
 
 ## [Unreleased]
 
+## [3.11.0] — 2026-09-08
+
+### Agregado
+
+- **Skill `azdo-sync`** (SHS-M27-T001), análoga a `jira-sync` pero espejando el
+  tablero del Vault en Azure DevOps Boards vía el MCP oficial de Azure DevOps:
+  cada milestone es un Epic y cada tarea del kanban un work item hijo, con
+  autenticación por PAT vía variable de entorno. Se distribuye como opción al
+  instalar el harness (`.mcp.json`, `azdo.json`, manifest); mientras se evalúa
+  como reemplazo de `jira-sync`, no se sincronizan ambas herramientas a la vez.
+
 ## [3.10.0] — 2026-09-08
 
 ### Agregado

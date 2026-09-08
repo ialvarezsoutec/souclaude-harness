@@ -1,5 +1,5 @@
 {
-  "harnessVersion": "3.10.0",
+  "harnessVersion": "3.11.0",
   "vault": {
     "repo": "https://github.com/ialvarezsoutec/soubunker-vault.git"
   },
@@ -36,6 +36,10 @@
     {
       "id": "jira-sync",
       "label": "jira-sync — espejo del tablero del Vault en Jira vía MCP de Atlassian"
+    },
+    {
+      "id": "azdo-sync",
+      "label": "azdo-sync — espejo del tablero del Vault en Azure DevOps Boards vía MCP"
     }
   ],
   "files": [
@@ -275,6 +279,27 @@
       "dest": ".mcp.json",
       "policy": "merge-json",
       "skill": "jira-sync"
+    },
+    {
+      "id": "skill-azdo-sync",
+      "src": "base/claude/skills/azdo-sync/SKILL.md",
+      "dest": ".claude/skills/azdo-sync/SKILL.md",
+      "policy": "managed",
+      "skill": "azdo-sync"
+    },
+    {
+      "id": "azdo-config",
+      "src": "base/claude/azdo.json",
+      "dest": ".claude/azdo.json",
+      "policy": "user-owned",
+      "skill": "azdo-sync"
+    },
+    {
+      "id": "mcp-config-azdo",
+      "src": "base/mcp.azdo.json",
+      "dest": ".mcp.json",
+      "policy": "merge-json",
+      "skill": "azdo-sync"
     },
     {
       "id": "progress-readme",

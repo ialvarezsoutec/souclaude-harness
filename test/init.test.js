@@ -21,6 +21,7 @@ const SKILLS = [
   'harness-upgrade',
   'vault-milestones',
   'jira-sync',
+  'azdo-sync',
 ]
 
 test('init en repo vacio: emite el harness completo + scaffolding', async () => {
@@ -94,6 +95,21 @@ test('init: el settings.json emitido es schema-correcto', async () => {
   // La exclusion real de secretos vive aca, no en un .claudeignore.
   assert.ok(settings.permissions.deny.includes('Read(./.env)'))
   assert.ok(settings.permissions.deny.includes('Read(./secrets/**)'))
+})
+
+test('init: jira-sync y azdo-sync activas a la vez funden sus servidores en .mcp.json sin pisarse', async () => {
+  const dir = mkRepo({ 'README.md': '' })
+  // Sin --skills: se instalan todas, jira-sync y azdo-sync incluidas (ver SKILLS arriba).
+  assert.equal(await main(['init', ...YES], dir), 0)
+
+  const mcp = JSON.parse(read(dir, '.mcp.json'))
+  assert.ok(mcp.mcpServers.atlassian, 'falta el servidor de jira-sync')
+  assert.ok(mcp.mcpServers['azure-devops'], 'falta el servidor de azdo-sync')
+  assert.deepEqual(mcp.mcpServers['azure-devops'].args.slice(0, 2), ['-y', '@azure-devops/mcp'])
+
+  // Una sola accion sobre el dest, no dos que se pisen entre si.
+  const plan = replan(dir)
+  assert.equal(plan.actions.filter((a) => a.dest === '.mcp.json').length, 1)
 })
 
 test('--skills: instala solo lo elegido, pero soutec-github entra siempre', async () => {

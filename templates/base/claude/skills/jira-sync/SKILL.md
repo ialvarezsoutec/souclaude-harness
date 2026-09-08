@@ -13,7 +13,9 @@ que el push inmediato al Vault.
 ## Configuración
 
 1. **Conector**: el harness distribuye `.mcp.json` con el servidor MCP oficial de
-   Atlassian. Cada usuario lo autoriza **una vez** (`/mcp` → autenticar Atlassian).
+   Atlassian (se funde con la entrada de `azdo-sync` si ambas skills están
+   instaladas — ninguna pisa a la otra). Cada usuario lo autoriza **una vez**
+   (`/mcp` → autenticar Atlassian).
 2. **Destino**: `.claude/jira.json` (commiteado, no es secreto) define el proyecto:
 
 ```json
