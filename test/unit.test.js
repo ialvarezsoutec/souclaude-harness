@@ -79,7 +79,15 @@ test('manifest: todos los templates declarados existen en disco', () => {
   }
 })
 
-test('manifest: ningun dest duplicado', () => {
-  const dests = loadManifest().files.map((f) => f.dest)
-  assert.equal(new Set(dests).size, dests.length)
+test('manifest: ningun dest duplicado salvo entries merge-json (se funden en computePlan, ver plan.js)', () => {
+  const byDest = new Map()
+  for (const f of loadManifest().files) {
+    const group = byDest.get(f.dest) ?? []
+    group.push(f)
+    byDest.set(f.dest, group)
+  }
+  for (const [dest, group] of byDest) {
+    if (group.length < 2) continue
+    assert.ok(group.every((f) => f.policy === 'merge-json'), `dest duplicado no permitido: "${dest}"`)
+  }
 })

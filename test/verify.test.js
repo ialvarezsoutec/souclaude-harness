@@ -93,6 +93,26 @@ test('verify: detecta ids y dest duplicados', () => {
   assert.equal(findDuplicateDests(manifest).length, 1)
 })
 
+test('verify: dest duplicado no es error cuando todos los entries son merge-json (skills que se funden, ej. jira-sync + azdo-sync sobre .mcp.json)', () => {
+  const manifest = {
+    files: [
+      { id: 'mcp-jira', src: 'base/mcp.json', dest: '.mcp.json', policy: 'merge-json', skill: 'jira-sync' },
+      { id: 'mcp-azdo', src: 'base/mcp.azdo.json', dest: '.mcp.json', policy: 'merge-json', skill: 'azdo-sync' },
+    ],
+  }
+  assert.equal(findDuplicateDests(manifest).length, 0)
+})
+
+test('verify: dest duplicado SI es error si alguno de los entries no es merge-json', () => {
+  const manifest = {
+    files: [
+      { id: 'mcp-jira', src: 'base/mcp.json', dest: '.mcp.json', policy: 'merge-json', skill: 'jira-sync' },
+      { id: 'mcp-managed', src: 'base/mcp.json', dest: '.mcp.json', policy: 'managed' },
+    ],
+  }
+  assert.equal(findDuplicateDests(manifest).length, 1)
+})
+
 test('verify: detecta critico faltante cuando el src del entry critical no existe', () => {
   const root = mkTemplatesRoot({})
   const manifest = { files: [{ id: 'claude-md', src: 'base/CLAUDE.md', dest: 'CLAUDE.md', policy: 'user-owned', critical: true }] }

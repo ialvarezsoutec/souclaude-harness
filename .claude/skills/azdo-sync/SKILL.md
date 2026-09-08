@@ -15,18 +15,21 @@ la que corresponda a la herramienta real del equipo.
 
 ## Configuración
 
-1. **Conector**: `.mcp.json` ya tiene un único dueño en el manifest del harness
-   (la entrada de `jira-sync`), así que el servidor de Azure DevOps **no se
-   distribuye automáticamente** — se agrega a mano una vez por repo, al bloque
-   `mcpServers` de `.mcp.json`. Es el paquete oficial de Microsoft
-   (`@azure-devops/mcp`), corre local por `stdio` (no es un endpoint HTTP alojado
-   como el de Atlassian) y necesita Node.js 20+.
+1. **Conector**: el harness distribuye la entrada `azure-devops` en `.mcp.json`
+   cuando esta skill está seleccionada (se funde con la de `jira-sync` si
+   ambas están instaladas — ninguna pisa a la otra). Es el paquete oficial de
+   Microsoft (`@azure-devops/mcp`), corre local por `stdio` (no es un endpoint
+   HTTP alojado como el de Atlassian) y necesita Node.js 20+.
+
+   La organización llega como placeholder — **edita el `<org>` en `.mcp.json`
+   una vez por repo** con la organización real de Azure DevOps; un upgrade
+   posterior nunca lo pisa (merge-json solo agrega claves que faltan).
 
    **Autenticación — `envvar` con PAT es el método usado por SOUTEC.** El
    servidor MCP local oficial se ejecuta con:
 
    ```
-   npx -y @azure-devops/mcp soutec --authentication envvar
+   npx -y @azure-devops/mcp <org> --authentication envvar
    ```
 
    El PAT se proporciona mediante la variable de entorno `ADO_MCP_AUTH_TOKEN`,
@@ -34,22 +37,26 @@ la que corresponda a la herramienta real del equipo.
    `.mcp.json`, `.claude/azdo.json` ni ningún archivo del repositorio; el
    proceso de Claude debe heredarla del entorno.
 
-   Ejemplo `.mcp.json`:
+   Entrada distribuida en `.mcp.json`:
 
    ```json
    "azure-devops": {
-     "command": "cmd",
+     "command": "npx",
      "args": [
-       "/c",
-       "npx",
        "-y",
        "@azure-devops/mcp",
-       "soutec",
+       "<org>",
        "--authentication",
        "envvar"
      ]
    }
    ```
+
+   Generar el PAT en Azure DevOps → ícono de usuario → **Personal Access
+   Tokens** → **New Token**, scope **Work Items (Read, Write, & Manage)**. Si el
+   tenant sí permite la app "Azure CLI" en Entra ID, `--authentication azcli`
+   (sesión de `az login`, sin secretos en el archivo) es una alternativa válida
+   — en ese caso edita `args` a mano para reemplazar `envvar` por `azcli`.
 2. **Destino**: `.claude/azdo.json` (commiteado, no es secreto) define la
    organización y el proyecto:
 

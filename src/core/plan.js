@@ -27,13 +27,36 @@ export function computePlan({ manifest, cwd, lock, vars, detected, force = false
   // lockfile, todas las del catalogo (compatibilidad con repos pre-3.0 y tests).
   const selected = resolveSkillSet({ manifest, lock, skills })
 
-  for (const entry of manifest.files) {
-    if (entry.when === 'empty-repo' && !detected.isEmpty) continue
+  const emitted = manifest.files.filter((entry) => {
+    if (entry.when === 'empty-repo' && !detected.isEmpty) return false
     // Skill no seleccionada: no se emite. Si estaba instalada de antes, cae al
     // barrido de OBSOLETE de abajo y se ofrece con --prune.
-    if (entry.skill && !selected.has(entry.skill)) continue
+    if (entry.skill && !selected.has(entry.skill)) return false
+    return true
+  })
+
+  // Dos skills distintas pueden declarar un entry merge-json sobre el mismo dest
+  // (ej. jira-sync y azdo-sync agregando cada una su servidor a .mcp.json). Cada
+  // planFile relee el disco por su cuenta y apply.js escribe una accion por
+  // entry: si se planificaran por separado, la segunda pisaria el archivo entero
+  // e ignoraria lo que agrego la primera (last-write-wins). Se agrupan por dest
+  // ANTES de planificar y se funden sus seeds en una sola accion.
+  const mergeJsonGroups = new Map()
+  for (const entry of emitted) {
+    if (entry.policy !== 'merge-json') continue
+    const group = mergeJsonGroups.get(entry.dest) ?? []
+    group.push(entry)
+    mergeJsonGroups.set(entry.dest, group)
+  }
+
+  for (const entry of emitted) {
+    const group = entry.policy === 'merge-json' ? mergeJsonGroups.get(entry.dest) : null
+    // Solo la primera entrada del grupo planifica; las demas ya quedaron
+    // fundidas como seedEntries.
+    if (group && group.length > 1 && group[0] !== entry) continue
     seenDests.add(entry.dest)
-    actions.push(planFile({ entry, manifest, cwd, lock, vars, detected, fromVersion, force }))
+    const seedEntries = group && group.length > 1 ? group : null
+    actions.push(planFile({ entry, manifest, cwd, lock, vars, detected, fromVersion, force, seedEntries }))
   }
 
   // Archivos que emitimos en una version anterior y que este manifest ya no
@@ -68,7 +91,7 @@ export function resolveSkillSet({ manifest, lock, skills }) {
   return new Set([...required, ...chosen])
 }
 
-function planFile({ entry, manifest, cwd, lock, vars, detected, fromVersion, force }) {
+function planFile({ entry, manifest, cwd, lock, vars, detected, fromVersion, force, seedEntries }) {
   const abs = path.join(cwd, ...entry.dest.split('/'))
   if (entry.binary) return planBinaryFile({ entry, abs, lock, force })
   const raw = readIfExists(abs)
@@ -97,7 +120,7 @@ function planFile({ entry, manifest, cwd, lock, vars, detected, fromVersion, for
 
   // 2. Contenido deseado. Para append-block y merge-json depende de lo que ya
   //    hay en disco, porque solo somos duenos de una parte del archivo.
-  const desired = desiredContent({ entry, manifest, vars, detected, baseline })
+  const desired = desiredContent({ entry, manifest, vars, detected, baseline, seedEntries })
 
   const action = { dest: entry.dest, policy: entry.policy, reasons, content: desired, writePath: entry.dest }
 
@@ -201,7 +224,7 @@ function planBinaryFile({ entry, abs, lock, force }) {
   return action
 }
 
-function desiredContent({ entry, manifest, vars, detected, baseline }) {
+function desiredContent({ entry, manifest, vars, detected, baseline, seedEntries }) {
   switch (entry.policy) {
     case 'append-block': {
       const lines = readFragments(entry.src, detected.stacks)
@@ -209,7 +232,10 @@ function desiredContent({ entry, manifest, vars, detected, baseline }) {
       return upsertBlock(baseline, block)
     }
     case 'merge-json': {
-      const seed = JSON.parse(render(readTemplate(entry.src), vars))
+      // Varios dueños (skills distintas) pueden aportar seed al mismo dest: se
+      // funden en orden antes de fundirlos con lo que ya hay en disco.
+      const seeds = (seedEntries ?? [entry]).map((e) => JSON.parse(render(readTemplate(e.src), vars)))
+      const seed = seeds.reduce((acc, s) => seedMerge(acc, s), {})
       const existing = parseJson(baseline, entry.dest)
       return stringifyJson(seedMerge(existing, seed))
     }

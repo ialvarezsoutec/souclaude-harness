@@ -293,6 +293,13 @@
       "skill": "azdo-sync"
     },
     {
+      "id": "mcp-config-azdo",
+      "src": "base/mcp.azdo.json",
+      "dest": ".mcp.json",
+      "policy": "merge-json",
+      "skill": "azdo-sync"
+    },
+    {
       "id": "progress-readme",
       "src": "base/progress/README.md",
       "dest": "progress/README.md",
