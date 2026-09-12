@@ -1,16 +1,16 @@
-# CLAUDE.md — souclaude-harness
+# AGENTS.md — souclaude-harness
 
 ## Contexto
 
 Proyecto de automation. Stack: Node.js.
-Dominio: el generador del harness de Claude Code de SOUTEC — un CLI (`npx souclaude`)
-que instala y migra la superficie Claude (skills, settings, docs) en los repos de la
+Dominio: el generador del harness de Codex de SOUTEC — un CLI (`npx souclaude`)
+que instala y migra la superficie Codex (skills, settings, docs) en los repos de la
 organización.
 
 ## Harness
 
 Harness `3.0.0`. Sin agentes ni flujos fijos: el modelo trabaja directo. Las skills
-viven en `.claude/skills/` y se aplican solas cuando el contexto lo amerita (en un
+viven en `.Codex/skills/` y se aplican solas cuando el contexto lo amerita (en un
 proyecto consumidor se eligen al instalar con `npx souclaude`; `soutec-github` es
 obligatoria y siempre está):
 
@@ -22,8 +22,6 @@ obligatoria y siempre está):
 - `harness-upgrade` — actualizar el harness.
 - `vault-milestones` — análisis e iteración de milestones en el Vault.
 - `jira-sync` — espejo del tablero del Vault en Jira vía MCP de Atlassian.
-- `azdo-sync` — espejo del tablero del Vault en Azure DevOps Boards vía MCP
-  (en prueba, alternativa a `jira-sync`; no se usan ambas a la vez).
 
 ## Git — reglas duras
 
@@ -82,12 +80,7 @@ una violación del protocolo, no una omisión menor.
 refleja en Jira **en el mismo momento** — Vault primero, Jira inmediatamente
 después. Si el conector no está autorizado, se reporta y el trabajo local sigue.
 
-**Espejo en Azure Boards** (skill `azdo-sync`, en prueba): mismo criterio que
-`jira-sync`, con Azure DevOps Boards como destino. Mientras se evalúa el
-reemplazo, no sincronices en las dos herramientas a la vez para la misma
-tarjeta — usa la que el usuario indique como activa en cada sesión.
-
-La ruta local del Vault está en `.claude/vault.local.json` (la escribe `npx souclaude`).
+La ruta local del Vault está en `.Codex/vault.local.json` (la escribe `npx souclaude`).
 Antes de empezar a trabajar: `git -C "<vault>" pull --rebase` y lee
 `Project-<PREFIJO>/milestones.md` y `kanban.md`. Si el milestone o la tarea ya está
 **En curso** con otro dueño u otra máquina: **para y pregunta**. Al tomar o cerrar
@@ -153,7 +146,7 @@ infraestructura y todo lo que toca frameworks, en inglés.
 ## Secretos
 
 Jamás commitear `.env`, `*.pem`, `*.key`, `*.pfx`, `credentials.json`, `secrets.json`,
-tokens ni contraseñas. `.claude/settings.json` ya deniega su lectura vía
+tokens ni contraseñas. `.Codex/settings.json` ya deniega su lectura vía
 `permissions.deny`.
 
 ## Referencias
