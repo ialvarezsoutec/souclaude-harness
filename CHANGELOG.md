@@ -4,6 +4,19 @@ El harness y el CLI se versionan juntos.
 
 ## [Unreleased]
 
+### Cambiado
+
+- **Una rama Git por milestone, no por tarea** (SHS-M31-T001, T002, T003). La skill
+  `soutec-github`, `CLAUDE.md` (local y distribuido), `AGENTS.md`, `progress/README.md`,
+  la skill `vault-milestones` y la plantilla de PR prescriben `tipo/<PREFIJO>-M<n>-slug`:
+  la rama nace de `dev` al tomar el milestone y vive hasta cerrarlo; las tareas del
+  kanban son commits en esa rama y pasan a Hecho al pushear, sin esperar el merge;
+  desde la misma rama se admiten PRs parciales a `dev` (tras cada merge, `git merge
+  origin/dev` y se sigue); `En review` queda opcional para tareas gateadas por un PR
+  concreto. El regex de `check-pr-rules.mjs` ya aceptaba la forma por milestone: solo
+  cambian el comentario y el test (las ramas por tarea legadas siguen validando). ADR
+  `docs/decisions/20260912-una-rama-por-milestone.md`.
+
 ## [3.11.0] — 2026-09-08
 
 ### Agregado
