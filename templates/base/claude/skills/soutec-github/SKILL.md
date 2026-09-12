@@ -26,7 +26,7 @@ Estas no se negocian, ni siquiera en un hotfix.
   `secrets.json`, tokens, contraseñas, llaves privadas.
 - **Nunca crear una rama sin nombre descriptivo.** Formato `tipo/descripcion-corta`. Si
   el trabajo tiene un ID rastreable — milestone del Vault, o tarea de un tracker
-  externo — va como prefijo del slug (`feature/SHS-M7-playbook-adopcion`,
+  externo — va como prefijo del slug (`feature/M7-playbook-adopcion`,
   `feature/REA-123-captura-lead`); si no lo hay, el slug solo. **No inventes IDs.**
 - **Una rama por milestone, no por tarea.** Las tareas del kanban del Vault son
   commits en la rama de su milestone; el ID `-T<nnn>` nunca va en el nombre de la
@@ -58,9 +58,12 @@ El **ID** va en mayúsculas como prefijo del slug y es uno de estos (**no invent
 IDs**):
 
 - **Milestone del Vault** (el caso normal con Vault conectado):
-  `feature/SHS-M7-playbook-adopcion`. **Una rama por milestone**; las tareas del
+  `feature/M7-playbook-adopcion`. **Una rama por milestone**; las tareas del
   milestone (`SHS-M7-T001`, `T002`, ...) se hacen como commits en esa rama. El ID
-  de tarea `-T<nnn>` **nunca** va en el nombre de la rama.
+  de tarea `-T<nnn>` **nunca** va en el nombre de la rama. La **clave del proyecto
+  tampoco** (`M7-`, no `SHS-M7-`): el repo ya pertenece a un solo proyecto del
+  Vault (`project` en `.claude/vault.local.json`), y el monitor la completa solo
+  al inferir el milestone. El número de milestone va en mayúscula (`M7`).
 - **Tracker externo** (sin Vault): `feature/REA-123-captura-lead`
 - **Sin ID rastreable**: `feature/captura-lead`
 
@@ -69,7 +72,7 @@ IDs**):
 Con Vault conectado, la rama y el milestone viven juntos:
 
 1. **Nace de `dev` al tomar el milestone** (tarjeta a En curso en `milestones.md`),
-   con el nombre `tipo/<PREFIJO>-M<n>-slug`. Anota la rama en la tarjeta del
+   con el nombre `tipo/M<n>-slug`. Anota la rama en la tarjeta del
    milestone.
 2. **Cada tarea terminada son commits pusheados a esa rama.** Al pushear, la
    tarjeta de la tarea pasa a **Hecho** en `kanban.md` en ese momento (push

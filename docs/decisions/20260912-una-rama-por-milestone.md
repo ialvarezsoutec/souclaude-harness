@@ -26,11 +26,18 @@ y las guías del Vault.
 
 ## Decision
 
-1. **Una rama por milestone.** La rama `tipo/<PREFIJO>-M<n>-slug` nace de `dev` al
+1. **Una rama por milestone.** La rama `tipo/M<n>-slug` nace de `dev` al
    tomar el milestone (tarjeta a En curso en `milestones.md`, rama anotada en la
    tarjeta) y vive hasta cerrarlo. El ID de tarea `-T<nnn>` nunca va en el nombre
    de la rama. El Vault sigue desglosado en tareas: las tareas son commits en la
    rama del milestone (opcionalmente `Cierra <ID>` en el cuerpo del commit).
+   **Sin clave de proyecto en la rama** (`M31-`, no `SHS-M31-`): un repo pertenece
+   a un solo proyecto del Vault, declarado en `vault.local.json`, así que la clave
+   es redundante en el nombre. Quien necesite el ID completo lo reconstruye con
+   ese `project`: `milestoneDeRama(rama, prefijo)` en el monitor lo hace para
+   `sessions.md`. En el registro de usage de `00-System/monitor/usage/` (que no
+   conoce el proyecto del Vault) las ramas cortas quedan con `milestone: null`;
+   las ramas viejas con clave siguen resolviendo en ambos.
 2. **Una tarea pasa a Hecho al pushear su commit** a la rama del milestone, sin
    esperar el merge del PR. La columna `En review` del kanban queda opcional: solo
    para tareas que el usuario quiera dejar gateadas por un PR concreto (ahí sí
@@ -41,9 +48,11 @@ y las guías del Vault.
    & merge de un PR parcial se sigue en la misma rama con
    `git fetch origin && git merge origin/dev`; nunca se recrea la rama ni se hace
    `push --force`. La rama se borra solo al cerrar el milestone.
-4. **Sin cambios de código en validadores ni contratos**: el regex de
-   `check-pr-rules.mjs` conserva la compatibilidad con ramas por tarea ya abiertas,
-   el hook y `vault-seeds.js` no cambian.
+4. **Cambios de código mínimos y compatibles**: `RAMA_REGEX` de
+   `check-pr-rules.mjs` suma la forma `M<n>-` y conserva las ramas legadas con
+   clave y por tarea; `milestoneDeRama(rama, prefijo)` del monitor resuelve la
+   forma corta con el proyecto declarado. El hook `declarar-milestone.mjs` y el
+   contrato de columnas de `vault-seeds.js` no cambian.
 
 ## Consequences
 

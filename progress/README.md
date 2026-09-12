@@ -47,7 +47,7 @@ Project-<PREFIJO>/
 milestone puede tener uno o más **planes** (`<PREFIJO>-M<n>-P<n>`) para llegar al
 objetivo; cada plan se ejecuta como **tareas** en el kanban. El milestone es la unidad
 de anti-solapamiento entre máquinas **y la unidad de rama Git** (una rama
-`tipo/<PREFIJO>-M<n>-slug` por milestone, desde la que salen uno o más PRs a `dev`);
+`tipo/M<n>-slug` por milestone, desde la que salen uno o más PRs a `dev`);
 la tarea es la unidad de trabajo del día: uno o pocos commits en la rama del
 milestone, nunca una rama propia.
 
@@ -74,7 +74,7 @@ kanban-plugin: board
 
 En `milestones.md` la tarjeta lleva **dueño y máquina** (`@quién · <máquina>`) y el
 plan activo si lo hay, y conviene anotar la rama del milestone (`rama
-feature/TNP-M2-integracion-odoo`) y cada PR que salga de ella (`PR #18`). En
+feature/M2-integracion-odoo`) y cada PR que salga de ella (`PR #18`). En
 `kanban.md` las tarjetas son tareas (`TNP-M2-T004 · qué · @quién`) y usan las
 columnas Backlog / En curso / En review / Hecho. Una tarea pasa a **Hecho al
 pushear su commit a la rama del milestone**, sin esperar el merge del PR. `En
@@ -161,7 +161,7 @@ Vault: `chore:` para movimientos de tableros, `docs:` para planes y espejos.
 línea al final** de `Project-<PREFIJO>/sessions.md`, append-only como `history.md`:
 
 ```
-- 2026-08-17 · feature/TNP-M2-integracion-odoo · TNP-M2 · @nacho · PC01 · in 142k / out 9k · T003 y T004 cerradas
+- 2026-08-17 · feature/M2-integracion-odoo · TNP-M2 · @nacho · PC01 · in 142k / out 9k · T003 y T004 cerradas
 ```
 
 Campos: fecha · rama o sesión · milestone · quién · máquina · tokens (entrada/salida)

@@ -34,10 +34,11 @@ test('evaluaRama: acepta puntos en el slug (bump de version)', () => {
 
 test('evaluaRama: acepta el prefijo de ID en sus tres variantes', () => {
   const validas = [
-    'feature/SHS-M7-playbook-adopcion', // milestone del Vault (la norma)
-    'fix/SHS-M10-chequeo-gh',
-    'feature/CSC-M1-alta-de-milestones',
-    'feature/SHS-M31-rama-por-milestone',
+    'feature/M7-playbook-adopcion', // milestone del Vault (la norma)
+    'fix/M10-chequeo-gh',
+    
+    'feature/M31-rama-por-milestone',
+    'feature/CSC-M1-alta-de-milestones', // con clave de proyecto, sigue validando
     'feature/SHS-M7-T006-playbook-adopcion', // rama por tarea legada, sigue validando
     'fix/SHS-M7-T007-check-pr-reglas',
     'feature/REA-123-captura-lead', // tracker externo
@@ -51,6 +52,7 @@ test('evaluaRama: rechaza lo que ninguna de las dos formas permite', () => {
   const invalidas = [
     'feature/Mayusculas-en-el-slug', // el slug sigue siendo minusculas
     'feature/SHS-M7-T006', // ID sin slug descriptivo
+    'feature/M7', // milestone sin slug descriptivo
     'cambios/algo', // tipo inexistente
     'feature/prueba', // slug prohibido
     'feature/final-final',

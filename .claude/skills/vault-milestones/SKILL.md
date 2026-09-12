@@ -90,7 +90,7 @@ Cuando el usuario acepte cambios (o los pida directamente):
   mergeado, entregable publicado). Marca `[x]` y deja la tarjeta con su dueño
   final; recién entonces se borra la rama del milestone.
 - **Tomar**: al pasar un milestone a En curso se crea su rama
-  `tipo/<PREFIJO>-M<n>-slug` desde `dev` (skill `soutec-github`) y se anota en la
+  `tipo/M<n>-slug` desde `dev` (skill `soutec-github`) y se anota en la
   tarjeta (`rama feature/...`); cada PR que salga de ella se suma a la tarjeta
   (`PR #N`). Las tareas no tienen rama propia: son commits en la del milestone.
 - **Cambio de plan** (P1 fracasó → P2): el plan viejo **no se borra** de

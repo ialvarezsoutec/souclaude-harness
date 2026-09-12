@@ -57,7 +57,7 @@ mantiene la capa de rocas, la opera un humano.
 
 El **milestone** es la unidad de anti-solapamiento entre máquinas: su tarjeta lleva
 dueño **y máquina** (`@nacho · PC01`). Es también la **unidad de rama Git**: una rama
-`tipo/<PREFIJO>-M<n>-slug` por milestone, desde la que salen uno o más PRs a `dev`.
+`tipo/M<n>-slug` por milestone, desde la que salen uno o más PRs a `dev`.
 La **tarea** es la unidad de trabajo del día — uno o pocos commits en la rama de su
 milestone, nunca una rama propia — y pasa a Hecho al pushear su commit.
 La **sesión** es la unidad de consumo.

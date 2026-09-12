@@ -35,7 +35,7 @@ por PR.
 
 - Ramas: `tipo/<slug>` (`feature/captura-lead`). Tipos: `feature` `fix` `hotfix`
   `docs` `chore` `refactor` `experiment`. Si hay un ID rastreable — milestone del
-  Vault (`feature/SHS-M7-playbook-adopcion`) o tarea de un tracker externo — va
+  Vault (`feature/M7-playbook-adopcion`) o tarea de un tracker externo — va
   como prefijo del slug, pero **no inventes IDs**.
 - **Una rama por milestone, no por tarea.** La rama nace de `dev` al tomar el
   milestone y vive hasta cerrarlo; las tareas del kanban son commits en esa rama
